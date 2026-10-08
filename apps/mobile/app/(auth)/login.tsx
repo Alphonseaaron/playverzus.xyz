@@ -41,7 +41,7 @@ export default function LoginScreen() {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const randomGuestEmail = `guest_${Math.random().toString(36).substring(7)}@verzus.xyz`;
+      const randomGuestEmail = `guest_${Math.random().toString(36).substring(7)}@playverzus.xyz`;
       const randomPassword = `DemoPass_${Math.random().toString(36).substring(7)}!`;
       const { error } = await supabase.auth.signUp({
         email: randomGuestEmail,

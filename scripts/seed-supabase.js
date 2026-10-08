@@ -112,8 +112,8 @@ const OFFICIAL_GAMES = [
 
 const SPONSORS = [
   {
-    name: 'VerzusXYZ Foundation',
-    website_url: 'https://verzus.xyz',
+    name: 'PlayVerzus Foundation',
+    website_url: 'https://playverzus.xyz',
     funded_amount: 100000,
   },
   {

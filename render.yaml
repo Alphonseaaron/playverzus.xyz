@@ -21,4 +21,4 @@ services:
       - key: WALLET_MODE
         value: demo
       - key: CORS_ORIGIN
-        value: https://verzus-xyz.vercel.app
+        value: https://playverzus.xyz

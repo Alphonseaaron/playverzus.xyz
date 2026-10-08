@@ -282,7 +282,7 @@ export default function TermsOfServicePage() {
             </h2>
             <p>
               If you have any questions regarding these Terms, dispute escalation, or regulatory compliance, please contact our
-              compliance department at <span className="font-mono text-primary">legal@verzus.xyz</span>.
+              compliance and support department at <a href="mailto:support@playverzus.xyz" className="font-mono text-primary hover:underline">support@playverzus.xyz</a>.
             </p>
           </section>
         </div>

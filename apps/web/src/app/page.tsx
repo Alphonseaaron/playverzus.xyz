@@ -718,6 +718,7 @@ export default function HomePage() {
               <li><Link href="/dashboard" className="hover:text-foreground">Cashier Ledger</Link></li>
               <li><Link href="/terms" className="hover:text-foreground">Terms of Service</Link></li>
               <li><Link href="/privacy" className="hover:text-foreground">Player Privacy Policy</Link></li>
+              <li><a href="mailto:support@playverzus.xyz" className="text-primary hover:underline font-mono">support@playverzus.xyz</a></li>
               <li><span className="text-muted-foreground/80">Paysafe Banking Hub</span></li>
             </ul>
           </div>
@@ -735,7 +736,7 @@ export default function HomePage() {
         </div>
 
         <div className="pt-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px]">
-          <span>© 2026 Verzus Arena. All rights reserved.</span>
+          <span>© 2026 PlayVerzus Arena (playverzus.xyz). All rights reserved.</span>
           <span className="font-mono text-[10px]">Faceit-grade competitive infrastructure</span>
         </div>
       </footer>

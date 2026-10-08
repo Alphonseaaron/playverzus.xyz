@@ -238,7 +238,7 @@ export default function PrivacyPolicyPage() {
             </h2>
             <p>
               To exercise your privacy rights, request data exports, or report security concerns, please contact our Data Protection
-              Officer at <span className="font-mono text-emerald-400">privacy@verzus.xyz</span>.
+              Officer at <a href="mailto:support@playverzus.xyz" className="font-mono text-emerald-400 hover:underline">support@playverzus.xyz</a>.
             </p>
           </section>
         </div>

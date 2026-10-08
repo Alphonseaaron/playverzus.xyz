@@ -19,6 +19,7 @@ import { AdminModule } from './admin/admin.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 import { RealtimeModule } from './realtime/realtime.module';
 import { WorkersModule } from './workers/workers.module';
+import { MailModule } from './mail/mail.module';
 
 import { RateLimitInterceptor } from './common/interceptors/rate-limit.interceptor';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor';
@@ -43,6 +44,7 @@ import { AuditInterceptor } from './common/interceptors/audit.interceptor';
     WebhooksModule,
     RealtimeModule,
     WorkersModule,
+    MailModule,
   ],
   providers: [
     {

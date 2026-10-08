@@ -163,7 +163,7 @@ on conflict do nothing;
 -- Official Brand Sponsors -----------------------------------------------------
 insert into public.sponsors (name, website_url, funded_amount)
 values
-  ('VerzusXYZ Foundation', 'https://verzus.xyz', 100000),
+  ('PlayVerzus Foundation', 'https://playverzus.xyz', 100000),
   ('Red Bull Gaming', 'https://redbull.com/esports', 50000),
   ('SteelSeries Esports', 'https://steelseries.com', 25000),
   ('Monster Energy Gaming', 'https://monsterenergy.com/gaming', 25000)
