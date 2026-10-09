@@ -4,7 +4,7 @@ import { Reflector } from '@nestjs/core';
 import { WalletService } from '../src/wallet/wallet.service';
 import { GeoblockGuard } from '../src/common/guards/geoblock.guard';
 import { RolesGuard } from '../src/common/guards/roles.guard';
-import { MIN_DEPOSIT_EUR, MAX_DEPOSIT_EUR, MIN_WITHDRAWAL_EUR, MAX_WITHDRAWAL_EUR } from '@antigravity/core';
+import { MIN_DEPOSIT_EUR, MAX_DEPOSIT_EUR, MIN_WITHDRAWAL_EUR, MAX_WITHDRAWAL_EUR } from '@playverzus/core';
 
 describe('API Services & Security Guards Edge Case Suite', () => {
   describe('WalletService Validation & User-Friendly Errors', () => {

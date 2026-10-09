@@ -1,6 +1,6 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
 import { LeaderboardService } from './leaderboard.service';
-import type { GameType } from '@antigravity/core';
+import type { GameType } from '@playverzus/core';
 
 @Controller('leaderboard')
 export class LeaderboardController {

@@ -1,4 +1,4 @@
-import type { TypedSupabaseClient } from '@antigravity/db';
+import type { TypedSupabaseClient } from '@playverzus/db';
 import { WalletError } from '../errors';
 import { namedLogger } from '../logger';
 import { PaysafeClient } from './paysafe';

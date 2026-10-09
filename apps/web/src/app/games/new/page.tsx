@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { CalibrationTool } from '../../../components/CalibrationTool';
 import { apiClient } from '../../../lib/api';
 import { autoAnalyzeScreenshots, type AutoCalibrateResult } from '../../../lib/autoCalibrate';
-import type { GameType, Platform, ROI } from '@antigravity/core';
+import type { GameType, Platform, ROI } from '@playverzus/core';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../../components/ui/card';
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';

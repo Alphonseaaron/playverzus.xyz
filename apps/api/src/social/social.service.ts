@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { createServiceClient, TypedSupabaseClient } from '@antigravity/db';
-import { FriendshipService } from '@antigravity/core';
+import { createServiceClient, TypedSupabaseClient } from '@playverzus/db';
+import { FriendshipService } from '@playverzus/core';
 
 @Injectable()
 export class SocialService {

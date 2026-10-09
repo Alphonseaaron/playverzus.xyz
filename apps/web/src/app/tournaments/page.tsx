@@ -7,7 +7,7 @@ import { Trophy, Plus, Globe, Filter, Users, Sparkles } from 'lucide-react';
 import { TournamentCard } from '../../components/TournamentCard';
 import { apiClient } from '../../lib/api';
 import { useGameStore } from '../../lib/gameStore';
-import { GLOBAL_REGIONS } from '@antigravity/core';
+import { GLOBAL_REGIONS } from '@playverzus/core';
 import { OFFICIAL_GAMES } from '../../lib/gamesCatalog';
 import { GamePoster } from '../../components/GamePoster';
 import { GameContextBar } from '../../components/GameContextBar';

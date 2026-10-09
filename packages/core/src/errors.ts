@@ -1,4 +1,4 @@
-export class AntigravityError extends Error {
+export class PlayVerzusError extends Error {
   constructor(
     public readonly code: string,
     message: string,
@@ -8,6 +8,8 @@ export class AntigravityError extends Error {
     this.name = new.target.name;
   }
 }
+
+export const AntigravityError = PlayVerzusError;
 
 export class WalletError extends AntigravityError {
   constructor(

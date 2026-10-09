@@ -2,7 +2,7 @@ import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import { RatingService } from './rating.service';
 import { SupabaseAuthGuard } from '../common/guards/supabase-auth.guard';
 import { CurrentUser, type AuthUser } from '../common/decorators/current-user.decorator';
-import type { GameType } from '@antigravity/core';
+import type { GameType } from '@playverzus/core';
 
 @Controller('ratings')
 export class RatingController {

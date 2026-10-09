@@ -40,7 +40,7 @@ import {
   TableCell,
 } from '../../../components/ui/table';
 import { formatEUR } from '../../../lib/currency';
-import type { GameProfile } from '@antigravity/core';
+import type { GameProfile } from '@playverzus/core';
 
 interface ChallengeItem {
   id: string;

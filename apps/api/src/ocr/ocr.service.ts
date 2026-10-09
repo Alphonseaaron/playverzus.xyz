@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { OCRServer } from '@antigravity/core';
+import { OCRServer } from '@playverzus/core';
 
 @Injectable()
 export class OCRService {

@@ -23,7 +23,7 @@ import { MatchPermissionsModal } from './MatchPermissionsModal';
 import { notifyUser, requestNotificationPermission } from '../lib/notifications';
 import { useGameAccountsStore } from '../lib/gameAccountsStore';
 import { getGameById } from '../lib/gamesCatalog';
-import type { GameProfile } from '@antigravity/core';
+import type { GameProfile } from '@playverzus/core';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';

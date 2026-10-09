@@ -1,4 +1,4 @@
-# Multi-stage Dockerfile for Antigravity NestJS API in PNPM Monorepo
+# Multi-stage Dockerfile for PlayVerzus NestJS API in PNPM Monorepo
 FROM node:22-alpine AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
@@ -16,9 +16,9 @@ COPY apps/mobile/package.json ./apps/mobile/package.json
 
 # Install dependencies and build db, core, and API packages
 RUN pnpm install --frozen-lockfile
-RUN pnpm --filter @antigravity/db build
-RUN pnpm --filter @antigravity/core build
-RUN pnpm --filter @antigravity/api build
+RUN pnpm --filter @playverzus/db build
+RUN pnpm --filter @playverzus/core build
+RUN pnpm --filter @playverzus/api build
 
 FROM node:22-alpine AS runner
 WORKDIR /app

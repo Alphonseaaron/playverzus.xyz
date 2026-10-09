@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { COUNTRIES, GLOBAL_REGIONS, searchCountries, type Country, type GlobalRegion } from '@antigravity/core';
+import { COUNTRIES, GLOBAL_REGIONS, searchCountries, type Country, type GlobalRegion } from '@playverzus/core';
 import { ChevronDown, Search, X, Check } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { Input } from './ui/input';

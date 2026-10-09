@@ -31,7 +31,7 @@ import { safeRegExp, parseIntLoose, parseTimeToMs } from '../src/types/TypeEngin
 import { MatchStateError, WalletError } from '../src/errors';
 import { PaysafeWallet } from '../src/wallet/PaysafeWallet';
 import type { GameProfile, MatchContext, ScoreFrame } from '../src/types';
-import type { TypedSupabaseClient } from '@antigravity/db';
+import type { TypedSupabaseClient } from '@playverzus/db';
 
 /** Mock in-memory Supabase client for testing PaysafeWallet invariants */
 function createMockWalletSupabase(initialBalance = 100, initialLocked = 0) {

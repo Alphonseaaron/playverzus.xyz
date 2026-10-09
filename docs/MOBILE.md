@@ -1,6 +1,6 @@
 # Mobile Application Guide (MOBILE.md)
 
-The Antigravity Mobile App (`apps/mobile`) is built on **React Native** and **Expo SDK 51** with **Expo Router v3**, providing cross-platform mobile access for iOS and Android players.
+The PlayVerzus Mobile App (`apps/mobile`) is built on **React Native** and **Expo SDK 51** with **Expo Router v3**, providing cross-platform mobile access for iOS and Android players.
 
 ---
 
@@ -15,7 +15,7 @@ Mobile devices handle verification in two modes:
 
 ### 2. Native Screen Capture (Android vs iOS Capabilities)
 - **Android**: Supports MediaProjection API for in-game floating overlays or scheduled frame grabs.
-- **iOS**: Apple sandboxing strictly restricts background screen recording while external apps (e.g., games) are active. Antigravity uses **ReplayKit** broadcast extension or manual game-over screenshot upload to satisfy iOS security requirements without jailbreak.
+- **iOS**: Apple sandboxing strictly restricts background screen recording while external apps (e.g., games) are active. PlayVerzus uses **ReplayKit** broadcast extension or manual game-over screenshot upload to satisfy iOS security requirements without jailbreak.
 
 ---
 

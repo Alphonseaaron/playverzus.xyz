@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useQuery } from '@tanstack/react-query';
 import {
   Rocket,
@@ -162,6 +163,18 @@ export default function HomePage() {
         {/* Ambient atmospheric glows */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-primary/15 rounded-full filter blur-[120px] pointer-events-none" />
         <div className="absolute top-1/4 right-1/4 w-[300px] h-[200px] bg-amber-500/10 rounded-full filter blur-[90px] pointer-events-none" />
+
+        {/* Brand Logo Display */}
+        <div className="flex items-center justify-center">
+          <Image
+            src="/images/logo.png"
+            alt="playverzus.xyz"
+            width={320}
+            height={64}
+            className="h-10 sm:h-14 w-auto object-contain drop-shadow-[0_4px_24px_rgba(200,98,40,0.2)]"
+            priority
+          />
+        </div>
 
         {/* Eyebrow Pill */}
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/30 text-primary text-xs font-semibold tracking-wide shadow-sm">
@@ -695,8 +708,16 @@ export default function HomePage() {
       {/* 9. GLOBAL FOOTER */}
       <footer className="border-t border-border pt-10 text-xs text-muted-foreground space-y-6">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
-          <div className="space-y-2">
-            <h4 className="font-bold text-foreground text-xs uppercase tracking-wider">Verzus Arena</h4>
+          <div className="space-y-3">
+            <Link href="/" className="inline-block">
+              <Image
+                src="/images/logo.png"
+                alt="playverzus.xyz"
+                width={160}
+                height={32}
+                className="h-7 w-auto object-contain"
+              />
+            </Link>
             <p className="text-[11px] leading-relaxed">
               The next-generation competitive gaming platform with automated score verification and instant payouts.
             </p>

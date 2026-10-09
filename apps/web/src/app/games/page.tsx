@@ -7,7 +7,7 @@ import { GameProfileCard } from '../../components/GameProfileCard';
 import { apiClient } from '../../lib/api';
 import { useGameStore } from '../../lib/gameStore';
 import { OFFICIAL_GAMES, type CatalogGame } from '../../lib/gamesCatalog';
-import type { GameProfile } from '@antigravity/core';
+import type { GameProfile } from '@playverzus/core';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';

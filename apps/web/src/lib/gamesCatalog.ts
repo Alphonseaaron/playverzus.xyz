@@ -1,4 +1,4 @@
-import type { GameProfile, GameType, Platform, ROI } from '@antigravity/core';
+import type { GameProfile, GameType, Platform, ROI } from '@playverzus/core';
 
 export interface CatalogGame extends GameProfile {
   shortName: string;

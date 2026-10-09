@@ -1,4 +1,4 @@
-import type { TypedSupabaseClient } from '@antigravity/db';
+import type { TypedSupabaseClient } from '@playverzus/db';
 import { namedLogger } from '../logger';
 
 const log = namedLogger('FriendshipService');

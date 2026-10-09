@@ -1,5 +1,5 @@
 {
-  "extends": "@antigravity/config/tsconfig/nestjs.json",
+  "extends": "@playverzus/config/tsconfig/nestjs.json",
   "compilerOptions": {
     "baseUrl": ".",
     "outDir": "./dist",

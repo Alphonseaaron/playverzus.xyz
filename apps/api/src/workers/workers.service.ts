@@ -1,6 +1,6 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import { createServiceClient, TypedSupabaseClient } from '@antigravity/db';
-import { TournamentEngine, RatingService, namedLogger } from '@antigravity/core';
+import { createServiceClient, TypedSupabaseClient } from '@playverzus/db';
+import { TournamentEngine, RatingService, namedLogger } from '@playverzus/core';
 
 const log = namedLogger('WorkersService');
 

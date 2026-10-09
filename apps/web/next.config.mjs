@@ -7,7 +7,7 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
-  transpilePackages: ['@antigravity/core', '@antigravity/db', '@antigravity/ui'],
+  transpilePackages: ['@playverzus/core', '@playverzus/db', '@playverzus/ui'],
   experimental: {
     optimizePackageImports: ['lucide-react'],
   },

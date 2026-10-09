@@ -1,4 +1,4 @@
-import { createServiceClient } from '@antigravity/db';
+import { createServiceClient } from '@playverzus/db';
 
 import { DemoWallet } from './DemoWallet';
 import { StubRealWallet } from './StubRealWallet';

@@ -1,6 +1,6 @@
 # Legal Analysis & Jurisdictional Framework (LEGAL.md)
 
-This document outlines the legal classification of Antigravity as a **skill-based competitive platform** distinct from games of chance or gambling.
+This document outlines the legal classification of PlayVerzus as a **skill-based competitive platform** distinct from games of chance or gambling.
 
 ---
 
@@ -12,7 +12,7 @@ Under international jurisprudence (including common law precedents in the US, UK
 3. **Chance** (the outcome is determined primarily or predominantly by luck or randomness).
 
 ### The Predominance Test
-Antigravity operates strictly on games governed by the **Predominance Test**:
+PlayVerzus operates strictly on games governed by the **Predominance Test**:
 - The outcome of competitions (e.g. highest score, lowest time, fighting game rounds) is governed predominantly by physical dexterity, reaction speed, strategic decision-making, and game mastery.
 - Random number generation (RNG) elements in eligible games must not outweigh player skill over a standard competition duration.
 - Games governed predominantly by chance (roulette, slots, dice, bingo, card lotteries) are strictly prohibited from registration in the Game Profile directory.
@@ -25,7 +25,7 @@ Antigravity operates strictly on games governed by the **Predominance Test**:
 - **Governing Law**: Betting, Lotteries and Gaming Act (Cap 131, Laws of Kenya).
 - **Statutory Scope**: Regulates betting (wagering on uncertain future events like sports matches) and lotteries/gaming (games of chance).
 - **Esports Exemption Rationale**: Genuine contests of skill where participants compete directly against one another for prizes do not meet the statutory definition of gaming under Cap 131, provided no house odds are offered and entry fees fund direct prize pools or platform administration fees.
-- **Demo Mode**: Because Antigravity operates in `WALLET_MODE=demo` (POINTS have no cash value and cannot be converted to KES), no gaming license is required during initial rollout.
+- **Demo Mode**: Because PlayVerzus operates in `WALLET_MODE=demo` (POINTS have no cash value and cannot be converted to KES), no gaming license is required during initial rollout.
 
 ### 2. Kenya Data Protection Act (2019) & GDPR Compliance
 - **Principle of Minimization**: Verzus enforces an authoritative **Zero Video Storage Policy**. Match frames and visual feeds submitted for verification are analyzed transiently in volatile device/server memory. Only verified numeric match results and mathematical integrity signatures are permanently persisted.

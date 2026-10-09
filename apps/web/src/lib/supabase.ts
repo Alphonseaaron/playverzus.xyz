@@ -1,4 +1,4 @@
-import { createBrowserClient, type TypedSupabaseClient } from '@antigravity/db';
+import { createBrowserClient, type TypedSupabaseClient } from '@playverzus/db';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key';

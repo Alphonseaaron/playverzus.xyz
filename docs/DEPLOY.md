@@ -1,12 +1,12 @@
 # Production Deployment Guide (100% Free-Tier)
 
-This guide documents the complete procedure to deploy Antigravity across free-tier cloud platforms without incurring credit card charges.
+This guide documents the complete procedure to deploy PlayVerzus across free-tier cloud platforms without incurring credit card charges.
 
 ---
 
 ## 🛠️ Free-Tier Service Topology
 
-| Provider | Service | Free-Tier Allowance | Usage in Antigravity |
+| Provider | Service | Free-Tier Allowance | Usage in PlayVerzus |
 | :--- | :--- | :--- | :--- |
 | **Supabase** | Managed PostgreSQL & Auth | 500MB DB, 50k MAUs, Row Level Security | Match data, ledgers, profiles, auth |
 | **Render** | Web Service (Docker / Node) | 750 free instance hours / month | NestJS API (`apps/api`) |
@@ -19,7 +19,7 @@ This guide documents the complete procedure to deploy Antigravity across free-ti
 ## Step 1: Supabase Database & Auth Setup
 
 1. Create a free account at [supabase.com](https://supabase.com).
-2. Create a new project (e.g. `antigravity-prod`).
+2. Create a new project (e.g. `playverzus-prod`).
 3. Open the **SQL Editor** in the Supabase Dashboard:
    - Run `supabase/migrations/0001_init.sql` to generate all 16 tables, 18 `SECURITY DEFINER` stored procedures, and row-level security policies.
    - Run `supabase/seed.sql` to populate official game profiles, Season 0, and demo sponsors.
@@ -46,12 +46,12 @@ This guide documents the complete procedure to deploy Antigravity across free-ti
 1. Create a free account at [render.com](https://render.com).
 2. Click **New + > Web Service** and connect your GitHub repository.
 3. Configure the service settings:
-   - **Name**: `antigravity-api`
+   - **Name**: `verzusxyz-api`
    - **Environment**: `Node`
    - **Root Directory**: leave blank or specify `apps/api`
    - **Build Command**:
      ```bash
-     corepack enable && pnpm install --frozen-lockfile && pnpm --filter @antigravity/api build
+     corepack enable && pnpm install --frozen-lockfile && pnpm --filter @playverzus/api build
      ```
    - **Start Command**:
      ```bash
@@ -66,7 +66,7 @@ This guide documents the complete procedure to deploy Antigravity across free-ti
    - `REDIS_URL`: `<your-upstash-redis-url>`
    - `WALLET_MODE`: `demo`
    - `CORS_ORIGIN`: `https://<your-vercel-domain>.vercel.app`
-5. Click **Create Web Service**. Note the assigned URL: `https://antigravity-api.onrender.com`.
+5. Click **Create Web Service**. Note the assigned URL: `https://verzusxyz-api.onrender.com`.
 
 ---
 
@@ -82,7 +82,7 @@ This guide documents the complete procedure to deploy Antigravity across free-ti
 4. Add Environment Variables:
    - `NEXT_PUBLIC_SUPABASE_URL`: `https://<your-project>.supabase.co`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: `<your-anon-key>`
-   - `NEXT_PUBLIC_API_URL`: `https://antigravity-api.onrender.com`
+   - `NEXT_PUBLIC_API_URL`: `https://verzusxyz-api.onrender.com`
    - `NEXT_PUBLIC_WALLET_MODE`: `demo`
 5. Click **Deploy**. Vercel will build and assign your production domain.
 
@@ -95,11 +95,11 @@ This guide documents the complete procedure to deploy Antigravity across free-ti
    ```bash
    EXPO_PUBLIC_SUPABASE_URL=https://<your-project>.supabase.co
    EXPO_PUBLIC_SUPABASE_ANON_KEY=<your-anon-key>
-   EXPO_PUBLIC_API_URL=https://antigravity-api.onrender.com
+   EXPO_PUBLIC_API_URL=https://verzusxyz-api.onrender.com
    ```
 3. Run local simulator or device:
    ```bash
-   pnpm --filter @antigravity/mobile dev
+   pnpm --filter @playverzus/mobile dev
    ```
 4. To build standalone Android APK using EAS Free Tier:
    ```bash

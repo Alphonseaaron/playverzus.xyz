@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { MatchRoom } from '../../../components/MatchRoom';
 import { apiClient } from '../../../lib/api';
 import { getGameById } from '../../../lib/gamesCatalog';
-import type { GameProfile } from '@antigravity/core';
+import type { GameProfile } from '@playverzus/core';
 
 interface MatchDetails {
   id: string;

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { createServiceClient, TypedSupabaseClient } from '@antigravity/db';
-import { RatingService as CoreRatingService, type GameType } from '@antigravity/core';
+import { createServiceClient, TypedSupabaseClient } from '@playverzus/db';
+import { RatingService as CoreRatingService, type GameType } from '@playverzus/core';
 
 @Injectable()
 export class RatingService {

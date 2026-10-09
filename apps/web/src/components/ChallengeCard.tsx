@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { formatEUR } from '../lib/currency';
-import { getCountryByCode } from '@antigravity/core';
+import { getCountryByCode } from '@playverzus/core';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';

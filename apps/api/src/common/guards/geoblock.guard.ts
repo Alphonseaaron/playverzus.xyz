@@ -1,5 +1,5 @@
 import { CanActivate, ExecutionContext, Injectable, ForbiddenException } from '@nestjs/common';
-import { checkGeoblock } from '@antigravity/core';
+import { checkGeoblock } from '@playverzus/core';
 
 @Injectable()
 export class GeoblockGuard implements CanActivate {

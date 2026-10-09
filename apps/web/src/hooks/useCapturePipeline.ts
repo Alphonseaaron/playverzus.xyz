@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import Tesseract from 'tesseract.js';
-import type { GameProfile } from '@antigravity/core';
+import type { GameProfile } from '@playverzus/core';
 import { apiClient } from '../lib/api';
 
 export interface CaptureState {

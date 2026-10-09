@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { cn } from '@antigravity/ui';
+import { cn } from '@playverzus/ui';
 
 export interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
   size?: 'sm' | 'md' | 'lg' | 'xl';

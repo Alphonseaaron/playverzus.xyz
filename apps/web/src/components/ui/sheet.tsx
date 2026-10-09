@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { cn } from '@antigravity/ui';
+import { cn } from '@playverzus/ui';
 
 interface SheetProps {
   open: boolean;

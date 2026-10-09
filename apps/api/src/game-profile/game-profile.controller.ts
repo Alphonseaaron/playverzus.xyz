@@ -4,7 +4,7 @@ import { SupabaseAuthGuard } from '../common/guards/supabase-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser, type AuthUser } from '../common/decorators/current-user.decorator';
-import type { GameType, Platform, ROI } from '@antigravity/core';
+import type { GameType, Platform, ROI } from '@playverzus/core';
 
 @Controller('games')
 export class GameProfileController {

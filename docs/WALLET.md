@@ -1,6 +1,6 @@
 # Wallet Architecture & Points Ledger Specification (WALLET.md)
 
-Antigravity employs an abstracted, dual-mode wallet architecture. By default, the platform ships with **zero-cost demo POINTS**, ensuring absolute compliance with gaming and financial regulations without requiring merchant licenses or payment gateways.
+PlayVerzus employs an abstracted, dual-mode wallet architecture. By default, the platform ships with **zero-cost demo POINTS**, ensuring absolute compliance with gaming and financial regulations without requiring merchant licenses or payment gateways.
 
 ---
 
@@ -32,7 +32,7 @@ export interface IWalletService {
 
 ## 📒 Double-Entry Accounting Model
 
-Every balance alteration in Antigravity follows immutable double-entry bookkeeping principles. Balances are never mutated with a raw `UPDATE balance = balance + 10`. Instead, balance queries compute the sum of entries or utilize `SECURITY DEFINER` stored procedures.
+Every balance alteration in PlayVerzus follows immutable double-entry bookkeeping principles. Balances are never mutated with a raw `UPDATE balance = balance + 10`. Instead, balance queries compute the sum of entries or utilize `SECURITY DEFINER` stored procedures.
 
 ### Transaction Types
 - **`CREDIT`**: Faucet refills, tournament prize payouts, match winnings.

@@ -1,7 +1,7 @@
 'use client';
 
 import { create } from 'zustand';
-import type { GameProfile } from '@antigravity/core';
+import type { GameProfile } from '@playverzus/core';
 import { OFFICIAL_GAMES, getGameById } from './gamesCatalog';
 
 interface GameState {

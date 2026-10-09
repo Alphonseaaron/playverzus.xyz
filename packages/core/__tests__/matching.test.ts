@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { canTransition, assertTransition } from '../src/matching/MatchStateMachine';
 import { TournamentEngine } from '../src/matching/TournamentEngine';
-import type { TypedSupabaseClient } from '@antigravity/db';
+import type { TypedSupabaseClient } from '@playverzus/db';
 
 describe('MatchStateMachine', () => {
   it('allows valid state progression', () => {

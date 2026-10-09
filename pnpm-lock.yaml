@@ -29,12 +29,6 @@ importers:
 
   apps/api:
     dependencies:
-      '@antigravity/core':
-        specifier: workspace:*
-        version: link:../../packages/core
-      '@antigravity/db':
-        specifier: workspace:*
-        version: link:../../packages/db
       '@nestjs/common':
         specifier: ^10.3.7
         version: 10.4.22(reflect-metadata@0.2.2)(rxjs@7.8.2)
@@ -56,6 +50,12 @@ importers:
       '@nestjs/websockets':
         specifier: ^10.3.7
         version: 10.4.22(@nestjs/common@10.4.22(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@10.4.22)(@nestjs/platform-socket.io@10.4.22)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@playverzus/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@playverzus/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       '@supabase/supabase-js':
         specifier: ^2.42.0
         version: 2.116.0
@@ -84,15 +84,15 @@ importers:
         specifier: ^3.23.0
         version: 3.25.76
     devDependencies:
-      '@antigravity/config':
-        specifier: workspace:*
-        version: link:../../packages/config
       '@nestjs/cli':
         specifier: ^10.3.2
         version: 10.4.9
       '@nestjs/schematics':
         specifier: ^10.1.1
         version: 10.2.3(chokidar@3.6.0)(typescript@5.9.3)
+      '@playverzus/config':
+        specifier: workspace:*
+        version: link:../../packages/config
       '@types/express':
         specifier: ^4.17.21
         version: 4.17.25
@@ -108,10 +108,10 @@ importers:
 
   apps/mobile:
     dependencies:
-      '@antigravity/core':
+      '@playverzus/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@antigravity/db':
+      '@playverzus/db':
         specifier: workspace:*
         version: link:../../packages/db
       '@react-native-async-storage/async-storage':
@@ -166,7 +166,7 @@ importers:
         specifier: ^4.5.2
         version: 4.5.7(@types/react@18.3.31)(react@18.3.0)
     devDependencies:
-      '@antigravity/config':
+      '@playverzus/config':
         specifier: workspace:*
         version: link:../../packages/config
       '@types/react':
@@ -178,13 +178,13 @@ importers:
 
   apps/web:
     dependencies:
-      '@antigravity/core':
+      '@playverzus/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@antigravity/db':
+      '@playverzus/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@antigravity/ui':
+      '@playverzus/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       '@supabase/ssr':
@@ -221,7 +221,7 @@ importers:
         specifier: ^4.5.2
         version: 4.5.7(@types/react@18.3.31)(react@18.3.0)
     devDependencies:
-      '@antigravity/config':
+      '@playverzus/config':
         specifier: workspace:*
         version: link:../../packages/config
       '@types/node':
@@ -272,7 +272,7 @@ importers:
 
   packages/core:
     dependencies:
-      '@antigravity/db':
+      '@playverzus/db':
         specifier: workspace:*
         version: link:../db
       pino:
@@ -288,7 +288,7 @@ importers:
         specifier: ^3.23.0
         version: 3.25.76
     devDependencies:
-      '@antigravity/config':
+      '@playverzus/config':
         specifier: workspace:*
         version: link:../config
       '@types/node':
@@ -307,7 +307,7 @@ importers:
         specifier: ^2.42.0
         version: 2.116.0
     devDependencies:
-      '@antigravity/config':
+      '@playverzus/config':
         specifier: workspace:*
         version: link:../config
       typescript:
@@ -329,7 +329,7 @@ importers:
         specifier: ^2.3.0
         version: 2.6.1
     devDependencies:
-      '@antigravity/config':
+      '@playverzus/config':
         specifier: workspace:*
         version: link:../config
       '@types/react':
@@ -1279,7 +1279,7 @@ packages:
 
   '@expo/bunyan@4.0.1':
     resolution: {integrity: sha512-+Lla7nYSiHZirgK+U/uYzsLv/X+HaJienbD5AKX1UQZHYfWaP+9uuQluRB4GrEVWF0GZ7vEVp/jzaOT9k/SQlg==}
-    engines: {node: '>=0.10.0'}
+    engines: {'0': node >=0.10.0}
 
   '@expo/cli@0.18.31':
     resolution: {integrity: sha512-v9llw9fT3Uv+TCM6Xllo54t672CuYtinEQZ2LPJ2EJsCwuTc4Cd2gXQaouuIVD21VoeGQnr5JtJuWbF97sBKzQ==}

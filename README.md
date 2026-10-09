@@ -1,11 +1,11 @@
-# ⚡ ANTIGRAVITY
+# ⚡ PLAYVERZUS.XYZ
 
-> **Universal Esports Platform · Type-Based OCR Verification · Demo Wallet · 100% Free-Tier Only**
+> **Universal Esports Platform · Automated Verification · Demo Wallet · 100% Free-Tier Only**
 
-[![CI](https://github.com/your-org/antigravity/actions/workflows/ci.yml/badge.svg)](https://github.com/your-org/antigravity/actions/workflows/ci.yml)
+[![CI](https://github.com/anderstyree26/verzus.xyz/actions/workflows/ci.yml/badge.svg)](https://github.com/anderstyree26/verzus.xyz/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-purple.svg)](https://opensource.org/licenses/MIT)
 
-Antigravity is a modern competitive gaming platform that enables 1v1 match challenges and tournament brackets for **ANY game** (PC, mobile, console, or physical table games) without requiring game publisher APIs. Scores and match outcomes are verified using real-time canvas OCR, perceptual image hashing, heuristic anti-cheat algorithms, and an asynchronous human-in-the-loop (HITL) review queue.
+PlayVerzus.xyz is a modern competitive gaming platform that enables 1v1 match challenges and tournament brackets for **ANY game** (PC, mobile, console, or physical table games) without requiring game publisher APIs. Scores and match outcomes are verified using real-time canvas verification, perceptual image hashing, heuristic anti-cheat algorithms, and an asynchronous human-in-the-loop (HITL) review queue.
 
 ---
 
@@ -49,8 +49,8 @@ Antigravity is a modern competitive gaming platform that enables 1v1 match chall
 
 ### 2. Install Dependencies
 ```bash
-git clone https://github.com/your-org/antigravity.git
-cd antigravity
+git clone https://github.com/anderstyree26/verzus.xyz.git
+cd verzus.xyz
 pnpm install
 ```
 
@@ -111,4 +111,4 @@ pnpm lint
 ---
 
 ## 📄 License
-MIT © 2026 Antigravity
+MIT © 2026 PlayVerzus (playverzus.xyz)

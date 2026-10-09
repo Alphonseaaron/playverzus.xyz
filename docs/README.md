@@ -93,8 +93,8 @@ playerone/
 ### 2. Installation
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/antigravity.git
-cd antigravity
+git clone https://github.com/anderstyree26/verzus.xyz.git
+cd verzus.xyz
 
 # Install all workspace dependencies
 pnpm install

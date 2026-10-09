@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { namedLogger } from '@antigravity/core';
+import { namedLogger } from '@playverzus/core';
 
 const log = namedLogger('NestMain');
 

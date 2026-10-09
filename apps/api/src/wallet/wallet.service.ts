@@ -9,7 +9,7 @@ import {
   MAX_DEPOSIT_EUR,
   MIN_WITHDRAWAL_EUR,
   MAX_WITHDRAWAL_EUR,
-} from '@antigravity/core';
+} from '@playverzus/core';
 
 @Injectable()
 export class WalletService {

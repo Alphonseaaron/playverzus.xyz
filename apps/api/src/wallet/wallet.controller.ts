@@ -2,7 +2,7 @@ import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { WalletService } from './wallet.service';
 import { SupabaseAuthGuard } from '../common/guards/supabase-auth.guard';
 import { CurrentUser, type AuthUser } from '../common/decorators/current-user.decorator';
-import type { PayoutMethod } from '@antigravity/core';
+import type { PayoutMethod } from '@playverzus/core';
 
 @Controller('wallet')
 @UseGuards(SupabaseAuthGuard)

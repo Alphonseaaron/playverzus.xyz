@@ -1,4 +1,4 @@
-import type { TypedSupabaseClient } from '@antigravity/db';
+import type { TypedSupabaseClient } from '@playverzus/db';
 
 import { DEFAULT_ELO, QUICK_MATCH_ELO_WINDOW, type GameType, type MatchFormat } from '../constants';
 import { namedLogger } from '../logger';

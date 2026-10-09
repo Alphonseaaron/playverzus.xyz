@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { createServiceClient, TypedSupabaseClient } from '@antigravity/db';
-import { TournamentEngine, type TournamentFormat } from '@antigravity/core';
+import { createServiceClient, TypedSupabaseClient } from '@playverzus/db';
+import { TournamentEngine, type TournamentFormat } from '@playverzus/core';
 
 @Injectable()
 export class TournamentService {

@@ -22,7 +22,7 @@ import { CountrySelect } from '../../../components/CountrySelect';
 import { OFFICIAL_GAMES, getGameById } from '../../../lib/gamesCatalog';
 import { useWalletModeStore } from '../../../lib/walletModeStore';
 import { useGameAccountsStore } from '../../../lib/gameAccountsStore';
-import type { GameProfile, MatchFormat } from '@antigravity/core';
+import type { GameProfile, MatchFormat } from '@playverzus/core';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import { Badge } from '../../../components/ui/badge';

@@ -2,7 +2,7 @@ import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { TournamentService } from './tournament.service';
 import { SupabaseAuthGuard } from '../common/guards/supabase-auth.guard';
 import { CurrentUser, type AuthUser } from '../common/decorators/current-user.decorator';
-import type { TournamentFormat } from '@antigravity/core';
+import type { TournamentFormat } from '@playverzus/core';
 
 @Controller('tournaments')
 export class TournamentController {

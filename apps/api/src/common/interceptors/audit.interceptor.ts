@@ -5,7 +5,7 @@ import {
   NestInterceptor,
 } from '@nestjs/common';
 import { Observable, tap } from 'rxjs';
-import { createServiceClient, TypedSupabaseClient } from '@antigravity/db';
+import { createServiceClient, TypedSupabaseClient } from '@playverzus/db';
 
 @Injectable()
 export class AuditInterceptor implements NestInterceptor {

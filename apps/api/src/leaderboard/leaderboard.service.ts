@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { createServiceClient, TypedSupabaseClient } from '@antigravity/db';
-import { Leaderboard as CoreLeaderboard, type GameType } from '@antigravity/core';
+import { createServiceClient, TypedSupabaseClient } from '@playverzus/db';
+import { Leaderboard as CoreLeaderboard, type GameType } from '@playverzus/core';
 
 @Injectable()
 export class LeaderboardService {

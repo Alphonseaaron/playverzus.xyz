@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { createServiceClient, TypedSupabaseClient } from '@antigravity/db';
-import { MatchService as CoreMatchService, StreamIngestService, type LinkedStream } from '@antigravity/core';
+import { createServiceClient, TypedSupabaseClient } from '@playverzus/db';
+import { MatchService as CoreMatchService, StreamIngestService, type LinkedStream } from '@playverzus/core';
 
 @Injectable()
 export class StreamService {

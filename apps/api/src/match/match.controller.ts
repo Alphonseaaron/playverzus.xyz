@@ -2,7 +2,7 @@ import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/co
 import { MatchService } from './match.service';
 import { SupabaseAuthGuard } from '../common/guards/supabase-auth.guard';
 import { CurrentUser, type AuthUser } from '../common/decorators/current-user.decorator';
-import type { MatchFormat, ScoreFrame } from '@antigravity/core';
+import type { MatchFormat, ScoreFrame } from '@playverzus/core';
 
 @Controller('matches')
 @UseGuards(SupabaseAuthGuard)

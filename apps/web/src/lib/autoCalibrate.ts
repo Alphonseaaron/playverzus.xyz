@@ -1,5 +1,5 @@
 import Tesseract from 'tesseract.js';
-import type { GameType, ROI } from '@antigravity/core';
+import type { GameType, ROI } from '@playverzus/core';
 
 export interface AutoCalibrateResult {
   detectedGameType: GameType;

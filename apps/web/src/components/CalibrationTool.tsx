@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, MouseEvent, useEffect } from 'react';
-import type { ROI } from '@antigravity/core';
+import type { ROI } from '@playverzus/core';
 import { testOcrOnRoi } from '../lib/autoCalibrate';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';

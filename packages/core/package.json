@@ -1,5 +1,5 @@
 {
-  "name": "@antigravity/core",
+  "name": "@playverzus/core",
   "version": "0.1.0",
   "private": true,
   "main": "./dist/index.js",
@@ -22,14 +22,14 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@antigravity/db": "workspace:*",
+    "@playverzus/db": "workspace:*",
     "pino": "^9.0.0",
     "sharp": "^0.33.3",
     "tesseract.js": "^5.1.0",
     "zod": "^3.23.0"
   },
   "devDependencies": {
-    "@antigravity/config": "workspace:*",
+    "@playverzus/config": "workspace:*",
     "@types/node": "^20.11.0",
     "typescript": "^5.4.5",
     "vitest": "^1.6.0"

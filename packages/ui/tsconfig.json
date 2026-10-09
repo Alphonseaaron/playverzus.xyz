@@ -1,4 +1,4 @@
 {
-  "extends": "@antigravity/config/tsconfig/nextjs.json",
+  "extends": "@playverzus/config/tsconfig/nextjs.json",
   "include": ["src/**/*.ts", "src/**/*.tsx"]
 }

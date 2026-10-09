@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { createServiceClient, TypedSupabaseClient } from '@antigravity/db';
-import type { GameType, Platform, ROI } from '@antigravity/core';
+import { createServiceClient, TypedSupabaseClient } from '@playverzus/db';
+import type { GameType, Platform, ROI } from '@playverzus/core';
 
 @Injectable()
 export class GameProfileService {

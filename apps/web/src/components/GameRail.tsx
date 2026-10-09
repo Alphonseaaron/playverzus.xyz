@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -18,7 +19,7 @@ import {
 } from 'lucide-react';
 import { useGameStore } from '../lib/gameStore';
 import { apiClient } from '../lib/api';
-import type { GameProfile } from '@antigravity/core';
+import type { GameProfile } from '@playverzus/core';
 import { OFFICIAL_GAMES, getGameById, type CatalogGame } from '../lib/gamesCatalog';
 import { GamePoster } from './GamePoster';
 import { GameSelectionModal } from './GameSelectionModal';
@@ -80,13 +81,21 @@ export function GameRail() {
             href="/"
             className="flex items-center gap-3 px-2 py-1 text-foreground hover:opacity-90 transition group"
           >
-            <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center font-black text-primary-foreground text-sm shadow-sm transition-transform group-hover:scale-105">
-              VX
+            <div className="w-9 h-9 rounded-xl bg-card border border-border flex items-center justify-center p-1 shadow-sm transition-transform group-hover:scale-105 overflow-hidden">
+              <Image
+                src="/images/logo-mark.png"
+                alt="playverzus.xyz logo"
+                width={32}
+                height={32}
+                className="object-contain"
+                priority
+              />
             </div>
             <div className="flex flex-col">
-              <span className="font-extrabold text-sm tracking-tight text-foreground leading-tight flex items-center gap-1.5">
-                VERZUS
-                <Badge variant="outline" className="text-[9px] px-1 py-0 font-mono text-primary border-primary/30">
+              <span className="font-extrabold text-sm tracking-tight text-foreground leading-tight flex items-center gap-0.5">
+                <span>playverzus</span>
+                <span className="text-primary font-mono text-xs font-black">.xyz</span>
+                <Badge variant="outline" className="text-[9px] px-1 py-0 font-mono text-primary border-primary/30 ml-1">
                   PRO
                 </Badge>
               </span>

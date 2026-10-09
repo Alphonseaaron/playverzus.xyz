@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { createServiceClient, TypedSupabaseClient } from '@antigravity/db';
-import { SeasonService as CoreSeasonService } from '@antigravity/core';
+import { createServiceClient, TypedSupabaseClient } from '@playverzus/db';
+import { SeasonService as CoreSeasonService } from '@playverzus/core';
 
 @Injectable()
 export class SeasonService {

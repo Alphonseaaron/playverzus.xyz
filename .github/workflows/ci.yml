@@ -1,4 +1,4 @@
-name: Antigravity CI
+name: PlayVerzus CI
 
 on:
   push:

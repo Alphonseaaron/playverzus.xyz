@@ -4,7 +4,7 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { createServiceClient, TypedSupabaseClient } from '@antigravity/db';
+import { createServiceClient, TypedSupabaseClient } from '@playverzus/db';
 
 @Injectable()
 export class SupabaseAuthGuard implements CanActivate {

@@ -26,7 +26,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'pnpm --filter @antigravity/web dev',
+    command: 'pnpm --filter @playverzus/web dev',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
   },

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -60,7 +61,7 @@ function getPageContext(pathname: string): { title: string; subtitle?: string } 
   if (pathname.startsWith('/settings')) return { title: 'Settings', subtitle: 'Preferences' };
   if (pathname.startsWith('/admin')) return { title: 'Operations Console', subtitle: 'Administration' };
   if (pathname.startsWith('/profile')) return { title: 'Player Profile', subtitle: 'Career Dossier' };
-  return { title: 'Verzus Arena', subtitle: 'Esports Platform' };
+  return { title: 'PlayVerzus.xyz', subtitle: 'Esports Platform' };
 }
 
 export function TopHeader() {
@@ -293,11 +294,20 @@ export function TopHeader() {
       {/* Mobile Drawer (Sheet) */}
       <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen} side="left">
         <SheetHeader>
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary text-primary-foreground font-bold flex items-center justify-center text-sm">
-              VX
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-card border border-border flex items-center justify-center p-1 overflow-hidden shadow-sm">
+              <Image
+                src="/images/logo-mark.png"
+                alt="playverzus.xyz logo"
+                width={28}
+                height={28}
+                className="object-contain"
+              />
             </div>
-            <SheetTitle>VERZUS ARENA</SheetTitle>
+            <SheetTitle className="font-extrabold text-sm tracking-tight flex items-center gap-0.5">
+              <span>playverzus</span>
+              <span className="text-primary font-mono text-xs font-black">.xyz</span>
+            </SheetTitle>
           </div>
         </SheetHeader>
 

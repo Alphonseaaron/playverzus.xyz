@@ -8,8 +8,39 @@ import { PartyBar } from '../components/PartyBar';
 import { NotificationToastContainer } from '../components/NotificationToastContainer';
 
 export const metadata: Metadata = {
-  title: 'VerzusXYZ — Universal Esports Arena',
+  metadataBase: new URL('https://playverzus.xyz'),
+  title: 'PlayVerzus.xyz — Universal Esports Arena',
   description: 'Skill-based esports matchmaking, party duels, and tournaments with automated instant match verification and anti-cheat.',
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/icon.png', type: 'image/png', sizes: '512x512' },
+    ],
+    apple: [
+      { url: '/apple-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
+  },
+  openGraph: {
+    title: 'PlayVerzus.xyz — Universal Esports Arena',
+    description: 'Skill-based esports matchmaking, party duels, and tournaments with automated instant match verification.',
+    url: 'https://playverzus.xyz',
+    siteName: 'PlayVerzus.xyz',
+    images: [
+      {
+        url: '/images/logo.png',
+        width: 770,
+        height: 148,
+        alt: 'PlayVerzus.xyz Arena',
+      },
+    ],
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'PlayVerzus.xyz — Universal Esports Arena',
+    description: 'Skill-based esports matchmaking, party duels, and tournaments with automated instant match verification.',
+    images: ['/images/logo.png'],
+  },
 };
 
 export const viewport: Viewport = {

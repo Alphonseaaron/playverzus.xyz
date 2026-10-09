@@ -1,6 +1,6 @@
 # Universal Game Archetypes Specification (TYPES.md)
 
-Antigravity operates on a **type-based**, not game-based, verification architecture. Any game ever made maps to one of **8 universal competition engines**.
+PlayVerzus operates on a **type-based**, not game-based, verification architecture. Any game ever made maps to one of **8 universal competition engines**.
 
 ---
 

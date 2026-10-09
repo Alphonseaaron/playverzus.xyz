@@ -1,7 +1,7 @@
-# Antigravity REST API Reference (API.md)
+# PlayVerzus.xyz REST API Reference (API.md)
 
 Base URL (Local): `http://localhost:3001`  
-Base URL (Production): `https://antigravity-api.onrender.com`  
+Base URL (Production): `https://verzusxyz-api.onrender.com`  
 Authentication: Bearer Token (`Authorization: Bearer <supabase_jwt>`)
 
 ---
