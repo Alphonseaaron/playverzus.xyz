@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import {
   Swords,
@@ -21,7 +22,6 @@ import {
 } from 'lucide-react';
 import { EloBadge } from '../../components/EloBadge';
 import { GamePoster } from '../../components/GamePoster';
-import { CashierModal } from '../../components/CashierModal';
 import { apiClient } from '../../lib/api';
 import { useGameStore } from '../../lib/gameStore';
 import { formatEUR, formatPoints } from '../../lib/currency';
@@ -81,9 +81,8 @@ interface UserProfileData {
 }
 
 export default function DashboardPage() {
+  const router = useRouter();
   const { activeGame } = useGameStore();
-  const [cashierModalOpen, setCashierModalOpen] = useState(false);
-  const [cashierMode, setCashierMode] = useState<'deposit' | 'withdraw'>('deposit');
   const [faucetLoading, setFaucetLoading] = useState(false);
 
   const catalogGame = getGameById(activeGame?.id);
@@ -155,13 +154,11 @@ export default function DashboardPage() {
   };
 
   const openDeposit = () => {
-    setCashierMode('deposit');
-    setCashierModalOpen(true);
+    router.push('/cashier?tab=deposit');
   };
 
   const openWithdraw = () => {
-    setCashierMode('withdraw');
-    setCashierModalOpen(true);
+    router.push('/cashier?tab=withdraw');
   };
 
   return (
@@ -580,20 +577,6 @@ export default function DashboardPage() {
           </Card>
         </TabsContent>
       </Tabs>
-
-      {/* Cashier Modal */}
-      <CashierModal
-        open={cashierModalOpen}
-        onClose={() => setCashierModalOpen(false)}
-        initialMode={cashierMode}
-        countryCode={region}
-        userBalanceEur={cashEur}
-        userBalancePoints={points}
-        onSuccess={() => {
-          refetchBalance();
-          refetchHistory();
-        }}
-      />
     </div>
   );
 }

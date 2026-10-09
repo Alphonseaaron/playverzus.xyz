@@ -31,7 +31,6 @@ import { useGameStore } from '../lib/gameStore';
 import { EloBadge } from '../components/EloBadge';
 import { GamePoster } from '../components/GamePoster';
 import { GameDropdown } from '../components/GameDropdown';
-import { AuthPromptModal } from '../components/AuthPromptModal';
 import { apiClient } from '../lib/api';
 import { formatEUR, formatPoints } from '../lib/currency';
 import { OFFICIAL_GAMES, getGameById, type CatalogGame } from '../lib/gamesCatalog';
@@ -74,7 +73,6 @@ interface HomeLeaderboardEntry {
 
 export default function HomePage() {
   const { activeGame, setActiveGame } = useGameStore();
-  const [authModalOpen, setAuthModalOpen] = useState(false);
   const [selectedArenaTab, setSelectedArenaTab] = useState<'all' | 'pc' | 'console'>('all');
 
   // Check authentication
@@ -158,7 +156,7 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* 2. FACEIT-TIER HERO SECTION */}
+      {/* 2. HERO SECTION */}
       <section className="relative pt-6 sm:pt-12 text-center flex flex-col items-center gap-6 sm:gap-8 overflow-hidden">
         {/* Ambient atmospheric glows */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-primary/15 rounded-full filter blur-[120px] pointer-events-none" />
@@ -243,7 +241,7 @@ export default function HomePage() {
 
           <div className="p-4 rounded-xl bg-card border border-border shadow-sm flex flex-col items-center">
             <span className="font-mono text-xl sm:text-2xl font-black text-foreground">Level 1–10</span>
-            <span className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider mt-0.5">FACEIT Elo Rating</span>
+            <span className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider mt-0.5">Competitive Elo Rating</span>
           </div>
 
           <div className="p-4 rounded-xl bg-card border border-border shadow-sm flex flex-col items-center">
@@ -254,7 +252,7 @@ export default function HomePage() {
       </section>
 
       {/* 3. SUPPORTED COMPETITIVE GAME ARENAS */}
-      <section className="space-y-6">
+      <section id="arenas" className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-primary font-mono text-xs font-bold uppercase tracking-wider mb-1">
@@ -362,7 +360,7 @@ export default function HomePage() {
       </section>
 
       {/* 4. THE 3-STEP COMPETITIVE EXPERIENCE */}
-      <section className="p-8 sm:p-12 rounded-3xl bg-card border border-border shadow-2xl relative overflow-hidden">
+      <section id="how-it-works" className="p-8 sm:p-12 rounded-3xl bg-card border border-border shadow-2xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full filter blur-3xl pointer-events-none" />
 
         <div className="text-center max-w-2xl mx-auto space-y-2 mb-10 sm:mb-14">
@@ -426,7 +424,7 @@ export default function HomePage() {
       </section>
 
       {/* 5. WHY PLAYERS CHOOSE VERZUS (4 PILLARS) */}
-      <section className="space-y-6">
+      <section id="fair-play" className="space-y-6">
         <div className="text-center max-w-xl mx-auto space-y-2">
           <Badge variant="secondary" className="font-mono text-[10px]">
             COMPETITIVE INTEGRITY
@@ -466,7 +464,7 @@ export default function HomePage() {
             </div>
             <h3 className="font-bold text-sm text-foreground">Level 1–10 Elo System</h3>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              FACEIT-calibrated Elo ensures you only face opponents of equal rating. Fair, balanced, and competitive matches every time.
+              Calibrated Elo matchmaking ensures you only face opponents of equal rating. Fair, balanced, and competitive matches every time.
             </p>
           </Card>
 
@@ -483,7 +481,7 @@ export default function HomePage() {
       </section>
 
       {/* 6. FEATURED TOURNAMENT CUPS SHOWCASE */}
-      <section className="space-y-6">
+      <section id="tournaments" className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-primary font-mono text-xs font-bold uppercase tracking-wider mb-1">
@@ -580,7 +578,7 @@ export default function HomePage() {
       </section>
 
       {/* 7. HALL OF CHAMPIONS / LEADERBOARD SPOTLIGHT */}
-      <section className="p-6 sm:p-8 rounded-2xl bg-card border border-border shadow-lg space-y-6">
+      <section id="leaderboards" className="p-6 sm:p-8 rounded-2xl bg-card border border-border shadow-lg space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-primary font-mono text-xs font-bold uppercase tracking-wider mb-1">
@@ -757,8 +755,17 @@ export default function HomePage() {
         </div>
 
         <div className="pt-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px]">
-          <span>© 2026 PlayVerzus Arena (playverzus.xyz). All rights reserved.</span>
-          <span className="font-mono text-[10px]">Faceit-grade competitive infrastructure</span>
+          <div className="flex items-center gap-2">
+            <Image
+              src="/images/logo-mark.png"
+              alt="playverzus.xyz"
+              width={18}
+              height={18}
+              className="h-4 w-auto object-contain"
+            />
+            <span>© 2026 PlayVerzus Arena. All rights reserved.</span>
+          </div>
+          <span className="font-mono text-[10px]">Premier competitive esports infrastructure</span>
         </div>
       </footer>
     </div>

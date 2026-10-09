@@ -20,7 +20,6 @@ import {
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
-import { AuthPromptModal } from '../../components/AuthPromptModal';
 
 interface ProfileData {
   id: string;
@@ -34,7 +33,6 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const [authModalOpen, setAuthModalOpen] = useState(false);
 
   // Fetch current user profile to verify role permissions
   const { data: profile, isLoading } = useQuery<ProfileData | null>({
@@ -98,14 +96,15 @@ export default function AdminLayout({
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-            <Button
-              variant="default"
-              size="sm"
-              onClick={() => setAuthModalOpen(true)}
-              className="font-bold text-xs"
-            >
-              Sign In to Account
-            </Button>
+            <Link href="/login?redirect=/admin">
+              <Button
+                variant="default"
+                size="sm"
+                className="font-bold text-xs"
+              >
+                Sign In to Account
+              </Button>
+            </Link>
             <Link href="/">
               <Button variant="outline" size="sm" className="font-bold text-xs gap-1.5 w-full sm:w-auto">
                 <ArrowLeft className="w-3.5 h-3.5" />
@@ -114,7 +113,6 @@ export default function AdminLayout({
             </Link>
           </div>
         </Card>
-        <AuthPromptModal open={authModalOpen} onClose={() => setAuthModalOpen(false)} />
       </div>
     );
   }

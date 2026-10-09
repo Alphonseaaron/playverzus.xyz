@@ -7,11 +7,11 @@ import { Trophy, Plus, Globe, Filter, Users, Sparkles } from 'lucide-react';
 import { TournamentCard } from '../../components/TournamentCard';
 import { apiClient } from '../../lib/api';
 import { useGameStore } from '../../lib/gameStore';
+import { useRouter } from 'next/navigation';
 import { GLOBAL_REGIONS } from '@playverzus/core';
 import { OFFICIAL_GAMES } from '../../lib/gamesCatalog';
 import { GamePoster } from '../../components/GamePoster';
 import { GameContextBar } from '../../components/GameContextBar';
-import { AuthPromptModal } from '../../components/AuthPromptModal';
 import { EmptyState } from '../../components/EmptyState';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -33,11 +33,11 @@ interface TournamentItem {
 }
 
 export default function TournamentsPage() {
+  const router = useRouter();
   const { activeGame, setActiveGame } = useGameStore();
   const [filterGameOnly, setFilterGameOnly] = useState(true);
   const [selectedRegion, setSelectedRegion] = useState<string>('All');
   const [feeFilter, setFeeFilter] = useState<'ALL' | 'FREE' | 'CASH'>('ALL');
-  const [authModalOpen, setAuthModalOpen] = useState(false);
 
   const { data: userProfile } = useQuery<{ id: string } | null>({
     queryKey: ['tournaments-profile'],
@@ -100,7 +100,7 @@ export default function TournamentsPage() {
           onClick={(e) => {
             if (!userProfile) {
               e.preventDefault();
-              setAuthModalOpen(true);
+              router.push('/login?redirect=/tournaments/new');
             }
           }}
           className="flex-shrink-0"
@@ -215,14 +215,6 @@ export default function TournamentsPage() {
           actionHref={activeGame ? `/tournaments/new?profileId=${activeGame.id}` : '/tournaments/new'}
         />
       )}
-
-      {/* Auth Prompt Modal */}
-      <AuthPromptModal
-        open={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
-        title="Sign In to Enter Tournaments"
-        description="Create an account or sign in to register for official brackets and win guaranteed prize pools."
-      />
     </div>
   );
 }

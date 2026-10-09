@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../lib/api';
 import { formatEUR, formatPoints } from '../lib/currency';
@@ -28,8 +29,6 @@ interface TransactionItem {
 
 export function WalletCard() {
   const [faucetLoading, setFaucetLoading] = useState(false);
-  const [depositModalOpen, setDepositModalOpen] = useState(false);
-  const [selectedDepositAmount, setSelectedDepositAmount] = useState('€15.00');
 
   const { data: balanceData, isLoading: loadingBalance, refetch: refetchBalance } = useQuery<WalletData>({
     queryKey: ['wallet-balance'],
@@ -89,14 +88,15 @@ export function WalletCard() {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap flex-shrink-0">
-            <Button
-              variant="default"
-              size="sm"
-              onClick={() => setDepositModalOpen(true)}
-              className="text-xs font-bold"
-            >
-              + Deposit €
-            </Button>
+            <Link href="/cashier?tab=deposit">
+              <Button
+                variant="default"
+                size="sm"
+                className="text-xs font-bold"
+              >
+                + Deposit €
+              </Button>
+            </Link>
             <Button
               variant="secondary"
               size="sm"
@@ -184,76 +184,6 @@ export function WalletCard() {
           </div>
         )}
       </Card>
-
-      {/* Deposit Modal */}
-      {depositModalOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-md p-4 animate-in fade-in duration-150"
-        >
-          <div className="w-full max-w-md bg-card border border-border rounded-3xl p-6 text-foreground flex flex-col gap-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-border pb-3">
-              <div>
-                <h3 className="text-base font-black uppercase text-foreground">Deposit Funds (€ EUR)</h3>
-                <p className="text-xs text-muted-foreground">Standardized Euro currency gateway</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setDepositModalOpen(false)}
-                className="text-muted-foreground hover:text-foreground text-sm p-1"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="space-y-2">
-              <span className="text-xs text-muted-foreground font-bold">Select Amount:</span>
-              <div className="grid grid-cols-3 gap-2 font-mono text-xs font-bold">
-                {['€5.00', '€15.00', '€25.00', '€50.00', '€100.00', '€250.00'].map((amt) => (
-                  <button
-                    key={amt}
-                    type="button"
-                    onClick={() => setSelectedDepositAmount(amt)}
-                    className={`p-2.5 rounded-xl border text-center transition ${
-                      selectedDepositAmount === amt
-                        ? 'bg-primary text-primary-foreground border-primary shadow-sm font-black'
-                        : 'bg-secondary hover:bg-secondary/80 border-border text-foreground'
-                    }`}
-                  >
-                    {amt}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="p-3 bg-secondary/60 rounded-xl border border-border text-xs text-muted-foreground space-y-1.5">
-              <div className="font-semibold text-foreground flex items-center gap-1.5">
-                <span>🔒</span> Direct Smart Escrow
-              </div>
-              <p className="text-[11px] leading-relaxed">
-                Accepted: Visa, Mastercard, Paysafecard, Skrill. Zero exchange rate slippage. Funds are immediately available for 1v1 duels.
-              </p>
-            </div>
-
-            <Button
-              variant="default"
-              size="lg"
-              className="w-full text-xs font-bold uppercase tracking-wider"
-              onClick={() => {
-                notifyUser(`Initiated Deposit: ${selectedDepositAmount}`, {
-                  body: 'Checkout window opening in sandbox mode.',
-                  sound: 'connect',
-                  type: 'info',
-                });
-                setDepositModalOpen(false);
-              }}
-            >
-              Continue with {selectedDepositAmount} →
-            </Button>
-          </div>
-        </div>
-      )}
     </>
   );
 }

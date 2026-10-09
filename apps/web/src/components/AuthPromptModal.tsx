@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 
@@ -25,15 +26,21 @@ export function AuthPromptModal({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-md p-4 animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 overflow-y-auto bg-background/80 backdrop-blur-md p-3 sm:p-6 flex items-start justify-center animate-in fade-in duration-150"
     >
-      <div className="w-full max-w-md bg-card border border-border rounded-3xl p-6 sm:p-8 text-foreground flex flex-col gap-5 shadow-2xl relative overflow-hidden">
+      <div className="w-full max-w-md my-4 sm:my-8 bg-card border border-border rounded-3xl p-6 sm:p-8 text-foreground flex flex-col gap-5 shadow-2xl relative max-h-[calc(100vh-2rem)] sm:max-h-[calc(100vh-4rem)] overflow-y-auto scrollbar-thin">
         {/* Glow backdrop */}
         <div className="absolute top-0 right-0 w-40 h-40 bg-primary/10 rounded-full filter blur-3xl pointer-events-none" />
 
         <div className="flex items-start justify-between">
-          <div className="w-12 h-12 rounded-2xl bg-primary text-primary-foreground font-black text-xl flex items-center justify-center shadow-lg">
-            VX
+          <div className="w-12 h-12 rounded-2xl bg-card border border-border flex items-center justify-center p-1.5 shadow-lg overflow-hidden">
+            <Image
+              src="/images/logo-mark.png"
+              alt="playverzus.xyz"
+              width={36}
+              height={36}
+              className="object-contain"
+            />
           </div>
           <button
             type="button"

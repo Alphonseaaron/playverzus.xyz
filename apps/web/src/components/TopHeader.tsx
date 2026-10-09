@@ -24,7 +24,6 @@ import {
 import { useGameStore } from '../lib/gameStore';
 import { EloBadge } from './EloBadge';
 import { NotificationBell } from './NotificationBell';
-import { CashierModal } from './CashierModal';
 import { apiClient } from '../lib/api';
 import { formatEUR, formatPoints } from '../lib/currency';
 import { useWalletModeStore } from '../lib/walletModeStore';
@@ -71,7 +70,6 @@ export function TopHeader() {
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [gameDropdownOpen, setGameDropdownOpen] = useState(false);
-  const [cashierOpen, setCashierOpen] = useState(false);
 
   const activeCatalogGame = getGameById(activeGame?.id);
   const pageContext = getPageContext(pathname);
@@ -127,6 +125,190 @@ export function TopHeader() {
       : []),
   ];
 
+  // Dedicated Public Marketing Header for Landing Page
+  if (pathname === '/') {
+    return (
+      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8 max-w-full">
+        {/* Left: Brand Logo (Transparent Logo image, no background) */}
+        <div className="flex items-center gap-3">
+          <Link href="/" className="flex items-center gap-2 group">
+            <Image
+              src="/images/logo.png"
+              alt="playverzus.xyz"
+              width={160}
+              height={36}
+              className="h-8 sm:h-9 w-auto object-contain transition group-hover:opacity-90"
+              priority
+            />
+          </Link>
+        </div>
+
+        {/* Center: Desktop Public Marketing Navigation Links */}
+        <nav className="hidden md:flex items-center gap-6 text-xs font-bold tracking-wider uppercase">
+          <a
+            href="#arenas"
+            className="text-muted-foreground hover:text-foreground transition-colors hover:text-primary"
+          >
+            Supported Arenas
+          </a>
+          <a
+            href="#how-it-works"
+            className="text-muted-foreground hover:text-foreground transition-colors hover:text-primary"
+          >
+            How It Works
+          </a>
+          <Link
+            href="/tournaments"
+            className="text-muted-foreground hover:text-foreground transition-colors hover:text-primary"
+          >
+            Tournaments
+          </Link>
+          <Link
+            href="/leaderboards"
+            className="text-muted-foreground hover:text-foreground transition-colors hover:text-primary"
+          >
+            Ladders & Rank
+          </Link>
+          <a
+            href="#fair-play"
+            className="text-muted-foreground hover:text-foreground transition-colors hover:text-primary"
+          >
+            Fair Play
+          </a>
+        </nav>
+
+        {/* Right: Auth / Arena Entry CTAs */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          {!me ? (
+            <>
+              <Link href="/login">
+                <Button variant="ghost" size="sm" className="font-bold text-xs uppercase tracking-wider">
+                  Sign In
+                </Button>
+              </Link>
+              <Link href="/signup">
+                <Button
+                  size="sm"
+                  className="font-bold text-xs uppercase tracking-wider bg-primary hover:bg-primary/90 text-primary-foreground shadow-md shadow-primary/20"
+                >
+                  Play For Free
+                </Button>
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link href="/challenges">
+                <Button
+                  size="sm"
+                  className="font-bold text-xs uppercase tracking-wider bg-primary hover:bg-primary/90 text-primary-foreground shadow-md shadow-primary/20"
+                >
+                  Enter Arena
+                </Button>
+              </Link>
+              <Link
+                href={`/profile/${me.username || 'me'}`}
+                className="flex items-center gap-2 pl-1 pr-2.5 py-1 bg-card hover:bg-muted border border-border hover:border-primary/50 rounded-lg transition"
+                title="View Player Profile"
+              >
+                <Avatar size="sm" className="w-7 h-7 text-xs bg-primary text-primary-foreground">
+                  <AvatarFallback>{avatarLetter}</AvatarFallback>
+                </Avatar>
+                <span className="hidden sm:inline text-xs font-bold text-foreground">
+                  @{me.username}
+                </span>
+              </Link>
+            </>
+          )}
+
+          {/* Mobile Navigation Drawer Trigger */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setMobileMenuOpen(true)}
+            className="md:hidden text-muted-foreground hover:text-foreground"
+            aria-label="Toggle navigation drawer"
+          >
+            <Menu className="w-5 h-5" />
+          </Button>
+        </div>
+
+        {/* Mobile Landing Sheet Drawer */}
+        <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen} side="left">
+          <SheetHeader>
+            <div className="flex items-center gap-2.5">
+              <Image
+                src="/images/logo.png"
+                alt="playverzus.xyz"
+                width={140}
+                height={32}
+                className="h-7 w-auto object-contain"
+              />
+            </div>
+          </SheetHeader>
+          <div className="flex flex-col space-y-2 mt-6">
+            <a
+              href="#arenas"
+              onClick={() => setMobileMenuOpen(false)}
+              className="px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition"
+            >
+              Supported Arenas
+            </a>
+            <a
+              href="#how-it-works"
+              onClick={() => setMobileMenuOpen(false)}
+              className="px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition"
+            >
+              How It Works
+            </a>
+            <Link
+              href="/tournaments"
+              onClick={() => setMobileMenuOpen(false)}
+              className="px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition"
+            >
+              Tournaments
+            </Link>
+            <Link
+              href="/leaderboards"
+              onClick={() => setMobileMenuOpen(false)}
+              className="px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition"
+            >
+              Ladders & Rank
+            </Link>
+            <a
+              href="#fair-play"
+              onClick={() => setMobileMenuOpen(false)}
+              className="px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition"
+            >
+              Fair Play
+            </a>
+            <div className="pt-4 border-t border-border flex flex-col gap-2">
+              {!me ? (
+                <>
+                  <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
+                    <Button variant="outline" className="w-full font-bold text-xs uppercase tracking-wider">
+                      Sign In
+                    </Button>
+                  </Link>
+                  <Link href="/signup" onClick={() => setMobileMenuOpen(false)}>
+                    <Button className="w-full font-bold text-xs uppercase tracking-wider">
+                      Play For Free
+                    </Button>
+                  </Link>
+                </>
+              ) : (
+                <Link href="/challenges" onClick={() => setMobileMenuOpen(false)}>
+                  <Button className="w-full font-bold text-xs uppercase tracking-wider">
+                    Enter Arena
+                  </Button>
+                </Link>
+              )}
+            </div>
+          </div>
+        </Sheet>
+      </header>
+    );
+  }
+
   return (
     <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-border h-16 flex items-center justify-between px-4 sm:px-6 gap-3 sm:gap-4 max-w-full">
       {/* 1. Left Zone: Mobile Drawer Trigger + Active Arena Pill + Context Breadcrumb */}
@@ -145,9 +327,15 @@ export function TopHeader() {
         {/* Mobile Brand Mark */}
         <Link
           href="/"
-          className="lg:hidden w-8 h-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold text-xs shadow-sm flex-shrink-0"
+          className="lg:hidden flex items-center justify-center flex-shrink-0"
         >
-          VX
+          <Image
+            src="/images/logo-mark.png"
+            alt="playverzus.xyz"
+            width={28}
+            height={28}
+            className="w-7 h-7 object-contain"
+          />
         </Link>
 
         {/* Active Game Dropdown Switcher (Anchored dropdown - NO sticky popup modals) */}
@@ -236,11 +424,10 @@ export function TopHeader() {
           </button>
 
           {/* Active Balance Display */}
-          <button
-            type="button"
-            onClick={() => setCashierOpen(true)}
+          <Link
+            href="/cashier"
             className="px-2 py-0.5 font-mono font-bold text-xs hover:text-primary transition flex items-center gap-1"
-            title="Click to open Cashier"
+            title="Open Cashier & Balance Management"
           >
             {walletMode === 'REAL' ? (
               <span className="text-emerald-400 font-semibold">{formatEUR(cashAmount)}</span>
@@ -249,18 +436,19 @@ export function TopHeader() {
                 {formatPoints(pointsAmount)} <span className="text-[9px] text-muted-foreground font-sans">PTS</span>
               </span>
             )}
-          </button>
+          </Link>
 
           {/* Top-up Button */}
-          <Button
-            size="icon"
-            variant="default"
-            className="w-6 h-6 rounded-md"
-            onClick={() => setCashierOpen(true)}
-            title="Quick Deposit / Claim Demo Points"
-          >
-            <Plus className="w-3.5 h-3.5" />
-          </Button>
+          <Link href="/cashier?tab=deposit">
+            <Button
+              size="icon"
+              variant="default"
+              className="w-6 h-6 rounded-md"
+              title="Quick Deposit / Claim Demo Points"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </Button>
+          </Link>
         </div>
 
         {/* Notification Bell with Popover Dropdown */}
@@ -294,20 +482,14 @@ export function TopHeader() {
       {/* Mobile Drawer (Sheet) */}
       <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen} side="left">
         <SheetHeader>
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-card border border-border flex items-center justify-center p-1 overflow-hidden shadow-sm">
-              <Image
-                src="/images/logo-mark.png"
-                alt="playverzus.xyz logo"
-                width={28}
-                height={28}
-                className="object-contain"
-              />
-            </div>
-            <SheetTitle className="font-extrabold text-sm tracking-tight flex items-center gap-0.5">
-              <span>playverzus</span>
-              <span className="text-primary font-mono text-xs font-black">.xyz</span>
-            </SheetTitle>
+          <div className="flex items-center">
+            <Image
+              src="/images/logo.png"
+              alt="playverzus.xyz"
+              width={140}
+              height={32}
+              className="h-7 w-auto object-contain"
+            />
           </div>
         </SheetHeader>
 
@@ -366,14 +548,6 @@ export function TopHeader() {
           })}
         </div>
       </Sheet>
-
-      {/* Cashier & Deposit / Withdrawal Modal */}
-      <CashierModal
-        open={cashierOpen}
-        onClose={() => setCashierOpen(false)}
-        userBalanceEur={cashAmount}
-        userBalancePoints={pointsAmount}
-      />
     </header>
   );
 }

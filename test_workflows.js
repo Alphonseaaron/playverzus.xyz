@@ -74,7 +74,7 @@ function fetchRoute(path) {
     assert.ok(home.html.includes('Supported Competitive Arenas'), 'Game arenas section must be present');
     assert.ok(home.html.includes('Featured Tournament Cups'), 'Tournaments showcase must be present');
     assert.ok(home.html.includes('Hall of Champions'), 'Hall of champions must be present');
-    console.log('✓ Landing page has complete Faceit-tier structure.');
+    console.log('✓ Landing page has complete Pro-tier structure.');
 
     // 4.2 Challenges Page
     const challenges = await fetchRoute('/challenges');

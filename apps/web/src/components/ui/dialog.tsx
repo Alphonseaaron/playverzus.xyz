@@ -15,14 +15,14 @@ export function Dialog({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-background/80 backdrop-blur-sm p-3 sm:p-6 flex items-start justify-center animate-in fade-in-0">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-background/80 backdrop-blur-sm animate-in fade-in-0"
+        className="fixed inset-0"
         onClick={() => onOpenChange(false)}
       />
       {/* Content */}
-      <div className="relative z-50 animate-in fade-in-0 zoom-in-95">{children}</div>
+      <div className="relative z-50 w-full max-w-lg my-4 sm:my-8 animate-in zoom-in-95">{children}</div>
     </div>
   );
 }
@@ -34,7 +34,7 @@ export const DialogContent = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      'w-full max-w-lg rounded-2xl border border-border bg-card p-6 text-card-foreground shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto',
+      'w-full max-w-lg rounded-2xl border border-border bg-card p-5 sm:p-6 text-card-foreground shadow-2xl space-y-4 max-h-[calc(100vh-3rem)] sm:max-h-[calc(100vh-5rem)] overflow-y-auto scrollbar-thin',
       className
     )}
     {...props}

@@ -187,17 +187,17 @@ export function CashierModal({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-md p-4 sm:p-6 animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 overflow-y-auto bg-background/80 backdrop-blur-md p-3 sm:p-6 flex items-start justify-center animate-in fade-in duration-150"
     >
-      <div className="w-full max-w-3xl bg-card border border-border rounded-2xl p-6 sm:p-8 text-foreground flex flex-col gap-6 shadow-2xl relative overflow-hidden">
-        {/* Top Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-border">
+      <div className="w-full max-w-3xl my-4 sm:my-8 bg-card border border-border rounded-2xl text-foreground flex flex-col shadow-2xl relative max-h-[calc(100vh-2rem)] sm:max-h-[calc(100vh-4rem)] overflow-hidden">
+        {/* Top Header (Sticky / Non-collapsing) */}
+        <div className="flex items-center justify-between p-5 sm:p-6 border-b border-border bg-card flex-shrink-0 z-10">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary text-primary-foreground font-black flex items-center justify-center shadow-md">
               <Wallet className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-xl font-bold text-foreground tracking-tight">
+              <h3 className="text-lg sm:text-xl font-bold text-foreground tracking-tight">
                 Cashier & Balance Management
               </h3>
               <p className="text-xs text-muted-foreground mt-0.5">
@@ -216,6 +216,9 @@ export function CashierModal({
             <X className="w-5 h-5" />
           </Button>
         </div>
+
+        {/* Scrollable Modal Body */}
+        <div className="p-5 sm:p-6 overflow-y-auto scrollbar-thin flex flex-col gap-6 flex-1">
 
         {/* Ledger Mode Selector: REAL MONEY (€ EUR) vs DEMO PRACTICE (PTS) */}
         <div className="grid grid-cols-2 gap-3 p-1.5 bg-muted rounded-xl border border-border">
@@ -549,6 +552,7 @@ export function CashierModal({
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

@@ -22,7 +22,6 @@ import { apiClient } from '../lib/api';
 import type { GameProfile } from '@playverzus/core';
 import { OFFICIAL_GAMES, getGameById, type CatalogGame } from '../lib/gamesCatalog';
 import { GamePoster } from './GamePoster';
-import { GameSelectionModal } from './GameSelectionModal';
 import { AdminSidebar } from './AdminSidebar';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
@@ -32,7 +31,11 @@ import { Separator } from './ui/separator';
 export function GameRail() {
   const pathname = usePathname();
   const { activeGame, setActiveGame, initializeDefaultGame } = useGameStore();
-  const [gameModalOpen, setGameModalOpen] = useState(false);
+
+  // Landing page does not include the sidebar
+  if (pathname === '/') {
+    return null;
+  }
 
   // If inside the admin console, render the dedicated shadcn Admin Sidebar
   if (pathname.startsWith('/admin')) {
@@ -79,42 +82,27 @@ export function GameRail() {
           {/* Brand Logo & Name */}
           <Link
             href="/"
-            className="flex items-center gap-3 px-2 py-1 text-foreground hover:opacity-90 transition group"
+            className="flex items-center gap-2 px-2 py-1 text-foreground hover:opacity-90 transition group"
           >
-            <div className="w-9 h-9 rounded-xl bg-card border border-border flex items-center justify-center p-1 shadow-sm transition-transform group-hover:scale-105 overflow-hidden">
-              <Image
-                src="/images/logo-mark.png"
-                alt="playverzus.xyz logo"
-                width={32}
-                height={32}
-                className="object-contain"
-                priority
-              />
-            </div>
-            <div className="flex flex-col">
-              <span className="font-extrabold text-sm tracking-tight text-foreground leading-tight flex items-center gap-0.5">
-                <span>playverzus</span>
-                <span className="text-primary font-mono text-xs font-black">.xyz</span>
-                <Badge variant="outline" className="text-[9px] px-1 py-0 font-mono text-primary border-primary/30 ml-1">
-                  PRO
-                </Badge>
-              </span>
-              <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider leading-none">
-                Esports Arena
-              </span>
-            </div>
+            <Image
+              src="/images/logo.png"
+              alt="playverzus.xyz"
+              width={160}
+              height={36}
+              className="h-8 w-auto object-contain transition group-hover:scale-105"
+              priority
+            />
           </Link>
 
-          {/* Active Game Selector (Faceit-Style Trigger, opens clean dialog modal, no top scrollbars!) */}
+          {/* Active Game Selector (Navigates directly to /games catalog page - NO popups!) */}
           <div className="space-y-1.5">
             <span className="text-[10px] uppercase font-bold text-muted-foreground font-mono tracking-wider px-2">
               Active Arena
             </span>
-            <button
-              type="button"
-              onClick={() => setGameModalOpen(true)}
+            <Link
+              href="/games"
               className="flex items-center justify-between p-2 rounded-xl bg-card hover:bg-muted/80 border border-border hover:border-primary/50 transition group text-left w-full shadow-sm"
-              title="Click to switch game arena"
+              title="Click to view full game roster & switch arena"
             >
               <div className="flex items-center gap-2.5 min-w-0">
                 <GamePoster
@@ -132,7 +120,7 @@ export function GameRail() {
                 </div>
               </div>
               <ChevronsUpDown className="w-4 h-4 text-muted-foreground group-hover:text-primary flex-shrink-0 ml-1 transition-colors" />
-            </button>
+            </Link>
           </div>
 
           {/* Primary Navigation Links */}
@@ -172,13 +160,12 @@ export function GameRail() {
                 <Flame className="w-3 h-3 text-primary" />
                 Featured
               </span>
-              <button
-                type="button"
-                onClick={() => setGameModalOpen(true)}
+              <Link
+                href="/games"
                 className="text-[11px] text-primary hover:underline font-semibold"
               >
                 All ({OFFICIAL_GAMES.length})
-              </button>
+              </Link>
             </div>
 
             <div className="space-y-1">
@@ -237,12 +224,6 @@ export function GameRail() {
           </Link>
         </div>
       </aside>
-
-      {/* FACEIT-Style Game Selection Modal (clean dialog popup, replaces top scrollbars) */}
-      <GameSelectionModal
-        open={gameModalOpen}
-        onClose={() => setGameModalOpen(false)}
-      />
     </>
   );
 }

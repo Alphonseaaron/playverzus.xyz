@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import {
   Users,
@@ -23,10 +23,10 @@ import { notifyUser } from '../lib/notifications';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Input } from './ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './ui/dialog';
 
 export function PartyBar() {
   const router = useRouter();
+  const pathname = usePathname();
   const {
     members,
     maxSlots,
@@ -49,7 +49,6 @@ export function PartyBar() {
     staleTime: 60000,
   });
 
-  const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [chatInput, setChatInput] = useState('');
   const [copied, setCopied] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
@@ -94,6 +93,11 @@ export function PartyBar() {
     sendMessage(me?.username || 'You', chatInput);
     setChatInput('');
   };
+
+  // Hide squad bar on public marketing landing page and admin panel
+  if (pathname === '/' || pathname.startsWith('/admin')) {
+    return null;
+  }
 
   return (
     <>
@@ -225,11 +229,11 @@ export function PartyBar() {
               {emptySlotsCount > 0 && (
                 <button
                   type="button"
-                  onClick={() => setInviteModalOpen(true)}
+                  onClick={handleCopyCode}
                   className="w-9 h-9 rounded-full border border-dashed border-border hover:border-primary text-muted-foreground hover:text-primary flex items-center justify-center text-xs font-bold transition bg-muted/40 flex-shrink-0"
-                  title="Invite friend to squad"
+                  title="Click to copy squad invite code to clipboard"
                 >
-                  <Plus className="w-4 h-4" />
+                  {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Plus className="w-4 h-4" />}
                 </button>
               )}
             </div>
@@ -288,40 +292,6 @@ export function PartyBar() {
           </div>
         </aside>
       )}
-
-      {/* Invite Squad Code Modal */}
-      <Dialog open={inviteModalOpen} onOpenChange={setInviteModalOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Users className="w-5 h-5 text-primary" />
-              Squad Invite Code
-            </DialogTitle>
-            <DialogDescription>
-              Share this code with teammates to squad up for competitive matchmaking.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="flex items-center justify-between p-3 bg-muted border border-border rounded-xl font-mono text-sm font-bold text-primary">
-            <span>{inviteCode}</span>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={handleCopyCode}
-              className="gap-1 text-xs"
-            >
-              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-              {copied ? 'Copied' : 'Copy'}
-            </Button>
-          </div>
-
-          <DialogFooter>
-            <Button variant="secondary" onClick={() => setInviteModalOpen(false)} className="w-full">
-              Done
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }

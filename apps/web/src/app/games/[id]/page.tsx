@@ -25,7 +25,6 @@ import { useGameAccountsStore } from '../../../lib/gameAccountsStore';
 import { EloBadge } from '../../../components/EloBadge';
 import { ChallengeCard } from '../../../components/ChallengeCard';
 import { GamePoster } from '../../../components/GamePoster';
-import { GameSelectionModal } from '../../../components/GameSelectionModal';
 import { TournamentCard } from '../../../components/TournamentCard';
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
@@ -80,7 +79,6 @@ export default function GameHubPage() {
   const id = params.id as string;
   const { setActiveGame } = useGameStore();
 
-  const [modalOpen, setModalOpen] = useState(false);
   const [feeFilter, setFeeFilter] = useState<'ALL' | 'FREE' | 'CASH'>('ALL');
 
   // Query database profile
@@ -143,11 +141,6 @@ export default function GameHubPage() {
     staleTime: 15000,
   });
 
-  const handleSelectAnotherGame = (game: CatalogGame) => {
-    setActiveGame(game);
-    router.push(`/games/${game.id}`);
-  };
-
   const filteredChallenges = (challenges || []).filter((c) => {
     if (feeFilter === 'FREE' && (c.entry_fee || 0) > 0) return false;
     if (feeFilter === 'CASH' && (c.entry_fee || 0) === 0) return false;
@@ -204,15 +197,16 @@ export default function GameHubPage() {
 
           {/* Primary Action Buttons */}
           <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap flex-shrink-0">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setModalOpen(true)}
-              className="font-bold text-xs gap-1.5 h-9"
-            >
-              <ChevronsUpDown className="w-4 h-4" />
-              <span>Switch Arena</span>
-            </Button>
+            <Link href="/games">
+              <Button
+                variant="outline"
+                size="sm"
+                className="font-bold text-xs gap-1.5 h-9"
+              >
+                <ChevronsUpDown className="w-4 h-4" />
+                <span>Switch Arena</span>
+              </Button>
+            </Link>
 
             <Link href={`/matches/new?profileId=${resolvedProfile.id}`}>
               <Button variant="default" size="sm" className="font-bold text-xs gap-1.5 h-9 shadow-sm">
@@ -478,13 +472,6 @@ export default function GameHubPage() {
           </div>
         </TabsContent>
       </Tabs>
-
-      {/* Game Selection Modal */}
-      <GameSelectionModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onSelectGame={handleSelectAnotherGame}
-      />
     </div>
   );
 }

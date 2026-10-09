@@ -19,7 +19,6 @@ import {
 import { useCapturePipeline as useMatchCapture } from '../hooks/useCapturePipeline';
 import { LiveScore } from './LiveScore';
 import { GamePoster } from './GamePoster';
-import { MatchPermissionsModal } from './MatchPermissionsModal';
 import { notifyUser, requestNotificationPermission } from '../lib/notifications';
 import { useGameAccountsStore } from '../lib/gameAccountsStore';
 import { getGameById } from '../lib/gamesCatalog';
@@ -499,25 +498,97 @@ export function MatchRoom({
         </Card>
       )}
 
-      {/* Pre-Match Cross-Platform Permissions Modal */}
-      <MatchPermissionsModal
-        open={permissionsModalOpen}
-        onClose={() => setPermissionsModalOpen(false)}
-        onComplete={() => {
-          if (isPlayerA) setIsReadyA(true);
-          else setIsReadyB(true);
-          notifyUser('Permissions Verified & Ready!', { sound: 'score' });
-        }}
-        gameName={profile.displayName}
-        isCapturing={capture.status === 'CAPTURING'}
-        onStartCapture={capture.startCapture}
-        notificationsGranted={notificationsGranted}
-        onRequestNotifications={async () => {
-          const granted = await requestNotificationPermission();
-          setNotificationsGranted(granted);
-          return granted;
-        }}
-      />
+      {/* Pre-Match Cross-Platform Permissions Setup Card (Inline page section, NO modal popups!) */}
+      {permissionsModalOpen && (
+        <Card className="p-6 bg-card border-primary/50 ring-1 ring-primary/30 space-y-5 animate-in fade-in duration-200">
+          <div className="flex items-center justify-between border-b border-border pb-4">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
+                <h3 className="text-lg font-bold text-foreground tracking-tight">
+                  Pre-Match Permissions & Optical Game Feed
+                </h3>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Required for background victory detection and instant winner verification in {profile.displayName}.
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setPermissionsModalOpen(false)}
+              className="text-xs font-bold"
+            >
+              Close Setup
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Step 1: Video Capture */}
+            <div className="p-4 rounded-xl bg-secondary border border-border space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-foreground">1. Optical Screen Feed</span>
+                <Badge variant={capture.status === 'CAPTURING' ? 'success' : 'outline'}>
+                  {capture.status === 'CAPTURING' ? 'Active ✓' : 'Required'}
+                </Badge>
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Stream gameplay window to enable optical round detection and zero-screenshot scoring.
+              </p>
+              <Button
+                variant={capture.status === 'CAPTURING' ? 'secondary' : 'default'}
+                size="sm"
+                onClick={capture.startCapture}
+                disabled={capture.status === 'CAPTURING'}
+                className="w-full text-xs font-bold"
+              >
+                {capture.status === 'CAPTURING' ? 'Screen Capture Active ✓' : 'Select Game Window'}
+              </Button>
+            </div>
+
+            {/* Step 2: Live Notifications */}
+            <div className="p-4 rounded-xl bg-secondary border border-border space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-foreground">2. Match Alerts</span>
+                <Badge variant={notificationsGranted ? 'success' : 'outline'}>
+                  {notificationsGranted ? 'Granted ✓' : 'Recommended'}
+                </Badge>
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Receive browser audio and push alerts when rounds conclude or opponent submits.
+              </p>
+              <Button
+                variant={notificationsGranted ? 'secondary' : 'default'}
+                size="sm"
+                onClick={async () => {
+                  const granted = await requestNotificationPermission();
+                  setNotificationsGranted(granted);
+                }}
+                disabled={notificationsGranted}
+                className="w-full text-xs font-bold"
+              >
+                {notificationsGranted ? 'Notifications Active ✓' : 'Enable Alerts'}
+              </Button>
+            </div>
+          </div>
+
+          <div className="pt-2 flex justify-end">
+            <Button
+              variant="default"
+              size="default"
+              onClick={() => {
+                if (isPlayerA) setIsReadyA(true);
+                else setIsReadyB(true);
+                setPermissionsModalOpen(false);
+                notifyUser('Permissions Verified & Ready!', { sound: 'score' });
+              }}
+              className="text-xs font-bold uppercase tracking-wider px-6"
+            >
+              Confirm Ready for Match →
+            </Button>
+          </div>
+        </Card>
+      )}
     </div>
   );
 }

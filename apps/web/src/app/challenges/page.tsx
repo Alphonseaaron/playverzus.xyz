@@ -7,11 +7,11 @@ import { Swords, Plus, Filter, Globe, Coins, ShieldCheck } from 'lucide-react';
 import { ChallengeCard } from '../../components/ChallengeCard';
 import { apiClient } from '../../lib/api';
 import { useGameStore } from '../../lib/gameStore';
+import { useRouter } from 'next/navigation';
 import { GLOBAL_REGIONS } from '@playverzus/core';
 import { OFFICIAL_GAMES } from '../../lib/gamesCatalog';
 import { GamePoster } from '../../components/GamePoster';
 import { GameContextBar } from '../../components/GameContextBar';
-import { AuthPromptModal } from '../../components/AuthPromptModal';
 import { notifyUser } from '../../lib/notifications';
 import { EmptyState } from '../../components/EmptyState';
 import { ErrorState } from '../../components/ErrorState';
@@ -33,11 +33,11 @@ interface ChallengeItem {
 }
 
 export default function ChallengesPage() {
+  const router = useRouter();
   const { activeGame, setActiveGame } = useGameStore();
   const [filterGameOnly, setFilterGameOnly] = useState(true);
   const [selectedRegion, setSelectedRegion] = useState<string>('All');
   const [feeFilter, setFeeFilter] = useState<'ALL' | 'FREE' | 'CASH'>('ALL');
-  const [authModalOpen, setAuthModalOpen] = useState(false);
 
   const { data: userProfile } = useQuery<{ id: string } | null>({
     queryKey: ['challenges-profile'],
@@ -58,7 +58,7 @@ export default function ChallengesPage() {
 
   const handleAccept = async (matchId: string) => {
     if (!userProfile) {
-      setAuthModalOpen(true);
+      router.push('/login?redirect=/challenges');
       return;
     }
 
@@ -73,7 +73,7 @@ export default function ChallengesPage() {
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       if (msg.includes('401') || msg.toLowerCase().includes('unauthorized')) {
-        setAuthModalOpen(true);
+        router.push('/login?redirect=/challenges');
         return;
       }
       notifyUser('Could not accept duel', {
@@ -132,7 +132,7 @@ export default function ChallengesPage() {
           onClick={(e) => {
             if (!userProfile) {
               e.preventDefault();
-              setAuthModalOpen(true);
+              router.push('/login?redirect=/matches/new');
             }
           }}
           className="flex-shrink-0"
@@ -239,14 +239,6 @@ export default function ChallengesPage() {
           actionHref={activeGame ? `/matches/new?profileId=${activeGame.id}` : '/matches/new'}
         />
       )}
-
-      {/* Auth Prompt Modal */}
-      <AuthPromptModal
-        open={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
-        title="Sign In to Enter Matchmaking"
-        description="Create an account or sign in to host open duels, place stakes, and climb the competitive ladder."
-      />
     </div>
   );
 }

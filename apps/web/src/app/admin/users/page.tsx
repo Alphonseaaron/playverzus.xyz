@@ -192,54 +192,60 @@ export default function AdminUsersPage() {
         </CardContent>
       </Card>
 
-      {/* Ban Reason Dialog Modal */}
+      {/* Ban Reason Inline Action Panel */}
       {banModalUser && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
-          <Card className="max-w-md w-full p-6 shadow-2xl space-y-4">
-            <CardHeader className="p-0">
-              <CardTitle className="text-lg font-black text-foreground">
-                Ban @{banModalUser.username}
-              </CardTitle>
-              <CardDescription className="text-xs text-muted-foreground mt-1">
-                Provide a valid moderation reason. The player will be immediately restricted from entering duels, escrow payouts, and tournaments.
-              </CardDescription>
-            </CardHeader>
-
-            <Input
-              type="text"
-              placeholder="e.g. Cheat detection: emulator exploit / ROI bypass"
-              value={banReason}
-              onChange={(e) => setBanReason(e.target.value)}
-              className="text-xs"
-              autoFocus
-            />
-
-            <div className="flex justify-end gap-2 pt-2">
+        <Card className="p-6 border border-destructive/50 bg-card shadow-2xl space-y-4 animate-in fade-in duration-150">
+          <CardHeader className="p-0">
+            <CardTitle className="text-lg font-black text-foreground flex items-center justify-between">
+              <span>Moderate & Ban @{banModalUser.username}</span>
               <Button
-                variant="secondary"
+                variant="ghost"
                 size="sm"
                 onClick={() => setBanModalUser(null)}
-                className="text-xs font-bold"
+                className="text-xs"
               >
-                Cancel
+                ✕ Cancel
               </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() =>
-                  banMutation.mutate({
-                    userId: banModalUser.id,
-                    reason: banReason || 'Terms of Service violation',
-                  })
-                }
-                disabled={banMutation.isPending}
-                className="text-xs font-bold"
-              >
-                {banMutation.isPending ? 'Banning...' : 'Confirm Ban'}
-              </Button>
-            </div>
-          </Card>
-        </div>
+            </CardTitle>
+            <CardDescription className="text-xs text-muted-foreground mt-1">
+              Provide a valid moderation reason. The player will be immediately restricted from entering duels, escrow payouts, and tournaments.
+            </CardDescription>
+          </CardHeader>
+
+          <Input
+            type="text"
+            placeholder="e.g. Cheat detection: emulator exploit / ROI bypass"
+            value={banReason}
+            onChange={(e) => setBanReason(e.target.value)}
+            className="text-xs"
+            autoFocus
+          />
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setBanModalUser(null)}
+              className="text-xs font-bold"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() =>
+                banMutation.mutate({
+                  userId: banModalUser.id,
+                  reason: banReason || 'Terms of Service violation',
+                })
+              }
+              disabled={banMutation.isPending}
+              className="text-xs font-bold"
+            >
+              {banMutation.isPending ? 'Banning...' : 'Confirm Ban'}
+            </Button>
+          </div>
+        </Card>
       )}
     </div>
   );

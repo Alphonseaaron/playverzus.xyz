@@ -2,6 +2,7 @@
 
 import { useState, FormEvent } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { getSupabaseClient } from '../../lib/supabase';
 import { CountrySelect } from '../../components/CountrySelect';
@@ -65,11 +66,18 @@ export default function SignUpPage() {
     <div className="max-w-md mx-auto my-12 space-y-4">
       <Card className="bg-card border-border shadow-2xl">
         <CardHeader className="text-center pb-4 border-b border-border">
-          <div className="w-12 h-12 rounded-2xl bg-secondary border border-border mx-auto flex items-center justify-center text-primary mb-2 shadow-sm">
-            <UserPlus className="w-6 h-6" />
-          </div>
+          <Link href="/" className="inline-block mx-auto mb-2">
+            <Image
+              src="/images/logo.png"
+              alt="playverzus.xyz"
+              width={180}
+              height={40}
+              className="h-10 w-auto object-contain mx-auto"
+              priority
+            />
+          </Link>
           <CardTitle className="text-2xl font-black tracking-tight text-foreground">
-            Join Verzus Arena
+            Create Arena Account
           </CardTitle>
           <CardDescription className="text-xs text-muted-foreground">
             The Global Competitive Esports & Skill-Gaming Arena

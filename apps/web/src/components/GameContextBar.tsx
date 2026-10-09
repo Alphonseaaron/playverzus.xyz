@@ -1,10 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import Link from 'next/link';
 import { useGameStore } from '../lib/gameStore';
 import { getGameById, type CatalogGame } from '../lib/gamesCatalog';
 import { GamePoster } from './GamePoster';
-import { GameSelectionModal } from './GameSelectionModal';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 
@@ -28,12 +27,10 @@ export function GameContextBar({
   actionButton,
 }: GameContextBarProps) {
   const { activeGame } = useGameStore();
-  const [modalOpen, setModalOpen] = useState(false);
 
   const catalogGame = getGameById(activeGame?.id);
 
   return (
-    <>
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 bg-card border border-border rounded-2xl shadow-sm">
         {/* Left: Active Game Capsule */}
         <div className="flex items-center gap-3.5 min-w-0">
@@ -93,24 +90,18 @@ export function GameContextBar({
             </div>
           )}
 
-          <Button
-            variant="secondary"
-            size="default"
-            onClick={() => setModalOpen(true)}
-            className="text-xs font-bold gap-1.5"
-          >
-            <span>⇄ Switch Game</span>
-          </Button>
+          <Link href="/games">
+            <Button
+              variant="secondary"
+              size="default"
+              className="text-xs font-bold gap-1.5"
+            >
+              <span>⇄ Switch Game</span>
+            </Button>
+          </Link>
 
           {actionButton}
         </div>
       </div>
-
-      <GameSelectionModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onSelectGame={onSelectGame}
-      />
-    </>
   );
 }

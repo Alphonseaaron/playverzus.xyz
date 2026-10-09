@@ -143,9 +143,9 @@ export function MatchPermissionsModal({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-md p-4 animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 overflow-y-auto bg-background/80 backdrop-blur-md p-3 sm:p-6 flex items-start justify-center animate-in fade-in duration-150"
     >
-      <div className="w-full max-w-lg bg-card border border-border rounded-2xl shadow-2xl p-6 space-y-6">
+      <div className="w-full max-w-lg my-4 sm:my-8 bg-card border border-border rounded-2xl shadow-2xl p-6 space-y-6 max-h-[calc(100vh-2rem)] sm:max-h-[calc(100vh-4rem)] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border pb-4">
           <div className="min-w-0">
