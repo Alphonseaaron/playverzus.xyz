@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 
+import { RedisModule } from './redis/redis.module';
+import { PushModule } from './push/push.module';
 import { HealthModule } from './health/health.module';
 import { AuthModule } from './auth/auth.module';
 import { ProfileModule } from './profile/profile.module';
@@ -26,6 +28,10 @@ import { AuditInterceptor } from './common/interceptors/audit.interceptor';
 
 @Module({
   imports: [
+    // Global infrastructure first
+    RedisModule,   // Global — available to all modules
+    PushModule,    // Global — Web Push notifications
+    // Feature modules
     HealthModule,
     AuthModule,
     ProfileModule,

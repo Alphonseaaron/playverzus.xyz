@@ -10,13 +10,14 @@ import {
   MIN_WITHDRAWAL_EUR,
   MAX_WITHDRAWAL_EUR,
 } from '@playverzus/core';
+import { RedisService } from '../redis/redis.service';
 
 @Injectable()
 export class WalletService {
   private wallet: IWalletService;
   private paysafe: PaysafeClient;
 
-  constructor() {
+  constructor(private readonly redis: RedisService) {
     this.wallet = getWallet();
     this.paysafe = new PaysafeClient();
   }
@@ -204,27 +205,19 @@ export class WalletService {
 
   /**
    * Claim free Practice / Demo Coins (+1,000 PTS).
-   * Enforces a 24-hour cooldown per user via Supabase profiles table.
+   * Enforces a 24-hour cooldown per user via Redis.
    */
   async claimDemoTokens(userId: string) {
+    // Check 24h cooldown via Redis (falls back gracefully if Redis unavailable)
+    const remainingSecs = await this.redis.checkCooldown(`demo:${userId}`, 60 * 60 * 24);
+    if (remainingSecs > 0) {
+      const hoursLeft = Math.ceil(remainingSecs / 3600);
+      throw new BadRequestException(
+        `Demo coins can only be claimed once per 24 hours. Available again in ${hoursLeft}h.`,
+      );
+    }
+
     try {
-      // Check cooldown: read last_demo_claim from profile
-      const { data: profile } = await this.wallet['supabase']?.from?.('profiles')
-        .select('last_demo_claim')
-        .eq('id', userId)
-        .maybeSingle()
-        .catch(() => ({ data: null })) ?? { data: null };
-
-      if (profile?.last_demo_claim) {
-        const lastClaim = new Date(profile.last_demo_claim).getTime();
-        const cooldownMs = 24 * 60 * 60 * 1000; // 24 hours
-        const elapsed = Date.now() - lastClaim;
-        if (elapsed < cooldownMs) {
-          const hoursLeft = Math.ceil((cooldownMs - elapsed) / 3_600_000);
-          throw new BadRequestException(`Demo coins can only be claimed once per 24 hours. Available again in ${hoursLeft}h.`);
-        }
-      }
-
       const claimAmount = 1000;
       const tx = await this.wallet.credit(userId, claimAmount, 'Daily Free Demo Practice Reload', {
         metadata: { type: 'DEMO_CLAIM' },
@@ -246,6 +239,7 @@ export class WalletService {
       };
     }
   }
+
 
   getPaysafeConfig() {
     return {
