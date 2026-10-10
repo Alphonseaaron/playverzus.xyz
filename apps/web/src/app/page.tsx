@@ -39,6 +39,8 @@ import { Skeleton } from '../components/ui/skeleton';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '../components/ui/card';
+import { SEEDED_TOURNAMENTS } from '../lib/seededTournaments';
+import { SEEDED_CHAMPIONS } from '../lib/seededLeaderboards';
 
 interface UserProfile {
   id: string;
@@ -88,17 +90,33 @@ export default function HomePage() {
     staleTime: 30000,
   });
 
-  // Query real tournaments from API
+  // Query real tournaments from API — fall back to seeded data if API fails or returns empty
   const { data: tournaments, isLoading: loadingTournaments } = useQuery<HomeTournament[]>({
     queryKey: ['home-tournaments'],
-    queryFn: () => apiClient<HomeTournament[]>('/tournaments').catch(() => []),
+    queryFn: async () => {
+      try {
+        const res = await apiClient<HomeTournament[]>('/tournaments');
+        if (res && res.length > 0) return res;
+        return SEEDED_TOURNAMENTS as HomeTournament[];
+      } catch {
+        return SEEDED_TOURNAMENTS as HomeTournament[];
+      }
+    },
     staleTime: 30000,
   });
 
-  // Query real leaderboard champions from API
+  // Query real leaderboard champions from API — fall back to seeded data if API fails or returns empty
   const { data: champions, isLoading: loadingChampions } = useQuery<HomeLeaderboardEntry[]>({
     queryKey: ['home-champions'],
-    queryFn: () => apiClient<HomeLeaderboardEntry[]>('/leaderboard/HEAD_TO_HEAD').catch(() => []),
+    queryFn: async () => {
+      try {
+        const res = await apiClient<HomeLeaderboardEntry[]>('/leaderboard/HEAD_TO_HEAD');
+        if (res && res.length > 0) return res;
+        return SEEDED_CHAMPIONS as HomeLeaderboardEntry[];
+      } catch {
+        return SEEDED_CHAMPIONS as HomeLeaderboardEntry[];
+      }
+    },
     staleTime: 30000,
   });
 
@@ -118,7 +136,7 @@ export default function HomePage() {
         <div className="p-4 sm:p-5 rounded-2xl bg-card border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-lg animate-in fade-in">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary text-primary-foreground font-black text-sm flex items-center justify-center shadow-md">
-              {userProfile.username.slice(0, 1).toUpperCase()}
+              {userProfile?.username?.slice(0, 1)?.toUpperCase() ?? 'P'}
             </div>
             <div>
               <div className="flex items-center gap-2">

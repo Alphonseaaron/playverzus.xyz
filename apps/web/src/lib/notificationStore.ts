@@ -39,10 +39,10 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   notifications: [
     {
       id: 'welcome-init',
-      title: 'Welcome to Verzus Esports Arena',
+      title: 'Welcome to PlayVerzus Arena',
       body: 'Automated game sync active. Join duels or browse cups.',
       type: 'info',
-      timestamp: Date.now() - 1000 * 60 * 5,
+      timestamp: 1728500000000,
       read: false,
     },
   ],

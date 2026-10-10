@@ -20,8 +20,13 @@ function formatTimeAgo(timestamp: number) {
 
 export function NotificationBell() {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const { notifications, markAsRead, markAllAsRead, clearAll } = useNotificationStore();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -111,7 +116,7 @@ export function NotificationBell() {
                       {n.title}
                     </span>
                     <span className="text-[10px] text-muted-foreground font-mono flex-shrink-0">
-                      {formatTimeAgo(n.timestamp)}
+                      {mounted ? formatTimeAgo(n.timestamp) : 'Recent'}
                     </span>
                   </div>
 

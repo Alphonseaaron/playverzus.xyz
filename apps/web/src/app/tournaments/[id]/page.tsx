@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../..
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
 import { Trophy, Users, CheckCircle2, ArrowRight, Clock, Coins, Medal, Gamepad2 } from 'lucide-react';
+import { notifyUser } from '../../../lib/notifications';
 
 interface TournamentDetails {
   id: string;
@@ -36,22 +37,22 @@ export default function TournamentDetailPage() {
   const handleJoin = async () => {
     try {
       await apiClient(`/tournaments/${id}/join`, { method: 'POST' });
-      alert('Joined tournament successfully!');
+      notifyUser('Joined tournament!', { body: 'You are now registered. Check-in when it opens.', type: 'match' });
       refetch();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      alert(`Could not join: ${msg}`);
+      notifyUser('Could not join', { body: msg, type: 'error' });
     }
   };
 
   const handleCheckin = async () => {
     try {
       await apiClient(`/tournaments/${id}/checkin`, { method: 'POST' });
-      alert('Checked in successfully!');
+      notifyUser('Checked in!', { body: 'You are confirmed for this tournament.', type: 'match' });
       refetch();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      alert(`Check-in failed: ${msg}`);
+      notifyUser('Check-in failed', { body: msg, type: 'error' });
     }
   };
 

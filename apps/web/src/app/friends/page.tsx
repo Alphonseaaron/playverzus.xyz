@@ -9,6 +9,7 @@ import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Users, UserPlus } from 'lucide-react';
+import { notifyUser } from '../../lib/notifications';
 
 interface FriendItem {
   id: string;
@@ -41,12 +42,12 @@ export default function FriendsPage() {
         method: 'POST',
         body: JSON.stringify({ addresseeId: addresseeId.trim() }),
       });
-      alert('Friend request sent!');
+      notifyUser('Friend request sent!', { body: 'They will be notified.', type: 'match' });
       setAddresseeId('');
       refetch();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      alert(`Request failed: ${msg}`);
+      notifyUser('Request failed', { body: msg, type: 'error' });
     } finally {
       setLoading(false);
     }

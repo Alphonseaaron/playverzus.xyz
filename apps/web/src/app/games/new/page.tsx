@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CalibrationTool } from '../../../components/CalibrationTool';
 import { apiClient } from '../../../lib/api';
+import { notifyUser } from '../../../lib/notifications';
 import { autoAnalyzeScreenshots, type AutoCalibrateResult } from '../../../lib/autoCalibrate';
 import type { GameType, Platform, ROI } from '@playverzus/core';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../../components/ui/card';
@@ -187,7 +188,7 @@ function NewGameProfileForm() {
         }
       }
 
-      alert('Game profile registered successfully!');
+      notifyUser('Game profile registered!', { body: 'Your game has been submitted successfully.', type: 'match' });
       router.push('/games');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);

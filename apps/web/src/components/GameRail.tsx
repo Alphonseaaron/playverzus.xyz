@@ -32,25 +32,18 @@ export function GameRail() {
   const pathname = usePathname();
   const { activeGame, setActiveGame, initializeDefaultGame } = useGameStore();
 
-  // Landing page does not include the sidebar
-  if (pathname === '/') {
-    return null;
-  }
-
-  // If inside the admin console, render the dedicated shadcn Admin Sidebar
-  if (pathname.startsWith('/admin')) {
-    return <AdminSidebar className="hidden lg:flex" />;
-  }
-
+  // All hooks must be called before any conditional returns (React Rules of Hooks)
   const { data: games } = useQuery<GameProfile[]>({
     queryKey: ['approved-games-rail'],
     queryFn: () => apiClient<GameProfile[]>('/games'),
+    enabled: pathname !== '/' && !pathname.startsWith('/admin'),
   });
 
   const { data: me } = useQuery<{ id: string; role?: string } | null>({
     queryKey: ['gamerail-me'],
     queryFn: () => apiClient<{ id: string; role?: string }>('/profile/me').catch(() => null),
     staleTime: 30000,
+    enabled: pathname !== '/' && !pathname.startsWith('/admin'),
   });
 
   const isStaff = me?.role === 'ADMIN' || me?.role === 'SUPER_ADMIN' || me?.role === 'REVIEWER';
@@ -60,6 +53,16 @@ export function GameRail() {
       initializeDefaultGame(games);
     }
   }, [games, initializeDefaultGame]);
+
+  // Landing page does not include the sidebar
+  if (pathname === '/') {
+    return null;
+  }
+
+  // If inside the admin console, render the dedicated shadcn Admin Sidebar
+  if (pathname.startsWith('/admin')) {
+    return <AdminSidebar className="hidden lg:flex" />;
+  }
 
   const activeCatalogGame = getGameById(activeGame?.id);
 
