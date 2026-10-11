@@ -30,6 +30,11 @@ export function toUserFriendlyWalletError(error: unknown): string {
     return 'Insufficient balance for this transaction. Please adjust the amount or make a deposit.';
   }
 
+  // 2b. Demo Faucet Cooldown
+  if (raw.includes('cooldown') || raw.includes('24 hours') || raw.includes('once per') || raw.includes('demo coins')) {
+    return 'Demo practice refill is only available once every 24 hours. Please check back later!';
+  }
+
   // 3. Payment Method / Card Declined
   if (raw.includes('declined') || raw.includes('card_declined') || raw.includes('do_not_honor')) {
     return 'Your payment method was declined by the card issuer or banking provider. Please check your details or try another card.';

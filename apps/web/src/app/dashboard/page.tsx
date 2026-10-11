@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Swords,
   BarChart3,
@@ -27,6 +27,7 @@ import { useGameStore } from '../../lib/gameStore';
 import { formatEUR, formatPoints } from '../../lib/currency';
 import { getGameById, OFFICIAL_GAMES } from '../../lib/gamesCatalog';
 import { notifyUser } from '../../lib/notifications';
+import { toUserFriendlyWalletError } from '../../lib/walletErrors';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '../../components/ui/card';
@@ -82,6 +83,7 @@ interface UserProfileData {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { activeGame } = useGameStore();
   const [faucetLoading, setFaucetLoading] = useState(false);
 
@@ -138,16 +140,19 @@ export default function DashboardPage() {
   const handleClaimFaucet = async () => {
     setFaucetLoading(true);
     try {
-      await apiClient('/wallet/claim-demo', { method: 'POST' }).catch(() => {});
+      await apiClient('/wallet/claim-demo', { method: 'POST' });
       notifyUser('Demo Funds Claimed! +1,000 PTS', {
-        body: 'Demo play points added to your account for free tournament entries.',
+        body: 'Demo play points added to your account for free practice duels.',
         sound: 'score',
         type: 'success',
       });
-      refetchBalance();
-      refetchHistory();
-    } catch {
-      notifyUser('Could not claim demo tokens', { body: 'Please try again in a moment.', type: 'error' });
+      await refetchBalance();
+      await refetchHistory();
+      queryClient.invalidateQueries({ queryKey: ['header-wallet'] });
+      queryClient.invalidateQueries({ queryKey: ['cashier-wallet-balance'] });
+    } catch (err: unknown) {
+      const msg = toUserFriendlyWalletError(err);
+      notifyUser('Faucet Unavailable', { body: msg, type: 'error' });
     } finally {
       setFaucetLoading(false);
     }

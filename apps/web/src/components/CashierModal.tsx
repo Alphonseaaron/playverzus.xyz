@@ -78,9 +78,7 @@ export function CashierModal({
     setSuccessReceipt(null);
 
     try {
-      await apiClient('/wallet/claim-demo', { method: 'POST' }).catch(() => {
-        // Fallback for offline demo mode
-      });
+      await apiClient('/wallet/claim-demo', { method: 'POST' });
 
       setSuccessReceipt('1,000 Free Demo Practice Coins added to your ledger!');
       notifyUser('Demo Coins Claimed', {
@@ -142,23 +140,24 @@ export function CashierModal({
             method: activeRail?.name || 'PAYSAFE',
             paymentHandleToken: 'paysafe_token_' + Date.now(),
           }),
-        }).catch((apiErr) => {
-          console.warn('Backend deposit request fallback (offline sandbox):', apiErr);
         });
       } else {
         let payoutType = 'PAYSAFE';
         if (activeRail?.category === 'mobile_money') payoutType = 'MPESA';
         else if (activeRail?.category === 'crypto') payoutType = 'CRYPTO';
-        else payoutType = 'BANK';
+        else payoutType = 'PAYSAFE';
 
         await apiClient('/wallet/payout', {
           method: 'POST',
           body: JSON.stringify({
             amount: numAmount,
-            method: payoutType,
+            method: {
+              type: payoutType,
+              accountId: accountDetails.trim(),
+              iban: accountDetails.trim(),
+              address: accountDetails.trim(),
+            },
           }),
-        }).catch((apiErr) => {
-          console.warn('Backend payout request fallback (offline sandbox):', apiErr);
         });
       }
 

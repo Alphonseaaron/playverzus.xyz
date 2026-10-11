@@ -54,6 +54,11 @@ export class WalletController {
     return this.walletService.claimDemoTokens(user.id);
   }
 
+  @Post('faucet')
+  async faucet(@CurrentUser() user: AuthUser) {
+    return this.walletService.claimDemoTokens(user.id);
+  }
+
   @Get('paysafe/config')
   getPaysafeConfig() {
     return this.walletService.getPaysafeConfig();

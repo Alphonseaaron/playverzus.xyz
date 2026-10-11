@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -42,6 +42,7 @@ interface WalletBalanceResponse {
 }
 
 function CashierContent() {
+  const queryClient = useQueryClient();
   const searchParams = useSearchParams();
   const initialTab = searchParams.get('tab') === 'withdraw' ? 'withdraw' : 'deposit';
 
@@ -70,14 +71,14 @@ function CashierContent() {
       try {
         return await apiClient<WalletBalanceResponse>('/wallet/balance');
       } catch {
-        return { cashEur: 0, balance: 1000 };
+        return { cashEur: 0, balance: 10000 };
       }
     },
-    staleTime: 10000,
+    staleTime: 5000,
   });
 
   const cashEur = wallet?.cashEur ?? 0.0;
-  const points = wallet?.balance ?? 1000;
+  const points = wallet?.balance ?? 10000;
 
   const profile = getPaymentProfileForCountry(selectedCountry);
   const availableRails = actionTab === 'deposit' ? profile.depositRails : profile.withdrawalRails;
@@ -92,9 +93,7 @@ function CashierContent() {
     setSuccessReceipt(null);
 
     try {
-      await apiClient('/wallet/claim-demo', { method: 'POST' }).catch(() => {
-        // Fallback for offline demo mode
-      });
+      await apiClient('/wallet/claim-demo', { method: 'POST' });
 
       setSuccessReceipt('1,000 Free Demo Practice Coins added to your ledger!');
       notifyUser('Demo Coins Claimed', {
@@ -102,7 +101,10 @@ function CashierContent() {
         sound: 'score',
         type: 'success',
       });
-      refetchWallet();
+      await refetchWallet();
+      queryClient.invalidateQueries({ queryKey: ['header-wallet'] });
+      queryClient.invalidateQueries({ queryKey: ['wallet-balance'] });
+      queryClient.invalidateQueries({ queryKey: ['wallet-history'] });
     } catch (err) {
       setErrorMessage(toUserFriendlyWalletError(err));
     } finally {
@@ -146,23 +148,24 @@ function CashierContent() {
             method: activeRail?.name || 'PAYSAFE',
             paymentHandleToken: 'paysafe_token_' + Date.now(),
           }),
-        }).catch((apiErr) => {
-          console.warn('Backend deposit request fallback (offline sandbox):', apiErr);
         });
       } else {
         let payoutType = 'PAYSAFE';
         if (activeRail?.category === 'mobile_money') payoutType = 'MPESA';
         else if (activeRail?.category === 'crypto') payoutType = 'CRYPTO';
-        else payoutType = 'BANK';
+        else payoutType = 'PAYSAFE';
 
         await apiClient('/wallet/payout', {
           method: 'POST',
           body: JSON.stringify({
             amount: numAmount,
-            method: payoutType,
+            method: {
+              type: payoutType,
+              accountId: accountDetails.trim(),
+              iban: accountDetails.trim(),
+              address: accountDetails.trim(),
+            },
           }),
-        }).catch((apiErr) => {
-          console.warn('Backend payout request fallback (offline sandbox):', apiErr);
         });
       }
 
@@ -174,7 +177,10 @@ function CashierContent() {
         type: 'success',
       });
 
-      refetchWallet();
+      await refetchWallet();
+      queryClient.invalidateQueries({ queryKey: ['header-wallet'] });
+      queryClient.invalidateQueries({ queryKey: ['wallet-balance'] });
+      queryClient.invalidateQueries({ queryKey: ['wallet-history'] });
     } catch (err: unknown) {
       const friendly = toUserFriendlyWalletError(err);
       setErrorMessage(friendly);
@@ -186,6 +192,7 @@ function CashierContent() {
       setIsProcessing(false);
     }
   };
+
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-20">

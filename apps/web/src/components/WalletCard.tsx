@@ -2,10 +2,11 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../lib/api';
 import { formatEUR, formatPoints } from '../lib/currency';
 import { notifyUser } from '../lib/notifications';
+import { toUserFriendlyWalletError } from '../lib/walletErrors';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Card, CardHeader, CardContent } from './ui/card';
@@ -28,6 +29,7 @@ interface TransactionItem {
 }
 
 export function WalletCard() {
+  const queryClient = useQueryClient();
   const [faucetLoading, setFaucetLoading] = useState(false);
 
   const { data: balanceData, isLoading: loadingBalance, refetch: refetchBalance } = useQuery<WalletData>({
@@ -43,19 +45,20 @@ export function WalletCard() {
   const handleClaimFaucet = async () => {
     setFaucetLoading(true);
     try {
-      await apiClient('/wallet/faucet', { method: 'POST' });
+      await apiClient('/wallet/claim-demo', { method: 'POST' });
       notifyUser('Demo Funds Claimed! +1,000 PTS', {
         body: 'Demo play points added to your account for free tournament entries.',
         sound: 'score',
         type: 'success',
       });
-      refetchBalance();
-      refetchHistory();
+      await refetchBalance();
+      await refetchHistory();
+      queryClient.invalidateQueries({ queryKey: ['header-wallet'] });
+      queryClient.invalidateQueries({ queryKey: ['cashier-wallet-balance'] });
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      notifyUser('Faucet Request Failed', {
+      const msg = toUserFriendlyWalletError(err);
+      notifyUser('Faucet Unavailable', {
         body: msg,
-        sound: 'score',
         type: 'error',
       });
     } finally {
