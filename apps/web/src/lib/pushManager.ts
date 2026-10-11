@@ -60,11 +60,19 @@ export async function initPushNotifications(): Promise<void> {
     // 3. Check if already subscribed
     const existing = await registration.pushManager.getSubscription();
     if (existing) {
-      // Already subscribed — just make sure it's saved server-side
-      await apiClient('/push/subscribe', {
-        method: 'POST',
-        body: JSON.stringify({ subscription: existing.toJSON() }),
-      }).catch(() => {});
+      // Debounce server re-sync to once every 7 days (prevents writing to Redis on every refresh)
+      const lastSynced = typeof window !== 'undefined' ? localStorage.getItem('playverzus_push_synced') : null;
+      const needsSync = !lastSynced || (Date.now() - Number(lastSynced) > 7 * 24 * 60 * 60 * 1000);
+
+      if (needsSync) {
+        await apiClient('/push/subscribe', {
+          method: 'POST',
+          body: JSON.stringify({ subscription: existing.toJSON() }),
+        }).catch(() => {});
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('playverzus_push_synced', String(Date.now()));
+        }
+      }
       pushInitialised = true;
       return;
     }

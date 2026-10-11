@@ -72,9 +72,16 @@ export class PushService {
     await this.sendRaw(userId, sub, payload);
   }
 
-  /** Send push to multiple users (e.g. both match participants) */
+  /** Send push to multiple users (batches subscription fetch into 1 single Redis MGET) */
   async sendToUsers(userIds: string[], payload: PushPayload): Promise<void> {
-    await Promise.allSettled(userIds.map((id) => this.sendToUser(id, payload)));
+    if (!this.enabled || userIds.length === 0) return;
+
+    const subsMap = await this.redis.getPushSubscriptions(userIds);
+    const promises: Promise<void>[] = [];
+    for (const [userId, sub] of subsMap.entries()) {
+      promises.push(this.sendRaw(userId, sub, payload));
+    }
+    await Promise.allSettled(promises);
   }
 
   private async sendRaw(
