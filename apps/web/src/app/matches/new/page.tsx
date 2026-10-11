@@ -19,6 +19,7 @@ import { useGameStore } from '../../../lib/gameStore';
 import { usePartyStore } from '../../../lib/partyStore';
 import { formatEUR, formatPoints } from '../../../lib/currency';
 import { CountrySelect } from '../../../components/CountrySelect';
+import { AuthGuard } from '../../../components/AuthGuard';
 import { OFFICIAL_GAMES, getGameById } from '../../../lib/gamesCatalog';
 import { useWalletModeStore } from '../../../lib/walletModeStore';
 import { useGameAccountsStore } from '../../../lib/gameAccountsStore';
@@ -305,8 +306,8 @@ function NewMatchForm() {
 
 export default function NewMatchPage() {
   return (
-    <Suspense fallback={<div className="p-12 text-center text-muted-foreground font-mono text-xs">Loading form...</div>}>
+    <AuthGuard>
       <NewMatchForm />
-    </Suspense>
+    </AuthGuard>
   );
 }

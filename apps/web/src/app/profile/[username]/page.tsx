@@ -78,7 +78,7 @@ export default function PublicProfilePage() {
 
   const { data: matches } = useQuery<MatchRecord[]>({
     queryKey: ['public-profile-matches', username],
-    queryFn: () => apiClient<MatchRecord[]>('/matches/mine').catch(() => []),
+    queryFn: () => apiClient<MatchRecord[]>(`/profile/${username}/matches`).catch(() => []),
   });
 
   if (isLoading) {

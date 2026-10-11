@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { FriendList } from '../../components/FriendList';
+import { AuthGuard } from '../../components/AuthGuard';
 import { apiClient } from '../../lib/api';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
@@ -18,7 +19,7 @@ interface FriendItem {
   status: string;
 }
 
-export default function FriendsPage() {
+function FriendsContent() {
   const [addresseeId, setAddresseeId] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -105,5 +106,13 @@ export default function FriendsPage() {
       {/* Friends List */}
       <FriendList friends={friends ?? []} currentUserId={me?.id ?? ''} />
     </div>
+  );
+}
+
+export default function FriendsPage() {
+  return (
+    <AuthGuard>
+      <FriendsContent />
+    </AuthGuard>
   );
 }

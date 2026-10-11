@@ -1,32 +1,39 @@
 'use client';
 
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect, Suspense, FormEvent } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { getSupabaseClient } from '../../lib/supabase';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../components/ui/card';
-import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import { LogIn, AlertCircle, Swords, ArrowRight } from 'lucide-react';
+import { LogIn, AlertCircle, Loader2 } from 'lucide-react';
 
-export default function LoginPage() {
+function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
-  // If already authenticated, forward to dashboard
+  // Safely extract redirect destination, preventing open redirect vulnerabilities
+  const redirectParam = searchParams.get('redirect');
+  const target =
+    redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//')
+      ? redirectParam
+      : '/dashboard';
+
+  // If already authenticated, forward to destination or dashboard
   useEffect(() => {
     const supabase = getSupabaseClient();
     supabase.auth.getSession().then(({ data }) => {
       if (data.session?.user) {
-        router.replace('/dashboard');
+        router.replace(target);
       }
     });
-  }, [router]);
+  }, [router, target]);
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
@@ -41,7 +48,7 @@ export default function LoginPage() {
       });
 
       if (authError) throw authError;
-      router.push('/dashboard');
+      router.push(target);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       setError(msg);
@@ -49,6 +56,10 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  const signupLink = redirectParam
+    ? `/signup?redirect=${encodeURIComponent(redirectParam)}`
+    : '/signup';
 
   return (
     <div className="max-w-md mx-auto my-12 space-y-4">
@@ -68,7 +79,13 @@ export default function LoginPage() {
             Sign In to Arena
           </CardTitle>
           <CardDescription className="text-xs text-muted-foreground">
-            Access your esports wallet, active matches, and tournaments.
+            {redirectParam ? (
+              <span className="text-primary font-medium">
+                Authentication required to access this arena area.
+              </span>
+            ) : (
+              'Access your esports wallet, active matches, and tournaments.'
+            )}
           </CardDescription>
         </CardHeader>
 
@@ -122,7 +139,7 @@ export default function LoginPage() {
           <div className="text-center mt-6 pt-4 border-t border-border">
             <p className="text-xs text-muted-foreground">
               Don't have a competitor account?{' '}
-              <Link href="/signup" className="text-primary hover:underline font-bold">
+              <Link href={signupLink} className="text-primary hover:underline font-bold">
                 Create Account
               </Link>
             </p>
@@ -130,5 +147,19 @@ export default function LoginPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex justify-center items-center min-h-[50vh]">
+          <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   );
 }

@@ -1,18 +1,17 @@
 'use client';
 
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect, Suspense, FormEvent } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { getSupabaseClient } from '../../lib/supabase';
 import { CountrySelect } from '../../components/CountrySelect';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../components/ui/card';
-import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import { UserPlus, Gift, AlertCircle, ShieldCheck } from 'lucide-react';
+import { Gift, AlertCircle, ShieldCheck, Loader2 } from 'lucide-react';
 
-export default function SignUpPage() {
+function SignUpForm() {
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -21,16 +20,24 @@ export default function SignUpPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
-  // If already authenticated, forward to dashboard
+  // Safely extract redirect destination, preventing open redirect vulnerabilities
+  const redirectParam = searchParams.get('redirect');
+  const target =
+    redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//')
+      ? redirectParam
+      : '/dashboard';
+
+  // If already authenticated, forward to destination or dashboard
   useEffect(() => {
     const supabase = getSupabaseClient();
     supabase.auth.getSession().then(({ data }) => {
       if (data.session?.user) {
-        router.replace('/dashboard');
+        router.replace(target);
       }
     });
-  }, [router]);
+  }, [router, target]);
 
   const handleSignUp = async (e: FormEvent) => {
     e.preventDefault();
@@ -63,7 +70,7 @@ export default function SignUpPage() {
       });
 
       if (authError) throw authError;
-      router.push('/dashboard');
+      router.push(target);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       setError(msg);
@@ -71,6 +78,10 @@ export default function SignUpPage() {
       setLoading(false);
     }
   };
+
+  const loginLink = redirectParam
+    ? `/login?redirect=${encodeURIComponent(redirectParam)}`
+    : '/login';
 
   return (
     <div className="max-w-md mx-auto my-12 space-y-4">
@@ -201,7 +212,7 @@ export default function SignUpPage() {
           <div className="text-center mt-6 pt-4 border-t border-border">
             <p className="text-xs text-muted-foreground">
               Already have an account?{' '}
-              <Link href="/login" className="text-primary hover:underline font-bold">
+              <Link href={loginLink} className="text-primary hover:underline font-bold">
                 Sign In
               </Link>
             </p>
@@ -209,5 +220,19 @@ export default function SignUpPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function SignUpPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex justify-center items-center min-h-[50vh]">
+          <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        </div>
+      }
+    >
+      <SignUpForm />
+    </Suspense>
   );
 }

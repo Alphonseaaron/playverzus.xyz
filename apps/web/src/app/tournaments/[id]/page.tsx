@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../../../lib/api';
 import { formatEUR } from '../../../lib/currency';
@@ -27,6 +27,7 @@ interface TournamentDetails {
 
 export default function TournamentDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const id = params.id as string;
 
   const { data: tournament, refetch, isLoading } = useQuery<TournamentDetails>({
@@ -41,6 +42,10 @@ export default function TournamentDetailPage() {
       refetch();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes('401') || msg.toLowerCase().includes('unauthorized')) {
+        router.push(`/login?redirect=/tournaments/${id}`);
+        return;
+      }
       notifyUser('Could not join', { body: msg, type: 'error' });
     }
   };
@@ -52,6 +57,10 @@ export default function TournamentDetailPage() {
       refetch();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes('401') || msg.toLowerCase().includes('unauthorized')) {
+        router.push(`/login?redirect=/tournaments/${id}`);
+        return;
+      }
       notifyUser('Check-in failed', { body: msg, type: 'error' });
     }
   };

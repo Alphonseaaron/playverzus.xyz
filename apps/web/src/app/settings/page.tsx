@@ -6,6 +6,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../lib/api';
 import { getSupabaseClient } from '../../lib/supabase';
 import { CountrySelect } from '../../components/CountrySelect';
+import { AuthGuard } from '../../components/AuthGuard';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -21,7 +22,7 @@ interface MyProfile {
   phone?: string;
 }
 
-export default function SettingsPage() {
+function SettingsContent() {
   const queryClient = useQueryClient();
   const { data: profile } = useQuery<MyProfile>({
     queryKey: ['me-settings'],
@@ -208,5 +209,13 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <AuthGuard>
+      <SettingsContent />
+    </AuthGuard>
   );
 }

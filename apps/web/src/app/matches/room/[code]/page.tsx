@@ -3,13 +3,14 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { apiClient } from '../../../../lib/api';
+import { AuthGuard } from '../../../../components/AuthGuard';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../../../components/ui/card';
 import { Badge } from '../../../../components/ui/badge';
 import { Button } from '../../../../components/ui/button';
 import { Loader2, AlertCircle, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
-export default function JoinByRoomCodePage() {
+function JoinByRoomCodeContent() {
   const params = useParams();
   const router = useRouter();
   const code = (params.code as string)?.toUpperCase();
@@ -68,5 +69,13 @@ export default function JoinByRoomCodePage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function JoinByRoomCodePage() {
+  return (
+    <AuthGuard>
+      <JoinByRoomCodeContent />
+    </AuthGuard>
   );
 }

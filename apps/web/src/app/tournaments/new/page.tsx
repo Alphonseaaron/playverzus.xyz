@@ -11,6 +11,7 @@ import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Trophy, Gamepad2, Users, Layers, AlertCircle, ArrowLeft } from 'lucide-react';
+import { AuthGuard } from '../../../components/AuthGuard';
 import Link from 'next/link';
 
 interface FormatDetail {
@@ -56,7 +57,7 @@ const TOURNAMENT_FORMATS: Record<TournamentFormat, FormatDetail> = {
   },
 };
 
-export default function NewTournamentPage() {
+function NewTournamentContent() {
   const router = useRouter();
   const [name, setName] = useState('');
   const [profileId, setProfileId] = useState('');
@@ -290,5 +291,13 @@ export default function NewTournamentPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function NewTournamentPage() {
+  return (
+    <AuthGuard>
+      <NewTournamentContent />
+    </AuthGuard>
   );
 }

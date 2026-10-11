@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'next/navigation';
 import { MatchRoom } from '../../../components/MatchRoom';
+import { AuthGuard } from '../../../components/AuthGuard';
 import { apiClient } from '../../../lib/api';
 import { getGameById } from '../../../lib/gamesCatalog';
 import type { GameProfile } from '@playverzus/core';
@@ -16,7 +17,7 @@ interface MatchDetails {
   roomCode?: string | null;
 }
 
-export default function MatchDetailPage() {
+function MatchDetailContent() {
   const params = useParams();
   const matchId = params.id as string;
 
@@ -37,11 +38,11 @@ export default function MatchDetailPage() {
   });
 
   if (loadingMatch || loadingProfile) {
-    return <div className="p-12 text-center text-gray-400">Loading match lobby...</div>;
+    return <div className="p-12 text-center text-muted-foreground font-mono text-xs">Loading match lobby...</div>;
   }
 
   if (!match || !profile) {
-    return <div className="p-12 text-center text-red-400">Match or game profile not found.</div>;
+    return <div className="p-12 text-center text-destructive font-bold text-sm">Match or game profile not found.</div>;
   }
 
   return (
@@ -54,5 +55,13 @@ export default function MatchDetailPage() {
       status={match.status}
       roomCode={match.roomCode}
     />
+  );
+}
+
+export default function MatchDetailPage() {
+  return (
+    <AuthGuard>
+      <MatchDetailContent />
+    </AuthGuard>
   );
 }

@@ -96,7 +96,7 @@ export default function AdminLayout({
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-            <Link href="/login?redirect=/admin">
+            <Link href={`/login?redirect=${encodeURIComponent(pathname)}`}>
               <Button
                 variant="default"
                 size="sm"

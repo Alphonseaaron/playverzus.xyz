@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { EloBadge } from '../../components/EloBadge';
 import { GamePoster } from '../../components/GamePoster';
+import { AuthGuard } from '../../components/AuthGuard';
 import { apiClient } from '../../lib/api';
 import { useGameStore } from '../../lib/gameStore';
 import { formatEUR, formatPoints } from '../../lib/currency';
@@ -81,7 +82,7 @@ interface UserProfileData {
   trust_score?: number;
 }
 
-export default function DashboardPage() {
+function DashboardContent() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { activeGame } = useGameStore();
@@ -583,5 +584,13 @@ export default function DashboardPage() {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <AuthGuard>
+      <DashboardContent />
+    </AuthGuard>
   );
 }

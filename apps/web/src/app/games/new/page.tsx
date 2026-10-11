@@ -27,6 +27,7 @@ import {
   Crop,
   ArrowLeft,
 } from 'lucide-react';
+import { AuthGuard } from '../../../components/AuthGuard';
 
 const AVAILABLE_PLATFORMS: { value: Platform; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { value: 'PC', label: 'PC', icon: Monitor },
@@ -480,8 +481,8 @@ function NewGameProfileForm() {
 
 export default function NewGameProfilePage() {
   return (
-    <Suspense fallback={<div className="p-12 text-center text-xs text-muted-foreground">Loading Game Calibrator...</div>}>
+    <AuthGuard>
       <NewGameProfileForm />
-    </Suspense>
+    </AuthGuard>
   );
 }

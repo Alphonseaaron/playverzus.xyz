@@ -31,6 +31,7 @@ import { toUserFriendlyWalletError } from '../../lib/walletErrors';
 import { useWalletModeStore, type WalletMode } from '../../lib/walletModeStore';
 import { apiClient } from '../../lib/api';
 import { formatEUR, formatPoints } from '../../lib/currency';
+import { AuthGuard } from '../../components/AuthGuard';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/card';
@@ -501,14 +502,8 @@ function CashierContent() {
 
 export default function CashierPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="p-12 text-center text-muted-foreground font-mono text-xs">
-          Loading Cashier...
-        </div>
-      }
-    >
+    <AuthGuard>
       <CashierContent />
-    </Suspense>
+    </AuthGuard>
   );
 }
