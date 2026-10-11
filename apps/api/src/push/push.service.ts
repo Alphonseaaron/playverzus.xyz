@@ -30,8 +30,10 @@ export class PushService {
   private readonly enabled: boolean;
 
   constructor(private readonly redis: RedisService) {
-    const publicKey = process.env.VAPID_PUBLIC_KEY;
-    const privateKey = process.env.VAPID_PRIVATE_KEY;
+    const defaultPubKey = 'BF_mYvSksdyk19iB2KoWbYfZBraady2jtgfY91v8rbTYU9Ap9xdldu03q61J3IPxvtok53htErzrMCVKU0ITYyw';
+    const defaultPrivKey = 'U9Ap9xdldu03q61J3IPxvtok53htErzrMCVKU0ITYyw';
+    const publicKey = process.env.VAPID_PUBLIC_KEY || defaultPubKey;
+    const privateKey = process.env.VAPID_PRIVATE_KEY || defaultPrivKey;
     const subject = process.env.VAPID_SUBJECT || 'mailto:support@playverzus.xyz';
 
     if (publicKey && privateKey) {
@@ -106,6 +108,6 @@ export class PushService {
 
   /** Return the VAPID public key for the frontend to use when subscribing */
   getPublicKey(): string {
-    return process.env.VAPID_PUBLIC_KEY || '';
+    return process.env.VAPID_PUBLIC_KEY || 'BF_mYvSksdyk19iB2KoWbYfZBraady2jtgfY91v8rbTYU9Ap9xdldu03q61J3IPxvtok53htErzrMCVKU0ITYyw';
   }
 }

@@ -13,7 +13,8 @@ export class RedisService implements OnModuleDestroy {
   private client: Redis | null = null;
 
   constructor() {
-    const url = process.env.REDIS_URL;
+    const defaultUpstashUrl = 'rediss://default:gQAAAAAAA1c6AAIgcDI0MjBjZDdhY2JmY2E0NThmODEwOTJmOWZjMTc4YWM4MQ@funky-ant-218938.upstash.io:6379';
+    const url = process.env.REDIS_URL || defaultUpstashUrl;
     if (!url) {
       this.log.warn('REDIS_URL not set — Redis features disabled, using Supabase fallbacks');
       return;
