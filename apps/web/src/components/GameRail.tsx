@@ -16,9 +16,13 @@ import {
   Flame,
   LayoutDashboard,
   Wallet,
+  Globe,
+  LogOut,
 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useGameStore } from '../lib/gameStore';
 import { apiClient } from '../lib/api';
+import { getSupabaseClient } from '../lib/supabase';
 import type { GameProfile } from '@playverzus/core';
 import { OFFICIAL_GAMES, getGameById, type CatalogGame } from '../lib/gamesCatalog';
 import { GamePoster } from './GamePoster';
@@ -30,6 +34,7 @@ import { Separator } from './ui/separator';
 
 export function GameRail() {
   const pathname = usePathname();
+  const queryClient = useQueryClient();
   const { activeGame, setActiveGame, initializeDefaultGame } = useGameStore();
 
   // All hooks must be called before any conditional returns (React Rules of Hooks)
@@ -47,6 +52,17 @@ export function GameRail() {
   });
 
   const isStaff = me?.role === 'ADMIN' || me?.role === 'SUPER_ADMIN' || me?.role === 'REVIEWER';
+
+  const handleSignOut = async () => {
+    try {
+      const supabase = getSupabaseClient();
+      await supabase.auth.signOut();
+      queryClient.clear();
+      window.location.href = '/?view=landing';
+    } catch {
+      window.location.href = '/';
+    }
+  };
 
   useEffect(() => {
     if (games && games.length > 0) {
@@ -70,12 +86,12 @@ export function GameRail() {
   const pinnedGames = OFFICIAL_GAMES.slice(0, 4);
 
   const navItems = [
-    { href: '/', label: 'Overview', icon: LayoutDashboard, exact: true },
+    { href: me ? '/dashboard' : '/', label: me ? 'Dashboard' : 'Overview', icon: LayoutDashboard, exact: true },
     { href: '/challenges', label: 'Play Duels', icon: Swords },
     { href: '/tournaments', label: 'Tournaments', icon: Trophy },
     { href: '/leaderboards', label: 'Ladders & Rank', icon: BarChart3 },
     { href: '/games', label: 'Explore Games', icon: Gamepad2 },
-    { href: '/dashboard', label: 'Wallet & Cashier', icon: Wallet },
+    { href: '/cashier', label: 'Wallet & Cashier', icon: Wallet },
   ];
 
   return (
@@ -84,7 +100,7 @@ export function GameRail() {
         <div className="space-y-6">
           {/* Brand Logo & Name */}
           <Link
-            href="/"
+            href={me ? '/dashboard' : '/'}
             className="flex items-center gap-2 px-2 py-1 text-foreground hover:opacity-90 transition group"
           >
             <Image
@@ -204,27 +220,51 @@ export function GameRail() {
         </div>
 
         {/* Bottom Utility Links */}
-        <div className={`pt-3 border-t border-border flex items-center ${isStaff ? 'justify-between' : 'justify-center'} px-2 text-xs`}>
-          {isStaff && (
+        <div className="pt-3 border-t border-border flex flex-col gap-2 px-2 text-xs">
+          <div className={`flex items-center ${isStaff ? 'justify-between' : 'justify-start'}`}>
+            {isStaff && (
+              <Link
+                href={me?.role === 'REVIEWER' ? '/admin/review' : '/admin'}
+                className={`flex items-center gap-1.5 transition ${
+                  pathname.startsWith('/admin') ? 'text-primary font-bold' : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Shield className="w-3.5 h-3.5" />
+                <span>{me?.role === 'REVIEWER' ? 'Audit' : 'Admin'}</span>
+              </Link>
+            )}
             <Link
-              href={me?.role === 'REVIEWER' ? '/admin/review' : '/admin'}
+              href="/settings"
               className={`flex items-center gap-1.5 transition ${
-                pathname.startsWith('/admin') ? 'text-primary font-bold' : 'text-muted-foreground hover:text-foreground'
-              }`}
+                pathname.startsWith('/settings') ? 'text-primary font-bold' : 'text-muted-foreground hover:text-foreground'
+              } ${!isStaff ? 'w-full py-1 rounded-lg hover:text-foreground' : ''}`}
             >
-              <Shield className="w-3.5 h-3.5" />
-              <span>{me?.role === 'REVIEWER' ? 'Audit' : 'Admin'}</span>
+              <Settings className="w-3.5 h-3.5" />
+              <span>Settings</span>
             </Link>
+          </div>
+
+          {me && (
+            <div className="pt-2 border-t border-border/50 flex items-center justify-between text-[11px] text-muted-foreground">
+              <Link
+                href="/?view=landing"
+                className="hover:text-foreground flex items-center gap-1 transition"
+                title="View public marketing landing page"
+              >
+                <Globe className="w-3 h-3" />
+                <span>Landing Page</span>
+              </Link>
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="hover:text-destructive flex items-center gap-1 transition text-[11px]"
+                title="Sign out of arena"
+              >
+                <LogOut className="w-3 h-3" />
+                <span>Sign Out</span>
+              </button>
+            </div>
           )}
-          <Link
-            href="/settings"
-            className={`flex items-center gap-1.5 transition ${
-              pathname.startsWith('/settings') ? 'text-primary font-bold' : 'text-muted-foreground hover:text-foreground'
-            } ${!isStaff ? 'w-full justify-center py-1 rounded-lg hover:bg-muted' : ''}`}
-          >
-            <Settings className="w-3.5 h-3.5" />
-            <span>Settings</span>
-          </Link>
         </div>
       </aside>
     </>

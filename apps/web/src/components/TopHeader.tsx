@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Menu,
   X,
@@ -20,11 +20,15 @@ import {
   Gamepad2,
   Wallet,
   Shield,
+  Settings,
+  Globe,
+  LogOut,
 } from 'lucide-react';
 import { useGameStore } from '../lib/gameStore';
 import { EloBadge } from './EloBadge';
 import { NotificationBell } from './NotificationBell';
 import { apiClient } from '../lib/api';
+import { getSupabaseClient } from '../lib/supabase';
 import { formatEUR, formatPoints } from '../lib/currency';
 import { useWalletModeStore } from '../lib/walletModeStore';
 import { OFFICIAL_GAMES, getGameById } from '../lib/gamesCatalog';
@@ -65,6 +69,7 @@ function getPageContext(pathname: string): { title: string; subtitle?: string } 
 
 export function TopHeader() {
   const pathname = usePathname();
+  const queryClient = useQueryClient();
   const { activeGame } = useGameStore();
   const { mode: walletMode, toggleMode: toggleWalletMode } = useWalletModeStore();
   const [searchQuery, setSearchQuery] = useState('');
@@ -100,6 +105,17 @@ export function TopHeader() {
     staleTime: 30000,
   });
 
+  const handleSignOut = async () => {
+    try {
+      const supabase = getSupabaseClient();
+      await supabase.auth.signOut();
+      queryClient.clear();
+      window.location.href = '/?view=landing';
+    } catch {
+      window.location.href = '/';
+    }
+  };
+
   const cashAmount = wallet?.cashEur ?? 0.0;
   const pointsAmount = wallet?.balance ?? 0;
   const eloRating = me?.rating ?? 1000;
@@ -108,12 +124,12 @@ export function TopHeader() {
   const isStaff = me?.role === 'ADMIN' || me?.role === 'SUPER_ADMIN' || me?.role === 'REVIEWER';
 
   const mobileNavLinks = [
-    { href: '/', label: 'Overview', icon: LayoutDashboard },
+    { href: me ? '/dashboard' : '/', label: me ? 'Dashboard' : 'Overview', icon: LayoutDashboard },
     { href: '/challenges', label: 'Play Duels', icon: Swords },
     { href: '/tournaments', label: 'Tournaments', icon: Trophy },
     { href: '/leaderboards', label: 'Ladders & Rank', icon: BarChart3 },
     { href: '/games', label: 'Explore Games', icon: Gamepad2 },
-    { href: '/dashboard', label: 'Wallet & Cashier', icon: Wallet },
+    { href: '/cashier', label: 'Wallet & Cashier', icon: Wallet },
     ...(isStaff
       ? [
           {
@@ -123,15 +139,17 @@ export function TopHeader() {
           },
         ]
       : []),
+    { href: '/settings', label: 'Settings', icon: Settings },
+    ...(me ? [{ href: '/?view=landing', label: 'Landing Page', icon: Globe }] : []),
   ];
 
   // Dedicated Public Marketing Header for Landing Page
   if (pathname === '/') {
     return (
       <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8 max-w-full">
-        {/* Left: Brand Logo (Transparent Logo image, no background) */}
+        {/* Left: Brand Logo */}
         <div className="flex items-center gap-3">
-          <Link href="/" className="flex items-center gap-2 group">
+          <Link href={me ? '/dashboard' : '/'} className="flex items-center gap-2 group">
             <Image
               src="/images/logo.png"
               alt="playverzus.xyz"
@@ -197,12 +215,13 @@ export function TopHeader() {
             </>
           ) : (
             <>
-              <Link href="/challenges">
+              <Link href="/dashboard">
                 <Button
                   size="sm"
-                  className="font-bold text-xs uppercase tracking-wider bg-primary hover:bg-primary/90 text-primary-foreground shadow-md shadow-primary/20"
+                  className="font-bold text-xs uppercase tracking-wider bg-primary hover:bg-primary/90 text-primary-foreground shadow-md shadow-primary/20 gap-1.5"
                 >
-                  Enter Arena
+                  <LayoutDashboard className="w-3.5 h-3.5" />
+                  <span>Dashboard</span>
                 </Button>
               </Link>
               <Link
@@ -217,6 +236,16 @@ export function TopHeader() {
                   @{me.username}
                 </span>
               </Link>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSignOut}
+                className="font-bold text-xs uppercase tracking-wider text-muted-foreground hover:text-destructive gap-1"
+                title="Log Out of Arena"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Sign Out</span>
+              </Button>
             </>
           )}
 
@@ -296,11 +325,25 @@ export function TopHeader() {
                   </Link>
                 </>
               ) : (
-                <Link href="/challenges" onClick={() => setMobileMenuOpen(false)}>
-                  <Button className="w-full font-bold text-xs uppercase tracking-wider">
-                    Enter Arena
+                <>
+                  <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)}>
+                    <Button className="w-full font-bold text-xs uppercase tracking-wider gap-2">
+                      <LayoutDashboard className="w-4 h-4" />
+                      <span>Enter Arena Dashboard</span>
+                    </Button>
+                  </Link>
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      handleSignOut();
+                    }}
+                    className="w-full font-bold text-xs uppercase tracking-wider text-destructive hover:bg-destructive/10 gap-2"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>Sign Out</span>
                   </Button>
-                </Link>
+                </>
               )}
             </div>
           </div>
@@ -326,7 +369,7 @@ export function TopHeader() {
 
         {/* Mobile Brand Mark */}
         <Link
-          href="/"
+          href={me ? '/dashboard' : '/'}
           className="lg:hidden flex items-center justify-center flex-shrink-0"
         >
           <Image
@@ -477,6 +520,19 @@ export function TopHeader() {
             </span>
           </div>
         </Link>
+
+        {/* Quick Desktop Sign Out Action */}
+        {me && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleSignOut}
+            className="w-8 h-8 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition hidden sm:flex"
+            title="Sign Out of Arena"
+          >
+            <LogOut className="w-4 h-4" />
+          </Button>
+        )}
       </div>
 
       {/* Mobile Drawer (Sheet) */}
@@ -546,6 +602,22 @@ export function TopHeader() {
               </Link>
             );
           })}
+
+          {me && (
+            <div className="pt-4 border-t border-border mt-3">
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  handleSignOut();
+                }}
+                className="w-full justify-start text-xs font-bold text-destructive hover:text-destructive hover:bg-destructive/10 gap-2"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Sign Out</span>
+              </Button>
+            </div>
+          )}
         </div>
       </Sheet>
     </header>

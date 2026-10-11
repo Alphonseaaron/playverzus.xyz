@@ -1,14 +1,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import Link from 'next/link';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../lib/api';
+import { getSupabaseClient } from '../../lib/supabase';
 import { CountrySelect } from '../../components/CountrySelect';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import { Settings, User, Phone, CheckCircle2, Save } from 'lucide-react';
+import { Separator } from '../../components/ui/separator';
+import { Settings, User, Phone, CheckCircle2, Save, Globe, LogOut } from 'lucide-react';
 
 interface MyProfile {
   id: string;
@@ -19,6 +22,7 @@ interface MyProfile {
 }
 
 export default function SettingsPage() {
+  const queryClient = useQueryClient();
   const { data: profile } = useQuery<MyProfile>({
     queryKey: ['me-settings'],
     queryFn: () => apiClient<MyProfile>('/profile/me'),
@@ -53,6 +57,17 @@ export default function SettingsPage() {
       alert(`Save failed: ${msg}`);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      const supabase = getSupabaseClient();
+      await supabase.auth.signOut();
+      queryClient.clear();
+      window.location.href = '/?view=landing';
+    } catch {
+      window.location.href = '/';
     }
   };
 
@@ -141,6 +156,55 @@ export default function SettingsPage() {
               <span>{saving ? 'Saving Changes...' : 'Save Profile Settings'}</span>
             </Button>
           </form>
+        </CardContent>
+      </Card>
+
+      {/* Session & Sign Out Card */}
+      <Card className="bg-card border-border shadow-2xl">
+        <CardHeader className="border-b border-border pb-4">
+          <CardTitle className="text-sm font-bold text-foreground">
+            Session & Platform Navigation
+          </CardTitle>
+          <CardDescription className="text-xs text-muted-foreground">
+            Manage your active session or visit the public marketing landing page.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="pt-5 space-y-4">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <div className="text-xs font-bold text-foreground">Public Landing Page</div>
+              <div className="text-[11px] text-muted-foreground">
+                Browse the public platform overview while keeping your session active.
+              </div>
+            </div>
+            <Link href="/?view=landing">
+              <Button variant="outline" size="sm" className="text-xs font-bold gap-1.5 flex-shrink-0">
+                <Globe className="w-3.5 h-3.5" />
+                <span>Visit Landing</span>
+              </Button>
+            </Link>
+          </div>
+
+          <Separator />
+
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <div className="text-xs font-bold text-foreground">Sign Out of Arena</div>
+              <div className="text-[11px] text-muted-foreground">
+                Safely end your current session on this device.
+              </div>
+            </div>
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              onClick={handleLogout}
+              className="text-xs font-bold gap-1.5 flex-shrink-0"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Log Out</span>
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

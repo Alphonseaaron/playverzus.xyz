@@ -1,12 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useQuery } from '@tanstack/react-query';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Rocket,
   LogIn,
+  LogOut,
+  LayoutDashboard,
+  Globe,
   Gamepad2,
   Zap,
   Coins,
@@ -32,6 +36,7 @@ import { EloBadge } from '../components/EloBadge';
 import { GamePoster } from '../components/GamePoster';
 import { GameDropdown } from '../components/GameDropdown';
 import { apiClient } from '../lib/api';
+import { getSupabaseClient } from '../lib/supabase';
 import { formatEUR, formatPoints } from '../lib/currency';
 import { OFFICIAL_GAMES, getGameById, type CatalogGame } from '../lib/gamesCatalog';
 import { EmptyState } from '../components/EmptyState';
@@ -73,9 +78,15 @@ interface HomeLeaderboardEntry {
   countryCode?: string;
 }
 
-export default function HomePage() {
+function HomeContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
   const { activeGame, setActiveGame } = useGameStore();
   const [selectedArenaTab, setSelectedArenaTab] = useState<'all' | 'pc' | 'console'>('all');
+
+  const viewParam = searchParams.get('view');
+  const wantsLanding = viewParam === 'landing' || viewParam === 'public';
 
   // Check authentication
   const { data: userProfile, isLoading: loadingProfile } = useQuery<UserProfile | null>({
@@ -89,6 +100,15 @@ export default function HomePage() {
     },
     staleTime: 30000,
   });
+
+  const isAuthenticated = !!userProfile?.id;
+
+  // When a user is logged in, automatically forward to dashboard unless they explicitly requested the public landing page (?view=landing)
+  useEffect(() => {
+    if (!loadingProfile && isAuthenticated && !wantsLanding) {
+      router.replace('/dashboard');
+    }
+  }, [loadingProfile, isAuthenticated, wantsLanding, router]);
 
   // Query real tournaments from API — fall back to seeded data if API fails or returns empty
   const { data: tournaments, isLoading: loadingTournaments } = useQuery<HomeTournament[]>({
@@ -120,7 +140,29 @@ export default function HomePage() {
     staleTime: 30000,
   });
 
-  const isAuthenticated = !!userProfile?.id;
+  const handleSignOut = async () => {
+    try {
+      const supabase = getSupabaseClient();
+      await supabase.auth.signOut();
+      queryClient.clear();
+      window.location.href = '/?view=landing';
+    } catch {
+      window.location.href = '/';
+    }
+  };
+
+  // If authenticated and redirecting to dashboard, show sleek loading indicator
+  if (isAuthenticated && !wantsLanding) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 text-center">
+        <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">
+          Entering Arena Dashboard...
+        </p>
+      </div>
+    );
+  }
+
   const currentCatalogGame = getGameById(activeGame?.id);
 
   const filteredGames = OFFICIAL_GAMES.filter((g) => {
@@ -131,7 +173,7 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-col gap-16 sm:gap-24 max-w-7xl mx-auto min-w-0 pb-16">
-      {/* 1. Authenticated Welcome Bar (if logged in) */}
+      {/* 1. Authenticated Welcome Bar (if logged in and explicitly browsing landing) */}
       {isAuthenticated && (
         <div className="p-4 sm:p-5 rounded-2xl bg-card border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-lg animate-in fade-in">
           <div className="flex items-center gap-3">
@@ -141,35 +183,38 @@ export default function HomePage() {
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-bold text-sm text-foreground">
-                  Welcome back, @{userProfile.username}
+                  Logged in as @{userProfile.username}
                 </span>
                 <EloBadge elo={userProfile.rating ?? 1000} size="sm" />
               </div>
               <p className="text-xs text-muted-foreground">
-                Your competitive profile is active. Ready to challenge rivals or enter tournaments?
+                Public Arena Overview. Return to your dashboard or challenge opponents.
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2.5 flex-wrap">
-            <Link href="/challenges">
-              <Button variant="default" size="sm" className="font-bold text-xs gap-1.5">
-                <Swords className="w-3.5 h-3.5" />
-                <span>Play 1v1 Duels</span>
-              </Button>
-            </Link>
-            <Link href="/tournaments">
-              <Button variant="secondary" size="sm" className="font-bold text-xs gap-1.5">
-                <Trophy className="w-3.5 h-3.5" />
-                <span>Browse Cups</span>
-              </Button>
-            </Link>
             <Link href="/dashboard">
-              <Button variant="outline" size="sm" className="font-bold text-xs gap-1.5">
-                <Coins className="w-3.5 h-3.5" />
-                <span>Cashier Ledger</span>
+              <Button variant="default" size="sm" className="font-bold text-xs gap-1.5 shadow-md">
+                <LayoutDashboard className="w-3.5 h-3.5" />
+                <span>Go to Dashboard</span>
               </Button>
             </Link>
+            <Link href="/challenges">
+              <Button variant="secondary" size="sm" className="font-bold text-xs gap-1.5">
+                <Swords className="w-3.5 h-3.5" />
+                <span>Play Duels</span>
+              </Button>
+            </Link>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSignOut}
+              className="font-bold text-xs gap-1.5 text-muted-foreground hover:text-destructive hover:border-destructive/40"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Log Out</span>
+            </Button>
           </div>
         </div>
       )}
@@ -787,5 +832,22 @@ export default function HomePage() {
         </div>
       </footer>
     </div>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 text-center">
+          <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">
+            Loading Arena...
+          </p>
+        </div>
+      }
+    >
+      <HomeContent />
+    </Suspense>
   );
 }
