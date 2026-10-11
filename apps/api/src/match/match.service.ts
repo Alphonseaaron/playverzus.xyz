@@ -19,7 +19,8 @@ export class MatchService {
       .from('matches')
       .select('*, game_profiles(display_name, game_type)')
       .or(`player_a.eq.${userId},player_b.eq.${userId}`)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(50);
 
     if (error) {
       // Fallback without relation if foreign key cache is stale
@@ -27,7 +28,8 @@ export class MatchService {
         .from('matches')
         .select('*')
         .or(`player_a.eq.${userId},player_b.eq.${userId}`)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(50);
       return fallback.data || [];
     }
     return data || [];

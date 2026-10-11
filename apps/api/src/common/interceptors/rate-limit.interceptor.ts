@@ -14,6 +14,16 @@ export class RateLimitInterceptor implements NestInterceptor {
   private readonly maxRequests = 60;
   private readonly hits = new Map<string, { count: number; resetAt: number }>();
 
+  constructor() {
+    // Prune stale IP and user records every 2 minutes to prevent heap growth
+    setInterval(() => {
+      const now = Date.now();
+      for (const [key, record] of this.hits.entries()) {
+        if (now > record.resetAt) this.hits.delete(key);
+      }
+    }, 120_000);
+  }
+
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const req = context.switchToHttp().getRequest();
     const key = req.user?.id ?? req.ip ?? 'anonymous';

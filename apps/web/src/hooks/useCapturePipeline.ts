@@ -25,6 +25,9 @@ export function useCapturePipeline(matchId: string, profile: GameProfile | null)
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const workerRef = useRef<Tesseract.Worker | null>(null);
 
+  const lastSubmittedTextRef = useRef<string | null>(null);
+  const lastSubmittedTimeRef = useRef<number>(0);
+
   // Initialize Tesseract worker
   useEffect(() => {
     let active = true;
@@ -139,16 +142,25 @@ export function useCapturePipeline(matchId: string, profile: GameProfile | null)
               status: isFinal ? 'VERIFYING' : 'CAPTURING',
             }));
 
-            // Submit score to backend
-            await apiClient(`/matches/${matchId}/score`, {
-              method: 'POST',
-              body: JSON.stringify({
-                rawText: text,
-                confidence,
-                isFinal,
-                source: 'CLIENT_OCR',
-              }),
-            });
+            // Only send HTTP POST if score actually changed, game is final, or 30s elapsed heartbeat
+            const textChanged = text !== lastSubmittedTextRef.current;
+            const heartbeatDue = Date.now() - lastSubmittedTimeRef.current > 30_000;
+
+            if (textChanged || isFinal || heartbeatDue) {
+              lastSubmittedTextRef.current = text;
+              lastSubmittedTimeRef.current = Date.now();
+
+              // Submit score to backend
+              await apiClient(`/matches/${matchId}/score`, {
+                method: 'POST',
+                body: JSON.stringify({
+                  rawText: text,
+                  confidence,
+                  isFinal,
+                  source: 'CLIENT_OCR',
+                }),
+              });
+            }
 
             if (isFinal) {
               await stopCapture();

@@ -7,11 +7,13 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
+  compress: true,
   transpilePackages: ['@playverzus/core', '@playverzus/db', '@playverzus/ui'],
   experimental: {
     optimizePackageImports: ['lucide-react'],
   },
   images: {
+    formats: ['image/avif', 'image/webp'],
     remotePatterns: [
       { protocol: 'https', hostname: '*.supabase.co' },
       { protocol: 'https', hostname: '*.r2.dev' },
@@ -19,7 +21,7 @@ const nextConfig = {
   },
   async redirects() {
     return [
-      { source: '/wallet', destination: '/dashboard?cashier=open', permanent: false },
+      { source: '/wallet', destination: '/cashier', permanent: false },
       { source: '/arena', destination: '/matches/new', permanent: false },
     ];
   },
