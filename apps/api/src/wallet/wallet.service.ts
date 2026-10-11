@@ -255,173 +255,182 @@ export class WalletService {
     paymentHandleToken?: string,
     method = 'PAYSAFE',
   ) {
-    if (typeof amount !== 'number' || isNaN(amount) || amount <= 0) {
-      throw new BadRequestException('Please enter a valid deposit amount greater than zero.');
-    }
-
-    const roundedAmount = Math.round(amount * 100) / 100;
-
-    if (roundedAmount < MIN_DEPOSIT_EUR) {
-      throw new BadRequestException(`The minimum deposit amount is €${MIN_DEPOSIT_EUR.toFixed(2)}.`);
-    }
-
-    if (roundedAmount > MAX_DEPOSIT_EUR) {
-      throw new BadRequestException(
-        `The maximum deposit limit per transaction is €${MAX_DEPOSIT_EUR.toLocaleString('en-US', { minimumFractionDigits: 2 })}.`,
-      );
-    }
-
-    const merchantRefNum = `dep-${userId.slice(0, 8)}-${Date.now()}`;
-    let paymentId = `paysafe-auth-${Date.now()}`;
-
-    // Process payment token via Paysafe client if token is supplied
-    if (paymentHandleToken && !paymentHandleToken.startsWith('paysafe_token_')) {
-      try {
-        const res = await this.paysafe.processPayment({
-          merchantRefNum,
-          amount: Math.round(roundedAmount * 100),
-          currencyCode: currency,
-          paymentHandleToken,
-          description: `PlayVerzus ${currency} Competitive Deposit via ${method}`,
-        });
-
-        if (res.status === 'FAILED') {
-          throw new BadRequestException(
-            res.error?.message || 'Your card issuer declined the transaction.',
-          );
-        }
-        paymentId = res.id;
-      } catch (err) {
-        if (err instanceof BadRequestException) throw err;
-        throw new BadRequestException('Payment authorization was unsuccessful. Please check your payment details.');
+    return this.redis.withLock(`wallet:${userId}`, 10_000, async () => {
+      if (typeof amount !== 'number' || isNaN(amount) || amount <= 0) {
+        throw new BadRequestException('Please enter a valid deposit amount greater than zero.');
       }
-    }
 
-    // Credit Real Cash ledger
-    const cash = await this.getRealCash(userId);
-    const newCashBalance = Math.round((cash.balance + roundedAmount) * 100) / 100;
-    cash.balance = newCashBalance;
-    await this.setRealCash(userId, cash);
+      const roundedAmount = Math.round(amount * 100) / 100;
 
-    // Record permanent financial transaction in Supabase
-    const amountCents = Math.round(roundedAmount * 100);
-    const balanceAfterCents = Math.round(newCashBalance * 100);
+      if (roundedAmount < MIN_DEPOSIT_EUR) {
+        throw new BadRequestException(`The minimum deposit amount is €${MIN_DEPOSIT_EUR.toFixed(2)}.`);
+      }
 
-    let txRecord: any = null;
-    try {
-      const res = await this.supabase
-        .from('transactions')
-        .insert({
-          user_id: userId,
-          amount: amountCents,
-          balance_after: balanceAfterCents,
-          reason: `Deposit via ${method}`,
-          metadata: {
-            currency: 'EUR',
-            provider: method,
-            paymentId,
+      if (roundedAmount > MAX_DEPOSIT_EUR) {
+        throw new BadRequestException(
+          `The maximum deposit limit per transaction is €${MAX_DEPOSIT_EUR.toLocaleString('en-US', { minimumFractionDigits: 2 })}.`,
+        );
+      }
+
+      const isLive = process.env.NODE_ENV === 'production' || process.env.WALLET_MODE === 'real';
+      if (isLive && (!paymentHandleToken || paymentHandleToken.startsWith('paysafe_token_'))) {
+        throw new BadRequestException('A verified payment handle token is required for live deposits.');
+      }
+
+      const merchantRefNum = `dep-${userId.slice(0, 8)}-${Date.now()}`;
+      let paymentId = `paysafe-auth-${Date.now()}`;
+
+      // Process payment token via Paysafe client if token is supplied
+      if (paymentHandleToken && !paymentHandleToken.startsWith('paysafe_token_')) {
+        try {
+          const res = await this.paysafe.processPayment({
             merchantRefNum,
-            type: 'DEPOSIT',
-          },
-        })
-        .select('id')
-        .maybeSingle();
-      txRecord = res.data;
-    } catch {
-      // Non-fatal if transactions table write fails
-    }
+            amount: Math.round(roundedAmount * 100),
+            currencyCode: currency,
+            paymentHandleToken,
+            description: `PlayVerzus ${currency} Competitive Deposit via ${method}`,
+          });
 
-    // Send instant push notification to user
-    await this.push.sendToUser(userId, {
-      title: 'Deposit Successful',
-      body: `€${roundedAmount.toFixed(2)} has been added to your Real Cash balance.`,
-      type: 'wallet',
-      url: '/cashier',
+          if (res.status === 'FAILED') {
+            throw new BadRequestException(
+              res.error?.message || 'Your card issuer declined the transaction.',
+            );
+          }
+          paymentId = res.id;
+        } catch (err) {
+          if (err instanceof BadRequestException) throw err;
+          throw new BadRequestException('Payment authorization was unsuccessful. Please check your payment details.');
+        }
+      }
+
+      // Credit Real Cash ledger
+      const cash = await this.getRealCash(userId);
+      const newCashBalance = Math.round((cash.balance + roundedAmount) * 100) / 100;
+      cash.balance = newCashBalance;
+      await this.setRealCash(userId, cash);
+
+      // Record permanent financial transaction in Supabase
+      const amountCents = Math.round(roundedAmount * 100);
+      const balanceAfterCents = Math.round(newCashBalance * 100);
+
+      let txRecord: any = null;
+      try {
+        const res = await this.supabase
+          .from('transactions')
+          .insert({
+            user_id: userId,
+            amount: amountCents,
+            balance_after: balanceAfterCents,
+            reason: `Deposit via ${method}`,
+            metadata: {
+              currency: 'EUR',
+              provider: method,
+              paymentId,
+              merchantRefNum,
+              type: 'DEPOSIT',
+            },
+          })
+          .select('id')
+          .maybeSingle();
+        txRecord = res.data;
+      } catch {
+        // Non-fatal if transactions table write fails
+      }
+
+      // Send instant push notification to user
+      await this.push.sendToUser(userId, {
+        title: 'Deposit Successful',
+        body: `€${roundedAmount.toFixed(2)} has been added to your Real Cash balance.`,
+        type: 'wallet',
+        url: '/cashier',
+      });
+
+      return {
+        success: true,
+        transactionId: txRecord?.id || `tx-${Date.now()}`,
+        amount: roundedAmount,
+        currency: 'EUR',
+        paymentId,
+        balanceAfter: newCashBalance,
+        message: `Successfully deposited €${roundedAmount.toFixed(2)} to your competitive wallet.`,
+      };
     });
-
-    return {
-      success: true,
-      transactionId: txRecord?.id || `tx-${Date.now()}`,
-      amount: roundedAmount,
-      currency: 'EUR',
-      paymentId,
-      balanceAfter: newCashBalance,
-      message: `Successfully deposited €${roundedAmount.toFixed(2)} to your competitive wallet.`,
-    };
   }
 
   /**
    * Request a real cash withdrawal / payout from the Real Cash ledger
    */
   async requestPayout(userId: string, amount: number, methodInput: PayoutMethod | string) {
-    if (typeof amount !== 'number' || isNaN(amount) || amount <= 0) {
-      throw new BadRequestException('Please enter a valid withdrawal amount greater than zero.');
-    }
+    return this.redis.withLock(`wallet:${userId}`, 10_000, async () => {
+      if (typeof amount !== 'number' || isNaN(amount) || amount <= 0) {
+        throw new BadRequestException('Please enter a valid withdrawal amount greater than zero.');
+      }
 
-    const roundedAmount = Math.round(amount * 100) / 100;
+      const roundedAmount = Math.round(amount * 100) / 100;
 
-    if (roundedAmount < MIN_WITHDRAWAL_EUR) {
-      throw new BadRequestException(`The minimum withdrawal threshold is €${MIN_WITHDRAWAL_EUR.toFixed(2)}.`);
-    }
+      if (roundedAmount < MIN_WITHDRAWAL_EUR) {
+        throw new BadRequestException(`The minimum withdrawal threshold is €${MIN_WITHDRAWAL_EUR.toFixed(2)}.`);
+      }
 
-    if (roundedAmount > MAX_WITHDRAWAL_EUR) {
-      throw new BadRequestException(
-        `The maximum single withdrawal limit is €${MAX_WITHDRAWAL_EUR.toLocaleString('en-US', { minimumFractionDigits: 2 })}.`,
-      );
-    }
+      if (roundedAmount > MAX_WITHDRAWAL_EUR) {
+        throw new BadRequestException(
+          `The maximum single withdrawal limit is €${MAX_WITHDRAWAL_EUR.toLocaleString('en-US', { minimumFractionDigits: 2 })}.`,
+        );
+      }
 
-    const cash = await this.getRealCash(userId);
-    const available = Math.max(0, Math.round((cash.balance - cash.locked) * 100) / 100);
+      const cash = await this.getRealCash(userId);
+      const available = Math.max(0, Math.round((cash.balance - cash.locked) * 100) / 100);
 
-    if (roundedAmount > available) {
-      throw new BadRequestException(
-        `Insufficient available cash balance. Your current withdrawable balance is €${available.toFixed(2)}.`,
-      );
-    }
+      if (roundedAmount > available) {
+        throw new BadRequestException(
+          `Insufficient available cash balance. Your current withdrawable balance is €${available.toFixed(2)}.`,
+        );
+      }
 
-    // Deduct from Real Cash ledger
-    const newCashBalance = Math.round((cash.balance - roundedAmount) * 100) / 100;
-    cash.balance = newCashBalance;
-    await this.setRealCash(userId, cash);
+      // Deduct from Real Cash ledger
+      const newCashBalance = Math.round((cash.balance - roundedAmount) * 100) / 100;
+      cash.balance = newCashBalance;
+      await this.setRealCash(userId, cash);
 
-    const methodType = typeof methodInput === 'string' ? methodInput : (methodInput as PayoutMethod).type || 'PAYSAFE';
-    const amountCents = Math.round(roundedAmount * 100);
-    const balanceAfterCents = Math.round(newCashBalance * 100);
+      const methodType = typeof methodInput === 'string' ? methodInput : (methodInput as PayoutMethod).type || 'PAYSAFE';
+      const amountCents = Math.round(roundedAmount * 100);
+      const balanceAfterCents = Math.round(newCashBalance * 100);
 
-    // Record permanent financial transaction in Supabase
-    try {
-      await this.supabase
-        .from('transactions')
-        .insert({
-          user_id: userId,
-          amount: -amountCents,
-          balance_after: balanceAfterCents,
-          reason: `Payout via ${methodType}`,
-          metadata: {
-            currency: 'EUR',
-            method: methodInput,
-            type: 'WITHDRAWAL',
-          },
-        });
-    } catch {
-      // Non-fatal if transactions table write fails
-    }
+      // Record permanent financial transaction in Supabase
+      try {
+        await this.supabase
+          .from('transactions')
+          .insert({
+            user_id: userId,
+            amount: -amountCents,
+            balance_after: balanceAfterCents,
+            reason: `Payout via ${methodType}`,
+            metadata: {
+              currency: 'EUR',
+              method: methodInput,
+              type: 'WITHDRAWAL',
+            },
+          });
+      } catch {
+        // Non-fatal if transactions table write fails
+      }
 
-    // Send instant push notification to user
-    await this.push.sendToUser(userId, {
-      title: 'Withdrawal Processing',
-      body: `Your payout of €${roundedAmount.toFixed(2)} has been submitted for processing.`,
-      type: 'wallet',
-      url: '/cashier',
+      // Send instant push notification to user
+      await this.push.sendToUser(userId, {
+        title: 'Withdrawal Processing',
+        body: `Your payout of €${roundedAmount.toFixed(2)} has been submitted for processing.`,
+        type: 'wallet',
+        url: '/cashier',
+      });
+
+      return {
+        success: true,
+        reference: `PAYOUT-${Date.now()}-${userId.slice(0, 6)}`,
+        amount: roundedAmount,
+        balanceAfter: newCashBalance,
+        message: `Your withdrawal of €${roundedAmount.toFixed(2)} has been submitted and is processing.`,
+      };
     });
-
-    return {
-      success: true,
-      reference: `PAYOUT-${Date.now()}-${userId.slice(0, 6)}`,
-      amount: roundedAmount,
-      balanceAfter: newCashBalance,
-      message: `Your withdrawal of €${roundedAmount.toFixed(2)} has been submitted and is processing.`,
-    };
   }
 
   /**
@@ -429,46 +438,48 @@ export class WalletService {
    * Enforces a 24-hour cooldown per user via Redis.
    */
   async claimDemoTokens(userId: string) {
-    // 1. Enforce 24-hour cooldown
-    const remainingSecs = await this.redis.checkCooldown(`demo:${userId}`, 60 * 60 * 24);
-    if (remainingSecs > 0) {
-      const hoursLeft = Math.ceil(remainingSecs / 3600);
-      throw new BadRequestException(
-        `Demo coins can only be claimed once per 24 hours. Available again in ${hoursLeft}h.`,
-      );
-    }
+    return this.redis.withLock(`wallet:${userId}`, 10_000, async () => {
+      // 1. Enforce 24-hour cooldown
+      const remainingSecs = await this.redis.checkCooldown(`demo:${userId}`, 60 * 60 * 24);
+      if (remainingSecs > 0) {
+        const hoursLeft = Math.ceil(remainingSecs / 3600);
+        throw new BadRequestException(
+          `Demo coins can only be claimed once per 24 hours. Available again in ${hoursLeft}h.`,
+        );
+      }
 
-    const claimAmount = 1000;
-    const current = await this.getDemoPoints(userId);
-    const newBalance = current.balance + claimAmount;
+      const claimAmount = 1000;
+      const current = await this.getDemoPoints(userId);
+      const newBalance = current.balance + claimAmount;
 
-    // 2. Update Supabase wallets table
-    await this.supabase
-      .from('wallets')
-      .update({ balance: newBalance, updated_at: new Date().toISOString() })
-      .eq('user_id', userId);
-
-    // 3. Record transaction in Supabase
-    try {
+      // 2. Update Supabase wallets table
       await this.supabase
-        .from('transactions')
-        .insert({
-          user_id: userId,
-          amount: claimAmount,
-          balance_after: newBalance,
-          reason: 'Daily Free Demo Practice Reload',
-          metadata: { currency: 'POINTS', type: 'DEMO_CLAIM' },
-        });
-    } catch {
-      // Non-fatal transaction history insert failure
-    }
+        .from('wallets')
+        .update({ balance: newBalance, updated_at: new Date().toISOString() })
+        .eq('user_id', userId);
 
-    return {
-      success: true,
-      amount: claimAmount,
-      balanceAfter: newBalance,
-      message: 'Claimed 1,000 Free Demo Practice Coins!',
-    };
+      // 3. Record transaction in Supabase
+      try {
+        await this.supabase
+          .from('transactions')
+          .insert({
+            user_id: userId,
+            amount: claimAmount,
+            balance_after: newBalance,
+            reason: 'Daily Free Demo Practice Reload',
+            metadata: { currency: 'POINTS', type: 'DEMO_CLAIM' },
+          });
+      } catch {
+        // Non-fatal transaction history insert failure
+      }
+
+      return {
+        success: true,
+        amount: claimAmount,
+        balanceAfter: newBalance,
+        message: 'Claimed 1,000 Free Demo Practice Coins!',
+      };
+    });
   }
 
   // ─── Match Escrow Operations (Real Cash & Demo Points) ────────────────────
@@ -477,44 +488,46 @@ export class WalletService {
    * Lock funds in escrow for a match (either Real Cash EUR or Demo PTS)
    */
   async lockMatchStake(userId: string, amount: number, matchId: string, isRealCash: boolean): Promise<void> {
-    if (isRealCash) {
-      const cash = await this.getRealCash(userId);
-      const available = Math.max(0, cash.balance - cash.locked);
-      if (available < amount) {
-        throw new BadRequestException(`Insufficient Real Cash balance: available €${available.toFixed(2)}, required €${amount.toFixed(2)}`);
-      }
-      cash.locked = Math.round((cash.locked + amount) * 100) / 100;
-      await this.setRealCash(userId, cash);
+    return this.redis.withLock(`wallet:${userId}`, 10_000, async () => {
+      if (isRealCash) {
+        const cash = await this.getRealCash(userId);
+        const available = Math.max(0, cash.balance - cash.locked);
+        if (available < amount) {
+          throw new BadRequestException(`Insufficient Real Cash balance: available €${available.toFixed(2)}, required €${amount.toFixed(2)}`);
+        }
+        cash.locked = Math.round((cash.locked + amount) * 100) / 100;
+        await this.setRealCash(userId, cash);
 
-      try {
-        await this.supabase.from('locks').insert({
-          user_id: userId,
-          amount: Math.round(amount * 100), // in cents
-          match_id: matchId,
-          status: 'LOCKED',
-        });
-      } catch {
-        // Non-fatal
+        try {
+          await this.supabase.from('locks').insert({
+            user_id: userId,
+            amount: Math.round(amount * 100), // in cents
+            match_id: matchId,
+            status: 'LOCKED',
+          });
+        } catch {
+          // Non-fatal
+        }
+      } else {
+        const pts = await this.getDemoPoints(userId);
+        const available = Math.max(0, pts.balance - pts.locked);
+        if (available < amount) {
+          throw new BadRequestException(`Insufficient Demo Points: available ${available} PTS, required ${amount} PTS`);
+        }
+        const newLocked = pts.locked + amount;
+        await this.supabase.from('wallets').update({ locked: newLocked }).eq('user_id', userId);
+        try {
+          await this.supabase.from('locks').insert({
+            user_id: userId,
+            amount,
+            match_id: matchId,
+            status: 'LOCKED',
+          });
+        } catch {
+          // Non-fatal
+        }
       }
-    } else {
-      const pts = await this.getDemoPoints(userId);
-      const available = Math.max(0, pts.balance - pts.locked);
-      if (available < amount) {
-        throw new BadRequestException(`Insufficient Demo Points: available ${available} PTS, required ${amount} PTS`);
-      }
-      const newLocked = pts.locked + amount;
-      await this.supabase.from('wallets').update({ locked: newLocked }).eq('user_id', userId);
-      try {
-        await this.supabase.from('locks').insert({
-          user_id: userId,
-          amount,
-          match_id: matchId,
-          status: 'LOCKED',
-        });
-      } catch {
-        // Non-fatal
-      }
-    }
+    });
   }
 
   /**
@@ -528,59 +541,61 @@ export class WalletService {
     stakeAmount: number,
     isRealCash: boolean,
   ): Promise<void> {
-    const totalPrize = Math.round((stakeAmount * 2 * 0.90) * 100) / 100; // 90% prize pool
+    return this.redis.withLock(`settle:${matchId}`, 15_000, async () => {
+      const totalPrize = Math.round((stakeAmount * 2 * 0.90) * 100) / 100; // 90% prize pool
 
-    if (isRealCash) {
-      // Release player A and B locks
-      const [cashA, cashB] = await Promise.all([
-        this.getRealCash(playerA),
-        this.getRealCash(playerB),
-      ]);
-      cashA.locked = Math.max(0, Math.round((cashA.locked - stakeAmount) * 100) / 100);
-      cashA.balance = Math.max(0, Math.round((cashA.balance - stakeAmount) * 100) / 100);
-      cashB.locked = Math.max(0, Math.round((cashB.locked - stakeAmount) * 100) / 100);
-      cashB.balance = Math.max(0, Math.round((cashB.balance - stakeAmount) * 100) / 100);
+      if (isRealCash) {
+        // Release player A and B locks
+        const [cashA, cashB] = await Promise.all([
+          this.getRealCash(playerA),
+          this.getRealCash(playerB),
+        ]);
+        cashA.locked = Math.max(0, Math.round((cashA.locked - stakeAmount) * 100) / 100);
+        cashA.balance = Math.max(0, Math.round((cashA.balance - stakeAmount) * 100) / 100);
+        cashB.locked = Math.max(0, Math.round((cashB.locked - stakeAmount) * 100) / 100);
+        cashB.balance = Math.max(0, Math.round((cashB.balance - stakeAmount) * 100) / 100);
 
-      // Credit winner
-      const winnerCash = winnerId === playerA ? cashA : cashB;
-      winnerCash.balance = Math.round((winnerCash.balance + totalPrize) * 100) / 100;
+        // Credit winner
+        const winnerCash = winnerId === playerA ? cashA : cashB;
+        winnerCash.balance = Math.round((winnerCash.balance + totalPrize) * 100) / 100;
 
-      await Promise.all([
-        this.setRealCash(playerA, cashA),
-        this.setRealCash(playerB, cashB),
-      ]);
+        await Promise.all([
+          this.setRealCash(playerA, cashA),
+          this.setRealCash(playerB, cashB),
+        ]);
 
-      // Release lock rows in DB
-      try {
-        await this.supabase.from('locks').update({ status: 'RELEASED' }).eq('match_id', matchId);
-      } catch {
-        // Non-fatal
+        // Release lock rows in DB
+        try {
+          await this.supabase.from('locks').update({ status: 'RELEASED' }).eq('match_id', matchId);
+        } catch {
+          // Non-fatal
+        }
+
+        // Record prize transaction
+        try {
+          await this.supabase.from('transactions').insert({
+            user_id: winnerId,
+            amount: Math.round(totalPrize * 100),
+            balance_after: Math.round(winnerCash.balance * 100),
+            reason: 'Match Prize Victory',
+            metadata: { matchId, currency: 'EUR', type: 'MATCH_PRIZE' },
+          });
+        } catch {
+          // Non-fatal
+        }
+      } else {
+        // Settle demo points using Postgres RPC
+        try {
+          await this.supabase.rpc('wallet_settle', {
+            p_match_id: matchId,
+            p_winner_id: winnerId,
+            p_amount: Math.round(totalPrize),
+          });
+        } catch {
+          // Non-fatal
+        }
       }
-
-      // Record prize transaction
-      try {
-        await this.supabase.from('transactions').insert({
-          user_id: winnerId,
-          amount: Math.round(totalPrize * 100),
-          balance_after: Math.round(winnerCash.balance * 100),
-          reason: 'Match Prize Victory',
-          metadata: { matchId, currency: 'EUR', type: 'MATCH_PRIZE' },
-        });
-      } catch {
-        // Non-fatal
-      }
-    } else {
-      // Settle demo points using Postgres RPC
-      try {
-        await this.supabase.rpc('wallet_settle', {
-          p_match_id: matchId,
-          p_winner_id: winnerId,
-          p_amount: Math.round(totalPrize),
-        });
-      } catch {
-        // Non-fatal
-      }
-    }
+    });
   }
 
   getPaysafeConfig() {

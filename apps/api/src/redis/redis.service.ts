@@ -27,10 +27,9 @@ export class RedisService implements OnModuleDestroy {
   private readonly l1CleanupInterval: NodeJS.Timeout;
 
   constructor() {
-    const defaultUpstashUrl = 'rediss://default:gQAAAAAAA1c6AAIgcDI0MjBjZDdhY2JmY2E0NThmODEwOTJmOWZjMTc4YWM4MQ@funky-ant-218938.upstash.io:6379';
-    const url = process.env.REDIS_URL || defaultUpstashUrl;
+    const url = process.env.REDIS_URL;
     if (!url) {
-      this.log.warn('REDIS_URL not set — Redis features disabled, using Supabase fallbacks');
+      this.log.warn('REDIS_URL not set — Redis features disabled, using in-memory and database fallbacks');
       this.l1CleanupInterval = setInterval(() => this.purgeExpiredL1(), 60_000);
       return;
     }
@@ -258,6 +257,77 @@ export class RedisService implements OnModuleDestroy {
     } catch (err) {
       this.log.warn({ err, key }, 'Redis cooldown check failed — fail-open');
       return 0;
+    }
+  }
+
+  // ─── Distributed Locking (Race Condition & Double-Spend Prevention) ──────
+  /**
+   * Acquire a distributed lock. Returns a unique token if acquired, or null if busy.
+   */
+  async acquireLock(key: string, ttlMs = 10_000): Promise<string | null> {
+    const lockToken = Math.random().toString(36).substring(2) + Date.now().toString(36);
+    const lockKey = `lk:${key}`;
+
+    if (!this.client) {
+      const existing = this.l1Cache.get(lockKey);
+      if (existing && Date.now() < existing.exp) {
+        return null;
+      }
+      this.l1Cache.set(lockKey, { val: lockToken, exp: Date.now() + ttlMs });
+      return lockToken;
+    }
+
+    try {
+      const res = await this.client.set(lockKey, lockToken, 'PX', ttlMs, 'NX');
+      return res === 'OK' ? lockToken : null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Release a distributed lock only if the token matches (atomic via Lua script).
+   */
+  async releaseLock(key: string, lockToken: string): Promise<boolean> {
+    const lockKey = `lk:${key}`;
+
+    if (!this.client) {
+      const existing = this.l1Cache.get(lockKey);
+      if (existing?.val === lockToken) {
+        this.l1Cache.delete(lockKey);
+        return true;
+      }
+      return false;
+    }
+
+    const luaScript = `
+      if redis.call("get", KEYS[1]) == ARGV[1] then
+        return redis.call("del", KEYS[1])
+      else
+        return 0
+      end
+    `;
+
+    try {
+      const res = await this.client.eval(luaScript, 1, lockKey, lockToken);
+      return res === 1;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Run an async action inside an exclusive distributed lock to prevent race conditions.
+   */
+  async withLock<T>(key: string, ttlMs: number, fn: () => Promise<T>): Promise<T> {
+    const lockToken = await this.acquireLock(key, ttlMs);
+    if (!lockToken) {
+      throw new Error('Another financial transaction is currently in progress. Please retry momentarily.');
+    }
+    try {
+      return await fn();
+    } finally {
+      await this.releaseLock(key, lockToken);
     }
   }
 

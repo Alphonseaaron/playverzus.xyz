@@ -25,7 +25,7 @@ export class ProfileService {
   async getProfileByUsername(username: string) {
     const { data, error } = await this.supabase
       .from('profiles')
-      .select('*')
+      .select('id, username, display_name, avatar_url, region, country_code, rating, trust_score, role, created_at')
       .eq('username', username)
       .maybeSingle();
 
@@ -44,7 +44,7 @@ export class ProfileService {
         updated_at: new Date().toISOString(),
       })
       .eq('id', userId)
-      .select()
+      .select('id, username, display_name, avatar_url, region, country_code, phone, rating, trust_score, role')
       .single();
 
     if (error) throw new Error(error.message);
@@ -56,12 +56,12 @@ export class ProfileService {
 
     const { data, error } = await this.supabase
       .from('matches')
-      .select('*')
+      .select('id, profile_id, player_a, player_b, format, status, entry_fee, prize_pool, winner, confidence, created_at')
       .or(`player_a.eq.${profile.id},player_b.eq.${profile.id}`)
       .order('created_at', { ascending: false })
       .limit(20);
 
     if (error) throw new Error(error.message);
-    return data;
+    return data || [];
   }
 }

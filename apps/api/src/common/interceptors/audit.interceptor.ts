@@ -32,14 +32,18 @@ export class AuditInterceptor implements NestInterceptor {
     return next.handle().pipe(
       tap(async () => {
         if (user?.id) {
-          await this.supabase.from('audit_log').insert({
-            actor_id: user.id,
-            action: `api.${method.toLowerCase()}${path.replace(/\//g, '.')}`,
-            metadata: {
-              ip: req.ip,
-              userAgent: req.headers['user-agent'],
-            },
-          });
+          try {
+            await this.supabase.from('audit_log').insert({
+              actor_id: user.id,
+              action: `api.${method.toLowerCase()}${path.replace(/\//g, '.')}`,
+              metadata: {
+                ip: req.ip,
+                userAgent: req.headers['user-agent'],
+              },
+            });
+          } catch {
+            // Silently suppress non-blocking audit write failures
+          }
         }
       }),
     );

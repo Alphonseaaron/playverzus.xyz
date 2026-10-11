@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { createServiceClient, TypedSupabaseClient } from '@playverzus/db';
 import { FriendshipService } from '@playverzus/core';
 
@@ -19,6 +19,9 @@ export class SocialService {
   }
 
   async requestFriend(requesterId: string, addresseeId: string) {
+    if (requesterId === addresseeId) {
+      throw new BadRequestException('You cannot send a friend request to yourself');
+    }
     return this.friendshipService.sendRequest(requesterId, addresseeId);
   }
 
@@ -27,6 +30,9 @@ export class SocialService {
   }
 
   async blockUser(requesterId: string, targetId: string) {
+    if (requesterId === targetId) {
+      throw new BadRequestException('You cannot block yourself');
+    }
     return this.friendshipService.blockUser(requesterId, targetId);
   }
 }

@@ -170,6 +170,10 @@ export class MatchService {
 
     if (error || !match) throw new NotFoundException('Open match with this room code not found');
 
+    if (match.player_a === userId) {
+      throw new Error('You cannot join your own duel as an opponent');
+    }
+
     return this.coreMatchService.accept(match.id, userId);
   }
 }

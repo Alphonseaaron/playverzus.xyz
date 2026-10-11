@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards, ForbiddenException } from '@nestjs/common';
 import { TournamentService } from './tournament.service';
 import { SupabaseAuthGuard } from '../common/guards/supabase-auth.guard';
 import { CurrentUser, type AuthUser } from '../common/decorators/current-user.decorator';
@@ -50,7 +50,11 @@ export class TournamentController {
 
   @UseGuards(SupabaseAuthGuard)
   @Post(':id/start')
-  async start(@Param('id') id: string) {
+  async start(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    const tournament = await this.tournamentService.getTournament(id);
+    if (tournament.creator_id !== user.id && user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') {
+      throw new ForbiddenException('Only the tournament organizer or an administrator can launch this tournament');
+    }
     return this.tournamentService.startTournament(id);
   }
 

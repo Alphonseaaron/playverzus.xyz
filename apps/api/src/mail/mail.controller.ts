@@ -1,5 +1,8 @@
-import { Controller, Post, Body, BadRequestException, Get } from '@nestjs/common';
+import { Controller, Post, Body, BadRequestException, Get, UseGuards } from '@nestjs/common';
 import { BrevoService, SupportTicketDto } from './brevo.service';
+import { SupabaseAuthGuard } from '../common/guards/supabase-auth.guard';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
 
 @Controller('mail')
 export class MailController {
@@ -23,6 +26,8 @@ export class MailController {
     return this.brevoService.handleSupportInquiry(body);
   }
 
+  @UseGuards(SupabaseAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'SUPER_ADMIN')
   @Post('test')
   async sendTestEmail(@Body() body: { to: string; name?: string }) {
     if (!body?.to) {

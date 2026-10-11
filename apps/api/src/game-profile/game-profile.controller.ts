@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards, ForbiddenException } from '@nestjs/common';
 import { GameProfileService } from './game-profile.service';
 import { SupabaseAuthGuard } from '../common/guards/supabase-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -47,7 +47,15 @@ export class GameProfileController {
 
   @UseGuards(SupabaseAuthGuard)
   @Post(':id/calibrate')
-  async calibrate(@Param('id') id: string, @Body() body: { roi: ROI }) {
+  async calibrate(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+    @Body() body: { roi: ROI },
+  ) {
+    const profile = await this.gameProfileService.getById(id);
+    if (profile.creatorId !== user.id && user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') {
+      throw new ForbiddenException('Only the game profile creator or an administrator can update calibration');
+    }
     return this.gameProfileService.updateCalibration(id, body.roi);
   }
 }

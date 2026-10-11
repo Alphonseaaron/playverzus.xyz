@@ -1,4 +1,14 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { MatchService } from './match.service';
 import { SupabaseAuthGuard } from '../common/guards/supabase-auth.guard';
 import { CurrentUser, type AuthUser } from '../common/decorators/current-user.decorator';
@@ -34,11 +44,19 @@ export class MatchController {
 
   @Post(':id/accept')
   async accept(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    const match = await this.matchService.getMatch(id);
+    if (match.playerA === user.id) {
+      throw new BadRequestException('You cannot accept your own duel');
+    }
     return this.matchService.acceptMatch(id, user.id);
   }
 
   @Post(':id/start')
-  async start(@Param('id') id: string) {
+  async start(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    const match = await this.matchService.getMatch(id);
+    if (match.playerA !== user.id && match.playerB !== user.id && user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') {
+      throw new ForbiddenException('Only match participants or administrators can start this match');
+    }
     return this.matchService.startMatch(id);
   }
 
@@ -55,6 +73,10 @@ export class MatchController {
       source?: ScoreFrame['source'];
     },
   ) {
+    const match = await this.matchService.getMatch(id);
+    if (match.playerA !== user.id && match.playerB !== user.id) {
+      throw new ForbiddenException('Only verified participants in this match can submit score proofs');
+    }
     return this.matchService.submitScore(
       id,
       user.id,
@@ -67,7 +89,11 @@ export class MatchController {
   }
 
   @Post(':id/settle')
-  async settle(@Param('id') id: string) {
+  async settle(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    const match = await this.matchService.getMatch(id);
+    if (match.playerA !== user.id && match.playerB !== user.id && user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') {
+      throw new ForbiddenException('Only match participants or administrators can trigger settlement');
+    }
     return this.matchService.settleMatch(id);
   }
 
@@ -77,6 +103,10 @@ export class MatchController {
     @CurrentUser() user: AuthUser,
     @Body() body: { reason: string },
   ) {
+    const match = await this.matchService.getMatch(id);
+    if (match.playerA !== user.id && match.playerB !== user.id) {
+      throw new ForbiddenException('Only match participants can raise a dispute for this match');
+    }
     return this.matchService.disputeMatch(id, user.id, body.reason);
   }
 

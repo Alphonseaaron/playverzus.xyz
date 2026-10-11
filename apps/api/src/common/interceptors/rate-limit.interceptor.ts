@@ -26,8 +26,29 @@ export class RateLimitInterceptor implements NestInterceptor {
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const req = context.switchToHttp().getRequest();
-    const key = req.user?.id ?? req.ip ?? 'anonymous';
+    const path = req.path || '';
+
+    // Accurate client IP extraction supporting Cloudflare, AWS, and reverse proxies
+    const clientIp =
+      (req.headers['cf-connecting-ip'] as string) ||
+      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
+      req.ip ||
+      'anonymous';
+
+    const identityKey = req.user?.id ? `u:${req.user.id}` : `ip:${clientIp}`;
     const now = Date.now();
+
+    // Sensitive endpoints get stricter rate limits to prevent brute-forcing and abuse
+    let routeLimit = this.maxRequests;
+    if (path.includes('/auth/login') || path.includes('/auth/refresh')) {
+      routeLimit = 15; // 15 attempts/minute for authentication
+    } else if (path.includes('/wallet/payout') || path.includes('/wallet/deposit') || path.includes('/wallet/claim-demo')) {
+      routeLimit = 12; // 12 financial transactions/minute
+    } else if (path.includes('/ocr/verify')) {
+      routeLimit = 20; // 20 OCR heavy validations/minute
+    }
+
+    const key = `${identityKey}:${path.split('/')[2] || 'root'}`;
 
     let record = this.hits.get(key);
     if (!record || now > record.resetAt) {
@@ -35,11 +56,11 @@ export class RateLimitInterceptor implements NestInterceptor {
       this.hits.set(key, record);
     } else {
       record.count += 1;
-      if (record.count > this.maxRequests) {
+      if (record.count > routeLimit) {
         throw new HttpException(
           {
             statusCode: HttpStatus.TOO_MANY_REQUESTS,
-            message: 'Too many requests, please try again in a minute.',
+            message: 'Too many requests. Please wait a moment before trying again.',
           },
           HttpStatus.TOO_MANY_REQUESTS,
         );
