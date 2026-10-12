@@ -171,19 +171,42 @@ export class MatchService {
   async disputeMatch(matchId: string, userId: string, reason: string) {
     const { data, error } = await this.supabase
       .from('disputes')
-      .insert({
-        match_id: matchId,
-        raised_by: userId,
-        reason,
-        status: 'OPEN',
-      })
+      .upsert(
+        {
+          match_id: matchId,
+          raised_by: userId,
+          reason,
+          status: 'OPEN',
+        },
+        { onConflict: 'match_id' },
+      )
       .select('*')
       .single();
 
     if (error) throw new Error(error.message);
 
-    // Update match status to DISPUTED
+    // Update match status to DISPUTED, then immediately run Autonomous AI Arbiter
     await this.supabase.from('matches').update({ status: 'DISPUTED' }).eq('id', matchId);
+
+    try {
+      const settled = await this.coreMatchService.settle(matchId);
+      if (settled && settled.status === 'SETTLED' && settled.winner) {
+        const resolutionText = `Automatically verified and resolved by Autonomous AI Arbiter (${settled.verifiedBy || 'AI_ARBITER'}). Winner: ${settled.winner}`;
+        const { data: resolvedDispute } = await this.supabase
+          .from('disputes')
+          .update({
+            status: 'RESOLVED',
+            resolution: resolutionText,
+            resolved_at: new Date().toISOString(),
+          })
+          .eq('id', data.id)
+          .select('*')
+          .single();
+        return resolvedDispute || { ...data, status: 'RESOLVED', resolution: resolutionText };
+      }
+    } catch {
+      // If no frames exist yet, background worker will auto-resolve once frames or no-show deadline arrive
+    }
 
     return data;
   }
@@ -202,6 +225,14 @@ export class MatchService {
       .single();
 
     if (error) throw new Error(error.message);
+
+    // Automatically refund any locked escrow stakes
+    try {
+      await this.supabase.rpc('wallet_refund', { p_match_id: matchId });
+    } catch {
+      // Non-fatal if no locks existed
+    }
+
     return data;
   }
 

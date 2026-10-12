@@ -25,17 +25,33 @@ export class BinaryResultEngine implements TypeEngine {
       return {
         primary: isWin ? 'WIN' : 'LOSS',
         raw: rawText,
-        confidence: 0.6, // Flags for human review
+        confidence: 0.6, // Flags for arbitration
+      };
+    }
+
+    if (hasWin) {
+      return {
+        primary: 'WIN',
+        raw: rawText,
+        confidence: 0.98,
+      };
+    }
+
+    if (hasLoss) {
+      return {
+        primary: 'LOSS',
+        raw: rawText,
+        confidence: 0.98,
       };
     }
 
     for (const kw of keywords) {
       if (lower.includes(kw)) {
-        const isWin = WIN_KEYWORDS.some((w) => kw.includes(w)) || kw === 'victory';
+        const isLossKw = LOSE_KEYWORDS.some((l) => kw.includes(l));
         return {
-          primary: isWin ? 'WIN' : 'LOSS',
+          primary: isLossKw ? 'LOSS' : 'WIN',
           raw: rawText,
-          confidence: 0.98,
+          confidence: 0.95,
         };
       }
     }

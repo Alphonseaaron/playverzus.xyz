@@ -116,14 +116,29 @@ export class TournamentService {
   async startTournament(tournamentId: string) {
     const tournament = await this.getTournament(tournamentId);
 
-    const { data: entries, error } = await this.supabase
+    let { data: entries, error } = await this.supabase
       .from('tournament_entries')
       .select('user_id, seed, checked_in')
       .eq('tournament_id', tournamentId)
       .eq('checked_in', true);
 
+    // If fewer than 2 players manually clicked check-in, auto-checkin all registered entrants
+    if (!entries || entries.length < 2) {
+      await this.supabase
+        .from('tournament_entries')
+        .update({ checked_in: true })
+        .eq('tournament_id', tournamentId);
+
+      const fallback = await this.supabase
+        .from('tournament_entries')
+        .select('user_id, seed, checked_in')
+        .eq('tournament_id', tournamentId);
+      entries = fallback.data;
+      error = fallback.error;
+    }
+
     if (error || !entries || entries.length < 2) {
-      throw new Error('Not enough checked-in players to start tournament');
+      throw new Error('Not enough registered players to start tournament');
     }
 
     const drafts =
@@ -133,18 +148,59 @@ export class TournamentService {
         ? this.engine.generateDoubleElim(entries.map((e) => ({ userId: e.user_id, seed: e.seed })))
         : this.engine.generateSingleElim(entries.map((e) => ({ userId: e.user_id, seed: e.seed })));
 
-    // Create matches for the drafts
+    // Create matches for the drafts and record their IDs by (round, position)
+    const createdByKey = new Map<string, { id: string; round: number; position: number; playerA: string | null; playerB: string | null; isLosers: boolean }>();
+
     for (const draft of drafts) {
-      await this.supabase.from('matches').insert({
-        tournament_id: tournamentId,
-        profile_id: tournament.profile_id,
-        player_a: draft.playerA,
-        player_b: draft.playerB,
-        bracket_round: draft.round,
-        bracket_position: draft.position,
-        is_losers_bracket: draft.isLosersBracket,
-        status: draft.playerA && draft.playerB ? 'LIVE' : 'DRAFT',
-      });
+      const isBye = Boolean(draft.round === 1 && draft.playerA && !draft.playerB && !draft.isLosersBracket);
+      const { data: inserted } = await this.supabase
+        .from('matches')
+        .insert({
+          tournament_id: tournamentId,
+          profile_id: tournament.profile_id,
+          player_a: draft.playerA,
+          player_b: draft.playerB,
+          winner: isBye ? draft.playerA : null,
+          verified_by: isBye ? 'AI_BYE' : null,
+          bracket_round: draft.round,
+          bracket_position: draft.position,
+          is_losers_bracket: draft.isLosersBracket,
+          status: isBye ? 'SETTLED' : draft.playerA && draft.playerB ? 'LIVE' : 'DRAFT',
+          started_at: draft.playerA && draft.playerB ? new Date().toISOString() : null,
+          settled_at: isBye ? new Date().toISOString() : null,
+        })
+        .select('id')
+        .single();
+
+      if (inserted?.id) {
+        createdByKey.set(`${draft.isLosersBracket ? 'L' : 'W'}:${draft.round}:${draft.position}`, {
+          id: inserted.id,
+          round: draft.round,
+          position: draft.position,
+          playerA: draft.playerA,
+          playerB: draft.playerB,
+          isLosers: draft.isLosersBracket,
+        });
+      }
+    }
+
+    // Link next_match_id between consecutive rounds and auto-advance any Round 1 byes
+    for (const m of createdByKey.values()) {
+      if (!m.isLosers) {
+        const nextKey = `W:${m.round + 1}:${Math.floor(m.position / 2)}`;
+        const nextMatch = createdByKey.get(nextKey);
+        if (nextMatch) {
+          await this.supabase
+            .from('matches')
+            .update({ next_match_id: nextMatch.id })
+            .eq('id', m.id);
+
+          // Auto-advance bye winner into next round
+          if (m.round === 1 && m.playerA && !m.playerB) {
+            await this.engine.advanceWinner(m.id, m.playerA);
+          }
+        }
+      }
     }
 
     await this.supabase
@@ -152,7 +208,7 @@ export class TournamentService {
       .update({ status: 'LIVE' })
       .eq('id', tournamentId);
 
-    return { message: 'Tournament started and bracket generated' };
+    return { message: 'Tournament started and bracket generated', matchesCreated: createdByKey.size };
   }
 
   async getBracket(tournamentId: string) {

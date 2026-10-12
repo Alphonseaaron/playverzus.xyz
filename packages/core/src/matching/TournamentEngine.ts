@@ -132,36 +132,87 @@ export class TournamentEngine {
     return drafts;
   }
 
-  /** Advance winner to the next round in a bracket tournament. */
+  /** Advance winner to the next round in a bracket tournament and auto-distribute prizes on Grand Final completion. */
   async advanceWinner(matchId: string, winnerId: string): Promise<void> {
     const { data: m, error } = await this.deps.client
       .from('matches')
-      .select('tournament_id, bracket_round, bracket_position, next_match_id')
+      .select('tournament_id, bracket_round, bracket_position, next_match_id, player_a, player_b')
       .eq('id', matchId)
       .maybeSingle();
 
     if (error || !m || !m.tournament_id) return;
 
-    if (m.next_match_id) {
+    const loserId = m.player_a === winnerId ? m.player_b : m.player_a;
+
+    // Mark loser as eliminated in tournament_entries
+    if (loserId) {
+      await this.deps.client
+        .from('tournament_entries')
+        .update({ eliminated: true })
+        .eq('tournament_id', m.tournament_id)
+        .eq('user_id', loserId);
+    }
+
+    let targetNextMatchId = m.next_match_id;
+
+    // Fallback: locate next round match by bracket_round + 1 and floor(bracket_position / 2)
+    if (!targetNextMatchId && typeof m.bracket_round === 'number' && typeof m.bracket_position === 'number') {
+      const nextRound = m.bracket_round + 1;
+      const nextPos = Math.floor(m.bracket_position / 2);
+      const { data: candidate } = await this.deps.client
+        .from('matches')
+        .select('id')
+        .eq('tournament_id', m.tournament_id)
+        .eq('bracket_round', nextRound)
+        .eq('bracket_position', nextPos)
+        .maybeSingle();
+      if (candidate?.id) {
+        targetNextMatchId = candidate.id;
+      }
+    }
+
+    if (targetNextMatchId) {
       const { data: nextMatch } = await this.deps.client
         .from('matches')
         .select('player_a, player_b')
-        .eq('id', m.next_match_id)
+        .eq('id', targetNextMatchId)
         .maybeSingle();
 
       if (nextMatch) {
         if (!nextMatch.player_a) {
           await this.deps.client
             .from('matches')
-            .update({ player_a: winnerId })
-            .eq('id', m.next_match_id);
-        } else if (!nextMatch.player_b) {
+            .update({ player_a: winnerId, status: nextMatch.player_b ? 'LIVE' : 'DRAFT' })
+            .eq('id', targetNextMatchId);
+        } else if (!nextMatch.player_b && nextMatch.player_a !== winnerId) {
           await this.deps.client
             .from('matches')
-            .update({ player_b: winnerId, status: 'ACCEPTED' })
-            .eq('id', m.next_match_id);
+            .update({ player_b: winnerId, status: 'LIVE', started_at: new Date().toISOString() })
+            .eq('id', targetNextMatchId);
         }
       }
+    } else {
+      // No next match -> This was the Grand Final! Automatically finalize placements & distribute prizes.
+      await this.deps.client
+        .from('tournament_entries')
+        .update({ final_placement: 1, eliminated: false })
+        .eq('tournament_id', m.tournament_id)
+        .eq('user_id', winnerId);
+
+      if (loserId) {
+        await this.deps.client
+          .from('tournament_entries')
+          .update({ final_placement: 2, eliminated: true })
+          .eq('tournament_id', m.tournament_id)
+          .eq('user_id', loserId);
+      }
+
+      await this.deps.client
+        .from('tournaments')
+        .update({ status: 'COMPLETED' })
+        .eq('id', m.tournament_id);
+
+      await this.distributePrizes(m.tournament_id);
     }
   }
 

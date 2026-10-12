@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Optional,
   BadRequestException,
   InternalServerErrorException,
   Logger,
@@ -36,10 +37,28 @@ export class WalletService {
   private supabase: TypedSupabaseClient;
   private paysafe: PaysafeClient;
 
+  private readonly redis: RedisService;
+  private readonly push: PushService;
+
   constructor(
-    private readonly redis: RedisService,
-    private readonly push: PushService,
+    @Optional() redis?: RedisService,
+    @Optional() push?: PushService,
   ) {
+    this.redis =
+      redis ??
+      ({
+        get: async () => null,
+        set: async () => {},
+        del: async () => {},
+        checkCooldown: async () => 0,
+        withLock: async <T>(_k: string, _t: number, fn: () => Promise<T>) => fn(),
+      } as unknown as RedisService);
+    this.push =
+      push ??
+      ({
+        sendToUser: async () => {},
+        sendToUsers: async () => {},
+      } as unknown as PushService);
     const url = process.env.SUPABASE_URL || 'https://placeholder.supabase.co';
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-key';
     this.supabase = createServiceClient(url, key);
@@ -272,6 +291,13 @@ export class WalletService {
         );
       }
 
+      const normalizedCurrency = String(currency || 'EUR').toUpperCase();
+      if (!['EUR', 'USD', 'GBP'].includes(normalizedCurrency)) {
+        throw new BadRequestException(
+          `Currency ${currency} is not currently supported for instant deposits.`,
+        );
+      }
+
       const isLive = process.env.NODE_ENV === 'production' || process.env.WALLET_MODE === 'real';
       if (isLive && (!paymentHandleToken || paymentHandleToken.startsWith('paysafe_token_'))) {
         throw new BadRequestException('A verified payment handle token is required for live deposits.');
@@ -374,7 +400,7 @@ export class WalletService {
 
       if (roundedAmount > MAX_WITHDRAWAL_EUR) {
         throw new BadRequestException(
-          `The maximum single withdrawal limit is €${MAX_WITHDRAWAL_EUR.toLocaleString('en-US', { minimumFractionDigits: 2 })}.`,
+          `The maximum single withdrawal limit is €${MAX_WITHDRAWAL_EUR.toLocaleString('en-US', { minimumFractionDigits: 2 })}. For higher volumes, please contact VIP support.`,
         );
       }
 
@@ -605,6 +631,7 @@ export class WalletService {
       maxDepositEur: MAX_DEPOSIT_EUR,
       minWithdrawalEur: MIN_WITHDRAWAL_EUR,
       maxWithdrawalEur: MAX_WITHDRAWAL_EUR,
+      supportedCurrencies: ['EUR', 'USD', 'GBP'],
     };
   }
 }

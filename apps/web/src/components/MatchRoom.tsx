@@ -83,6 +83,8 @@ export function MatchRoom({
   // Pre-Match Permission Gate Modal
   const [permissionsModalOpen, setPermissionsModalOpen] = useState(false);
   const [notificationsGranted, setNotificationsGranted] = useState(false);
+  const [streamPlatform, setStreamPlatform] = useState<'TWITCH' | 'YOUTUBE'>('TWITCH');
+  const [streamChannel, setStreamChannel] = useState(myGamertag || '');
 
   // Track state transitions for audio notifications
   const prevPlayerB = useRef(playerBId);
@@ -561,16 +563,20 @@ export function MatchRoom({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Step 1: Video Capture */}
+            {/* Step 1: Video / Console Stream Capture */}
             <div className="p-4 rounded-xl bg-secondary border border-border space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-foreground">1. Optical Screen Feed</span>
+                <span className="text-xs font-bold text-foreground">
+                  1. {profile.platform === 'CONSOLE' ? 'Console Stream / Optical Feed' : 'Optical Screen Feed'}
+                </span>
                 <Badge variant={capture.status === 'CAPTURING' ? 'success' : 'outline'}>
                   {capture.status === 'CAPTURING' ? 'Active ✓' : 'Required'}
                 </Badge>
               </div>
               <p className="text-[11px] text-muted-foreground">
-                Stream gameplay window to enable optical round detection and zero-screenshot scoring.
+                {profile.platform === 'CONSOLE'
+                  ? 'Link your PS5/Xbox broadcast stream (Twitch/YouTube) or optical camera feed for zero-manual AI scoring.'
+                  : 'Stream gameplay window to enable optical round detection and zero-screenshot scoring.'}
               </p>
               <Button
                 variant={capture.status === 'CAPTURING' ? 'secondary' : 'default'}
@@ -579,8 +585,59 @@ export function MatchRoom({
                 disabled={capture.status === 'CAPTURING'}
                 className="w-full text-xs font-bold"
               >
-                {capture.status === 'CAPTURING' ? 'Screen Capture Active ✓' : 'Select Game Window'}
+                {capture.status === 'CAPTURING'
+                  ? 'Live Verification Active ✓'
+                  : profile.platform === 'CONSOLE'
+                  ? 'Start Optical / Companion Feed'
+                  : 'Select Game Window'}
               </Button>
+
+              {/* Console Broadcast Link (PS5 / Xbox Twitch & YouTube Ingest) */}
+              <div className="pt-2 border-t border-border/60 space-y-2">
+                <div className="flex items-center justify-between text-[10px] text-muted-foreground font-mono uppercase">
+                  <span>PS5 / Xbox Broadcast Ingest</span>
+                  <div className="flex gap-1">
+                    {(['TWITCH', 'YOUTUBE'] as const).map((plat) => (
+                      <button
+                        key={plat}
+                        type="button"
+                        onClick={() => setStreamPlatform(plat)}
+                        className={`px-1.5 py-0.5 rounded text-[9px] font-bold transition ${
+                          streamPlatform === plat
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted text-muted-foreground hover:text-foreground'
+                        }`}
+                      >
+                        {plat}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Input
+                    type="text"
+                    placeholder={`${streamPlatform === 'TWITCH' ? 'twitch_channel' : '@youtube_handle'}`}
+                    value={streamChannel}
+                    onChange={(e) => setStreamChannel(e.target.value)}
+                    className="h-8 text-xs font-mono flex-1"
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    disabled={capture.status === 'CAPTURING'}
+                    onClick={() =>
+                      capture.connectConsoleStream(
+                        streamPlatform,
+                        streamChannel.trim() || myGamertag || playerAUsername || 'console_pro',
+                      )
+                    }
+                    className="h-8 text-[10px] font-bold px-2.5"
+                  >
+                    Link Stream
+                  </Button>
+                </div>
+              </div>
             </div>
 
             {/* Step 2: Live Notifications */}
