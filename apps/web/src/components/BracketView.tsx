@@ -1,9 +1,10 @@
 'use client';
 
+import Link from 'next/link';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 import { CountryFlag } from './CountryFlag';
-import { Trophy, Swords } from 'lucide-react';
+import { Trophy, Swords, ArrowUpRight } from 'lucide-react';
 
 interface MatchNode {
   id: string;
@@ -41,7 +42,7 @@ export function BracketView({ matches }: BracketViewProps) {
       <Card className="p-12 text-center bg-card border-border text-muted-foreground">
         <Swords className="w-8 h-8 mx-auto mb-2 text-muted-foreground opacity-50" />
         <p className="text-sm font-bold text-foreground">Tournament bracket has not been generated yet.</p>
-        <p className="text-xs text-muted-foreground mt-1">Brackets seed automatically when tournament check-in concludes.</p>
+        <p className="text-xs text-muted-foreground mt-1">Brackets seed automatically when registration reaches capacity or tournament starts.</p>
       </Card>
     );
   }
@@ -66,10 +67,24 @@ export function BracketView({ matches }: BracketViewProps) {
                 const isPlayerBWinner = match.winner && match.winner === match.player_b;
 
                 return (
-                  <div
+                  <Link
                     key={match.id}
-                    className="bg-secondary/70 border border-border hover:border-primary/40 rounded-xl p-3 text-xs flex flex-col gap-2 shadow-sm transition-all"
+                    href={`/matches/${match.id}`}
+                    className="group bg-secondary/70 border border-border hover:border-primary/60 rounded-xl p-3 text-xs flex flex-col gap-2 shadow-sm transition-all"
                   >
+                    <div className="flex items-center justify-between text-[9px] font-mono text-muted-foreground pb-0.5">
+                      <span className="uppercase font-bold">
+                        {match.status === 'SETTLED'
+                          ? '✓ Verified'
+                          : match.status === 'LIVE'
+                          ? '● Live Arena'
+                          : match.status}
+                      </span>
+                      <span className="inline-flex items-center gap-0.5 text-primary group-hover:underline">
+                        Arena <ArrowUpRight className="w-2.5 h-2.5" />
+                      </span>
+                    </div>
+
                     {/* Player A */}
                     <div
                       className={`flex justify-between items-center py-1.5 px-2.5 rounded-lg transition-colors ${
@@ -129,7 +144,7 @@ export function BracketView({ matches }: BracketViewProps) {
                         <Trophy className="w-3.5 h-3.5 text-amber-400 flex-shrink-0 ml-1" />
                       )}
                     </div>
-                  </div>
+                  </Link>
                 );
               })}
             </div>

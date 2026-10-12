@@ -167,6 +167,31 @@ export class MatchService {
 
     const frame = this.mapFrame(data as unknown as Record<string, unknown>);
 
+    // Update live scoreboard state on the match record for real-time spectators & polling
+    try {
+      if (profile.gameType === 'HEAD_TO_HEAD' && parsed.fields?.a !== undefined && parsed.fields?.b !== undefined) {
+        await this.deps.client
+          .from('matches')
+          .update({
+            score_a: { ...parsed, primary: parsed.fields.a } as unknown as never,
+            score_b: { ...parsed, primary: parsed.fields.b } as unknown as never,
+          })
+          .eq('id', input.matchId);
+      } else if (input.playerId === match.playerA) {
+        await this.deps.client
+          .from('matches')
+          .update({ score_a: parsed as unknown as never })
+          .eq('id', input.matchId);
+      } else if (input.playerId === match.playerB) {
+        await this.deps.client
+          .from('matches')
+          .update({ score_b: parsed as unknown as never })
+          .eq('id', input.matchId);
+      }
+    } catch {
+      // Non-fatal live score sync
+    }
+
     // Autonomous zero-manual settlement trigger when a final frame is detected
     if (input.isFinal) {
       try {
@@ -294,6 +319,16 @@ export class MatchService {
       }
     }
 
+    const baseScore = a?.parsed ?? b?.parsed ?? null;
+    const settledScoreA =
+      profile.gameType === 'HEAD_TO_HEAD' && baseScore?.fields?.a !== undefined
+        ? { ...baseScore, primary: baseScore.fields.a }
+        : (a?.parsed ?? b?.parsed ?? null);
+    const settledScoreB =
+      profile.gameType === 'HEAD_TO_HEAD' && baseScore?.fields?.b !== undefined
+        ? { ...baseScore, primary: baseScore.fields.b }
+        : (b?.parsed ?? a?.parsed ?? null);
+
     const { error } = await this.deps.client
       .from('matches')
       .update({
@@ -301,8 +336,8 @@ export class MatchService {
         winner: winnerId,
         confidence,
         verified_by: verifiedBy,
-        score_a: (a?.parsed ?? b?.parsed ?? null) as unknown as never,
-        score_b: (b?.parsed ?? a?.parsed ?? null) as unknown as never,
+        score_a: settledScoreA as unknown as never,
+        score_b: settledScoreB as unknown as never,
         settled_at: new Date().toISOString(),
       })
       .eq('id', matchId);

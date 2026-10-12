@@ -13,6 +13,9 @@ interface MatchDetails {
   profileId: string;
   playerA: string;
   playerB: string | null;
+  winner?: string | null;
+  verifiedBy?: string | null;
+  confidence?: number | null;
   status: string;
   roomCode?: string | null;
   playerAUsername?: string;
@@ -25,9 +28,10 @@ function MatchDetailContent() {
   const params = useParams();
   const matchId = params.id as string;
 
-  const { data: match, isLoading: loadingMatch } = useQuery<MatchDetails>({
+  const { data: match, isLoading: loadingMatch, refetch } = useQuery<MatchDetails>({
     queryKey: ['match', matchId],
     queryFn: () => apiClient<MatchDetails>(`/matches/${matchId}`),
+    refetchInterval: 4000,
   });
 
   const { data: profile, isLoading: loadingProfile } = useQuery<GameProfile>({
@@ -61,6 +65,12 @@ function MatchDetailContent() {
       currentUserId={me?.id ?? ''}
       status={match.status}
       roomCode={match.roomCode}
+      winnerId={match.winner}
+      verifiedBy={match.verifiedBy}
+      confidence={match.confidence}
+      onRefresh={() => {
+        refetch();
+      }}
       playerAUsername={match.playerAUsername || (isMeA ? me?.username : undefined)}
       playerACountry={match.playerACountry || (isMeA ? me?.country_code || me?.region : undefined)}
       playerBUsername={match.playerBUsername || (isMeB ? me?.username : undefined)}

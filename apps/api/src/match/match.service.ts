@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { createServiceClient, TypedSupabaseClient } from '@playverzus/db';
 import { MatchService as CoreMatchService, generateRoomCode, type MatchFormat, type ScoreFrame } from '@playverzus/core';
+import { resolveAndEnsureGameProfileId } from '../game-profile/game-profile.service';
 
 @Injectable()
 export class MatchService {
@@ -80,6 +81,10 @@ export class MatchService {
   }
 
   async getOpenMatches(profileId?: string) {
+    const resolvedProfileId = profileId
+      ? await resolveAndEnsureGameProfileId(this.supabase, profileId)
+      : undefined;
+
     let query = this.supabase
       .from('matches')
       .select('*, game_profiles(display_name, game_type)')
@@ -88,8 +93,8 @@ export class MatchService {
       .order('created_at', { ascending: false })
       .limit(50);
 
-    if (profileId) {
-      query = query.eq('profile_id', profileId);
+    if (resolvedProfileId) {
+      query = query.eq('profile_id', resolvedProfileId);
     }
 
     const { data, error } = await query;
@@ -112,10 +117,11 @@ export class MatchService {
     format: MatchFormat = 'BO1',
     entryFee?: number,
   ) {
+    const resolvedProfileId = await resolveAndEnsureGameProfileId(this.supabase, profileId);
     const roomCode = generateRoomCode();
     const match = await this.coreMatchService.create({
       creatorId,
-      profileId,
+      profileId: resolvedProfileId,
       playerA: creatorId,
       playerB: opponentId,
       format,
@@ -123,7 +129,10 @@ export class MatchService {
     });
 
     if (entryFee && entryFee > 0 && match?.id) {
-      await this.supabase.from('matches').update({ entry_fee: entryFee }).eq('id', match.id);
+      await this.supabase
+        .from('matches')
+        .update({ entry_fee: entryFee, prize_pool: entryFee * 2 })
+        .eq('id', match.id);
     }
 
     return match;

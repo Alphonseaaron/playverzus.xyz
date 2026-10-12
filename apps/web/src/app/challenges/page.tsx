@@ -9,7 +9,7 @@ import { apiClient } from '../../lib/api';
 import { useGameStore } from '../../lib/gameStore';
 import { useRouter } from 'next/navigation';
 import { GLOBAL_REGIONS } from '@playverzus/core';
-import { OFFICIAL_GAMES } from '../../lib/gamesCatalog';
+import { OFFICIAL_GAMES, getGameById } from '../../lib/gamesCatalog';
 import { GamePoster } from '../../components/GamePoster';
 import { GameContextBar } from '../../components/GameContextBar';
 import { notifyUser } from '../../lib/notifications';
@@ -92,8 +92,25 @@ export default function ChallengesPage() {
     if (filterGameOnly && activeGame) {
       const matchName = c.game_profiles?.display_name?.toLowerCase();
       const activeName = activeGame.displayName?.toLowerCase();
-      if (matchName && activeName && !matchName.includes(activeName) && !activeName.includes(matchName)) {
+      const sameId =
+        c.profile_id &&
+        (c.profile_id.toLowerCase() === activeGame.id.toLowerCase() ||
+          getGameById(c.profile_id).id.toLowerCase() === activeGame.id.toLowerCase());
+      if (
+        !sameId &&
+        matchName &&
+        activeName &&
+        !matchName.includes(activeName) &&
+        !activeName.includes(matchName)
+      ) {
         return false;
+      }
+    }
+
+    if (selectedRegion !== 'All') {
+      const itemCountry = (c.creator_country_code || c.country_code || '').toUpperCase();
+      if (itemCountry && itemCountry !== selectedRegion.toUpperCase()) {
+        // Also allow broad region filter when itemCountry isn't a 2-letter match
       }
     }
 

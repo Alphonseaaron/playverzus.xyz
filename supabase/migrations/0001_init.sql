@@ -450,20 +450,27 @@ returns trigger
 language plpgsql security definer set search_path = public as $$
 declare
   v_username text;
+  v_region text;
 begin
   v_username := coalesce(
     new.raw_user_meta_data->>'username',
     'player_' || substr(replace(new.id::text, '-', ''), 1, 10)
   );
+  v_region := coalesce(
+    new.raw_user_meta_data->>'country_code',
+    new.raw_user_meta_data->>'region'
+  );
 
-  insert into public.profiles (id, username, display_name, phone)
+  insert into public.profiles (id, username, display_name, region, phone)
   values (
     new.id,
     v_username,
     coalesce(new.raw_user_meta_data->>'display_name', v_username),
+    v_region,
     new.phone
   )
-  on conflict (id) do nothing;
+  on conflict (id) do update
+  set region = coalesce(public.profiles.region, excluded.region);
 
   insert into public.wallets (user_id) values (new.id)
   on conflict (user_id) do nothing;
@@ -703,21 +710,19 @@ create or replace function public.create_match(
   p_player_a uuid,
   p_player_b uuid,
   p_format match_format_enum default 'BO1',
-  p_room_code text default null
+  p_room_code text default null,
+  p_entry_fee bigint default 0
 ) returns public.matches
 language plpgsql security definer set search_path = public as $$
 declare
   v_match public.matches;
-  v_entry_fee bigint := 0;
+  v_entry_fee bigint := greatest(0, coalesce(p_entry_fee, 0));
 begin
-  select coalesce(entry_fee, 0) into v_entry_fee
-  from public.game_profiles where id = p_profile_id;
-
   insert into public.matches (
-    profile_id, player_a, player_b, format, room_code, entry_fee, created_by, status
+    profile_id, player_a, player_b, format, room_code, entry_fee, prize_pool, created_by, status
   ) values (
-    p_profile_id, p_player_a, p_player_b, p_format, p_room_code, v_entry_fee, p_creator,
-    case when p_player_b is null then 'OPEN'::match_status_enum else 'OPEN'::match_status_enum end
+    p_profile_id, p_player_a, p_player_b, p_format, p_room_code, v_entry_fee, v_entry_fee * 2, p_creator,
+    'OPEN'::match_status_enum
   ) returning * into v_match;
 
   insert into public.audit_log (actor_id, action, entity_type, entity_id, metadata)
@@ -909,7 +914,8 @@ begin
   on conflict (user_id, game_type) do nothing;
 
   update public.ratings
-  set games_played = games_played + 1,
+  set rating = greatest(100, rating + case when p_won then 25 else -20 end),
+      games_played = games_played + 1,
       wins = wins + case when p_won then 1 else 0 end,
       losses = losses + case when p_won then 0 else 1 end,
       updated_at = now()

@@ -57,7 +57,7 @@ function SignUpForm() {
 
     try {
       const supabase = getSupabaseClient();
-      const { error: authError } = await supabase.auth.signUp({
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -65,11 +65,25 @@ function SignUpForm() {
             username: username.trim().toLowerCase(),
             display_name: username.trim(),
             country_code: countryCode,
+            region: countryCode,
           },
         },
       });
 
       if (authError) throw authError;
+
+      // Ensure profiles.region is immediately populated for country flag rendering
+      if (authData?.user?.id) {
+        try {
+          await supabase
+            .from('profiles')
+            .update({ region: countryCode })
+            .eq('id', authData.user.id);
+        } catch {
+          // Non-fatal if trigger already handled it
+        }
+      }
+
       router.push(target);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);

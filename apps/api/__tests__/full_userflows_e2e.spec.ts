@@ -18,6 +18,7 @@ import { TournamentService } from '../src/tournament/tournament.service';
 import { SocialService } from '../src/social/social.service';
 import { LeaderboardService } from '../src/leaderboard/leaderboard.service';
 import { WorkersService } from '../src/workers/workers.service';
+import { GameProfileService, OFFICIAL_SLUG_TO_UUID } from '../src/game-profile/game-profile.service';
 
 /**
  * In-Memory Relational Database Simulator for Full Multi-Actor E2E Verification.
@@ -906,4 +907,38 @@ describe('End-to-End Multi-Actor & Multi-Platform Userflow Verification Suite (Z
     const task = db._tables.review_tasks.find((t) => t.id === 'rt-1')!;
     expect(task.status).toBe('APPROVED');
   });
+
+  it('Flow 8: Frontend Catalog Slug Resolution, Live ScoreA/ScoreB Updates & Autonomous Game Calibration Auto-Approval', async () => {
+    const db = createInMemoryPlatformDb();
+    const apiMatchService = new ApiMatchService();
+    (apiMatchService as any).supabase = db;
+    (apiMatchService as any).coreMatchService = new CoreMatchService({ client: db });
+
+    const gameProfileService = new GameProfileService();
+    (gameProfileService as any).supabase = db;
+
+    // 1. Frontend passes short catalog slug 'cs2' -> automatically resolves to canonical UUID and seeds game_profiles
+    const matchFromSlug = await apiMatchService.createMatch('u-usa', 'cs2', null, 'BO1', 100);
+    expect(matchFromSlug.profileId).toBe(OFFICIAL_SLUG_TO_UUID['cs2']);
+
+    await apiMatchService.acceptMatch(matchFromSlug.id, 'u-ger');
+
+    // 2. Non-final HEAD_TO_HEAD score frame updates live scoreA and scoreB on the match immediately
+    await apiMatchService.submitScore(matchFromSlug.id, 'u-usa', '9 - 6', 0.94, false, 'live_h1', 'CLIENT_OCR');
+    const liveMatch = await apiMatchService.getMatch(matchFromSlug.id);
+    expect(liveMatch.scoreA?.primary).toBe(9);
+    expect(liveMatch.scoreB?.primary).toBe(6);
+
+    // 3. User calibrates a new custom game via GameProfileService -> AI validates ROI & Regex and auto-approves immediately
+    const customProfile = await gameProfileService.submitProfile('u-usa', {
+      displayName: 'Street Fighter 6',
+      gameType: 'BINARY_RESULT',
+      platform: 'CONSOLE',
+      roi: { x: 0.25, y: 0.2, w: 0.5, h: 0.25 },
+      endKeywords: ['K.O.', 'YOU WIN', 'YOU LOSE'],
+    });
+    expect(customProfile.approved).toBe(true);
+    expect(customProfile.display_name).toBe('Street Fighter 6');
+  });
 });
+

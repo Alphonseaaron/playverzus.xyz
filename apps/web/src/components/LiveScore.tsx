@@ -41,11 +41,29 @@ export function LiveScore({ matchId, initialScoreA = null, initialScoreB = null 
     // Polling fallback every 3 seconds
     const interval = setInterval(async () => {
       try {
-        const match = await apiClient<{ score_a: { primary?: string | number }; score_b: { primary?: string | number } }>(
-          `/matches/${matchId}`,
-        );
-        if (match.score_a?.primary !== undefined) setScoreA(match.score_a.primary);
-        if (match.score_b?.primary !== undefined) setScoreB(match.score_b.primary);
+        const match = await apiClient<{
+          scoreA?: { primary?: string | number; fields?: { a?: number; b?: number } };
+          scoreB?: { primary?: string | number; fields?: { a?: number; b?: number } };
+          score_a?: { primary?: string | number; fields?: { a?: number; b?: number } };
+          score_b?: { primary?: string | number; fields?: { a?: number; b?: number } };
+        }>(`/matches/${matchId}`);
+
+        const rawA = match.scoreA ?? match.score_a;
+        const rawB = match.scoreB ?? match.score_b;
+
+        if (rawA?.primary !== undefined) {
+          setScoreA(rawA.primary);
+        } else if (rawA?.fields?.a !== undefined) {
+          setScoreA(rawA.fields.a);
+        }
+
+        if (rawB?.primary !== undefined && rawB.primary !== rawA?.primary) {
+          setScoreB(rawB.primary);
+        } else if (rawA?.fields?.b !== undefined) {
+          setScoreB(rawA.fields.b);
+        } else if (rawB?.primary !== undefined) {
+          setScoreB(rawB.primary);
+        }
       } catch {
         // quiet fallback
       }

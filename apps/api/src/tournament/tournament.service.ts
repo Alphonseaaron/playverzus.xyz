@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { createServiceClient, TypedSupabaseClient } from '@playverzus/db';
 import { TournamentEngine, type TournamentFormat } from '@playverzus/core';
+import { resolveAndEnsureGameProfileId } from '../game-profile/game-profile.service';
 
 @Injectable()
 export class TournamentService {
@@ -78,10 +79,11 @@ export class TournamentService {
       startsAt?: string;
     },
   ) {
+    const resolvedProfileId = await resolveAndEnsureGameProfileId(this.supabase, params.profileId);
     const { data, error } = await this.supabase.rpc('create_tournament', {
       p_creator: creatorId,
       p_name: params.name,
-      p_profile_id: params.profileId,
+      p_profile_id: resolvedProfileId,
       p_format: params.format,
       p_size: params.size,
       p_entry_fee: params.entryFee ?? 0,
@@ -100,6 +102,23 @@ export class TournamentService {
     });
 
     if (error) throw new Error(error.message);
+
+    // Zero-manual auto-start when tournament reaches full entrant capacity
+    try {
+      const tournament = await this.getTournament(tournamentId);
+      const entries = (tournament as any).tournament_entries as Array<unknown> | undefined;
+      if (
+        tournament &&
+        (tournament.status === 'REGISTRATION' || tournament.status === 'CHECKIN') &&
+        entries &&
+        entries.length >= tournament.size
+      ) {
+        await this.startTournament(tournamentId);
+      }
+    } catch {
+      // Non-fatal auto-start check
+    }
+
     return data;
   }
 
@@ -115,6 +134,15 @@ export class TournamentService {
 
   async startTournament(tournamentId: string) {
     const tournament = await this.getTournament(tournamentId);
+
+    // Idempotent check: if bracket matches already exist for this tournament, return them
+    const { data: existingMatches } = await this.supabase
+      .from('matches')
+      .select('id')
+      .eq('tournament_id', tournamentId);
+    if (existingMatches && existingMatches.length > 0) {
+      return { started: true, matchesCreated: existingMatches.length };
+    }
 
     let { data: entries, error } = await this.supabase
       .from('tournament_entries')

@@ -21,6 +21,7 @@ import { LiveScore } from './LiveScore';
 import { CountryFlag } from './CountryFlag';
 import { GamePoster } from './GamePoster';
 import { notifyUser, requestNotificationPermission } from '../lib/notifications';
+import { apiClient } from '../lib/api';
 import { useGameAccountsStore } from '../lib/gameAccountsStore';
 import { getGameById } from '../lib/gamesCatalog';
 import type { GameProfile } from '@playverzus/core';
@@ -37,6 +38,10 @@ interface MatchRoomProps {
   currentUserId: string;
   status: string;
   roomCode?: string | null;
+  winnerId?: string | null;
+  verifiedBy?: string | null;
+  confidence?: number | null;
+  onRefresh?: () => void;
   playerAUsername?: string;
   playerACountry?: string;
   playerBUsername?: string;
@@ -51,6 +56,10 @@ export function MatchRoom({
   currentUserId,
   status,
   roomCode,
+  winnerId,
+  verifiedBy,
+  confidence,
+  onRefresh,
   playerAUsername,
   playerACountry,
   playerBUsername,
@@ -63,6 +72,7 @@ export function MatchRoom({
   const isPlayerA = currentUserId === playerAId;
   const isPlayerB = currentUserId === playerBId;
   const isParticipant = isPlayerA || isPlayerB;
+  const [joiningMatch, setJoiningMatch] = useState(false);
 
   const gameTagLabel = getGamertagLabel(profile.id);
   const myGamertag = getGamertag(profile.id);
@@ -85,6 +95,24 @@ export function MatchRoom({
   const [notificationsGranted, setNotificationsGranted] = useState(false);
   const [streamPlatform, setStreamPlatform] = useState<'TWITCH' | 'YOUTUBE'>('TWITCH');
   const [streamChannel, setStreamChannel] = useState(myGamertag || '');
+
+  const handleAcceptOpenMatch = async () => {
+    try {
+      setJoiningMatch(true);
+      await apiClient(`/matches/${matchId}/accept`, { method: 'POST' });
+      notifyUser('Duel Accepted!', {
+        body: 'You have entered the arena as Challenger. Connect your game feed!',
+        sound: 'connect',
+        type: 'match',
+      });
+      onRefresh?.();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      notifyUser('Could not join duel', { body: msg, type: 'error' });
+    } finally {
+      setJoiningMatch(false);
+    }
+  };
 
   // Track state transitions for audio notifications
   const prevPlayerB = useRef(playerBId);
@@ -288,6 +316,51 @@ export function MatchRoom({
         </div>
       </Card>
 
+      {/* Autonomous AI Settled Match Outcome Banner */}
+      {status === 'SETTLED' && winnerId && (
+        <Card className="p-5 bg-emerald-500/10 border border-emerald-500/40 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500 text-stone-950 flex items-center justify-center font-black shadow-sm flex-shrink-0">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-black uppercase tracking-wider text-emerald-400">
+                  Match Verified & Settled Automatically
+                </span>
+                <Badge variant="success" className="font-mono text-[10px]">
+                  {verifiedBy || 'AI'} • {((confidence ?? 0.96) * 100).toFixed(0)}% Confidence
+                </Badge>
+              </div>
+              <div className="flex items-center gap-2 mt-1 text-sm font-bold text-foreground font-mono">
+                <span>Winner:</span>
+                <CountryFlag
+                  code={winnerId === playerAId ? playerACountry : playerBCountry}
+                  fallbackSeed={
+                    winnerId === playerAId
+                      ? playerAUsername || playerAId
+                      : playerBUsername || playerBId || winnerId
+                  }
+                  size="sm"
+                />
+                <span>
+                  {winnerId === playerAId
+                    ? playerAUsername
+                      ? `@${playerAUsername}`
+                      : `Player #${playerAId.slice(0, 8)}`
+                    : playerBUsername
+                    ? `@${playerBUsername}`
+                    : `Player #${winnerId.slice(0, 8)}`}
+                </span>
+              </div>
+            </div>
+          </div>
+          <Badge variant="copper" className="font-mono text-xs self-start sm:self-center">
+            Escrow Released & Elo Updated ✓
+          </Badge>
+        </Card>
+      )}
+
       {/* Head-to-Head Competitor Roster with In-Game Gamertags */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
         {/* Side A (Host) */}
@@ -347,6 +420,19 @@ export function MatchRoom({
             VS
           </div>
           <div className="text-xs text-muted-foreground font-mono mt-0.5">BEST OF 1 DUEL</div>
+
+          {!isParticipant && status === 'OPEN' && !playerBId && currentUserId && (
+            <div className="mt-4 w-full max-w-[200px]">
+              <Button
+                onClick={handleAcceptOpenMatch}
+                disabled={joiningMatch}
+                variant="default"
+                className="w-full text-xs font-bold shadow-md shadow-primary/20"
+              >
+                {joiningMatch ? 'Joining Arena...' : 'Accept & Join Duel'}
+              </Button>
+            </div>
+          )}
 
           {isParticipant && (
             <div className="mt-4 flex flex-col gap-2 w-full max-w-[200px]">

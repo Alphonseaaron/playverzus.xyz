@@ -52,7 +52,8 @@ export class TournamentController {
   @Post(':id/start')
   async start(@Param('id') id: string, @CurrentUser() user: AuthUser) {
     const tournament = await this.tournamentService.getTournament(id);
-    if (tournament.creator_id !== user.id && user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') {
+    const organizerId = (tournament as any).created_by || (tournament as any).creator_id;
+    if (organizerId !== user.id && user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') {
       throw new ForbiddenException('Only the tournament organizer or an administrator can launch this tournament');
     }
     return this.tournamentService.startTournament(id);

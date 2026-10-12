@@ -72,6 +72,21 @@ export default function TournamentDetailPage() {
     }
   };
 
+  const handleStartBracket = async () => {
+    try {
+      await apiClient(`/tournaments/${id}/start`, { method: 'POST' });
+      notifyUser('Bracket Generated & Live!', {
+        body: 'Tournament matches are now live in the arena.',
+        sound: 'connect',
+        type: 'match',
+      });
+      router.push(`/tournaments/${id}/bracket`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      notifyUser('Could not start tournament', { body: msg, type: 'error' });
+    }
+  };
+
   if (isLoading || !tournament) {
     return (
       <Card className="p-16 text-center text-xs text-muted-foreground bg-card border-border max-w-4xl mx-auto">
@@ -127,7 +142,7 @@ export default function TournamentDetailPage() {
           </div>
 
           <div className="flex items-center gap-2.5 flex-wrap flex-shrink-0">
-            {tournament.status === 'REGISTRATION' && (
+            {tournament.status === 'REGISTRATION' && entrantsCount < tournament.size && (
               <Button
                 onClick={handleJoin}
                 variant="default"
@@ -135,6 +150,17 @@ export default function TournamentDetailPage() {
                 className="font-bold text-xs uppercase tracking-wider shadow-md shadow-primary/20"
               >
                 Join Tournament
+              </Button>
+            )}
+
+            {(tournament.status === 'REGISTRATION' || tournament.status === 'CHECKIN') && entrantsCount >= 2 && (
+              <Button
+                onClick={handleStartBracket}
+                variant="outline"
+                size="default"
+                className="font-bold text-xs uppercase tracking-wider"
+              >
+                Launch Bracket
               </Button>
             )}
 

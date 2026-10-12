@@ -145,6 +145,25 @@ export const OFFICIAL_GAMES: CatalogGame[] = [
     constraints: {},
   },
   {
+    id: 'tekken8',
+    displayName: 'Tekken 8',
+    shortName: 'TK8',
+    icon: '🥊',
+    posterUrl: 'https://cdn.cloudflare.steamstatic.com/steam/apps/1778820/library_600x900_2x.jpg',
+    bannerUrl: 'https://cdn.cloudflare.steamstatic.com/steam/apps/1778820/header.jpg',
+    tagline: '1v1 Console & Crossplay Fighting Duels',
+    gradient: 'from-red-800 via-rose-950 to-stone-950',
+    platform: 'CONSOLE',
+    gameType: 'BINARY_RESULT',
+    approved: true,
+    isOfficial: true,
+    endKeywords: ['K.O.', 'YOU WIN', 'YOU LOSE', 'VICTORY', 'DEFEAT'],
+    regexPattern: null,
+    defaultRoi: { x: 0.3, y: 0.3, w: 0.4, h: 0.2 },
+    roi: { x: 0.3, y: 0.3, w: 0.4, h: 0.2 },
+    constraints: {},
+  },
+  {
     id: 'subway',
     displayName: 'Subway Surfers',
     shortName: 'SUB',
@@ -165,11 +184,24 @@ export const OFFICIAL_GAMES: CatalogGame[] = [
   },
 ];
 
+const UUID_TO_CATALOG_SLUG: Record<string, string> = {
+  '00000000-0000-0000-0000-000000000001': 'cs2',
+  '00000000-0000-0000-0000-000000000002': 'eafc',
+  '00000000-0000-0000-0000-000000000003': 'rl',
+  '00000000-0000-0000-0000-000000000004': 'val',
+  '00000000-0000-0000-0000-000000000005': 'dota2',
+  '00000000-0000-0000-0000-000000000006': 'cod',
+  '00000000-0000-0000-0000-000000000007': 'fortnite',
+  '00000000-0000-0000-0000-000000000008': 'tekken8',
+  '11111111-1111-1111-1111-111111111111': 'subway',
+};
+
 export function getGameById(id?: string | null): CatalogGame {
   const fallback = OFFICIAL_GAMES[0]!;
   if (!id) return fallback;
+  const normalized = (UUID_TO_CATALOG_SLUG[id.toLowerCase()] || id).toLowerCase();
   const found = OFFICIAL_GAMES.find(
-    (g) => g.id.toLowerCase() === id.toLowerCase() || g.displayName.toLowerCase().includes(id.toLowerCase())
+    (g) => g.id.toLowerCase() === normalized || g.displayName.toLowerCase().includes(normalized),
   );
   return found || fallback;
 }
