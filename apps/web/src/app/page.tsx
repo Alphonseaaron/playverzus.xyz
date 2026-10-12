@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { useGameStore } from '../lib/gameStore';
 import { EloBadge } from '../components/EloBadge';
+import { CountryFlag } from '../components/CountryFlag';
 import { GamePoster } from '../components/GamePoster';
 import { GameDropdown } from '../components/GameDropdown';
 import { apiClient } from '../lib/api';
@@ -53,6 +54,7 @@ interface UserProfile {
   display_name?: string;
   rating?: number;
   region?: string;
+  country_code?: string;
 }
 
 interface HomeTournament {
@@ -65,6 +67,7 @@ interface HomeTournament {
   status: string;
   game_profiles?: { display_name: string; id?: string };
   region?: string;
+  country_code?: string;
   enrolled_count?: number;
 }
 
@@ -182,6 +185,11 @@ function HomeContent() {
             </div>
             <div>
               <div className="flex items-center gap-2">
+                <CountryFlag
+                  code={userProfile.country_code || userProfile.region}
+                  fallbackSeed={userProfile.username || userProfile.id}
+                  size="sm"
+                />
                 <span className="font-bold text-sm text-foreground">
                   Logged in as @{userProfile.username}
                 </span>
@@ -592,9 +600,15 @@ function HomeContent() {
               <Card key={t.id} className="p-5 sm:p-6 bg-card border border-border flex flex-col justify-between gap-4 hover:border-primary/50 transition">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <Badge variant="copper" className="font-mono text-[10px]">
-                      {t.status || 'Active Cup'}
-                    </Badge>
+                    <div className="flex items-center gap-1.5">
+                      <Badge variant="copper" className="font-mono text-[10px]">
+                        {t.status || 'Active Cup'}
+                      </Badge>
+                      <Badge variant="secondary" className="font-mono text-[10px] flex items-center gap-1.5">
+                        <CountryFlag code={t.country_code || t.region} fallbackSeed={t.name} size="xs" />
+                        <span>{t.region || 'Global'}</span>
+                      </Badge>
+                    </div>
                     <span className="text-[11px] font-mono text-muted-foreground flex items-center gap-1">
                       <Users className="w-3 h-3 text-primary" /> {t.enrolled_count ?? 0}/{t.size} Players
                     </span>
@@ -698,8 +712,13 @@ function HomeContent() {
                       #{index + 1}
                     </span>
                     <div className="min-w-0">
-                      <span className="font-bold text-xs text-foreground block truncate">
-                        @{champ.username || 'Competitor'}
+                      <span className="font-bold text-xs text-foreground flex items-center gap-1.5 truncate">
+                        <CountryFlag
+                          code={champ.countryCode}
+                          fallbackSeed={champ.username || champ.userId}
+                          size="xs"
+                        />
+                        <span className="truncate">@{champ.username || 'Competitor'}</span>
                       </span>
                       <span className="text-[10px] font-mono text-muted-foreground">
                         {champ.gamesPlayed} Matches · {winRate} Win

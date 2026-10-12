@@ -27,6 +27,8 @@ interface ChallengeItem {
   entry_fee?: number;
   prize_pool?: number;
   created_by?: string;
+  creator_username?: string;
+  creator_country_code?: string;
   format?: string;
   country_code?: string;
   mode?: string;
@@ -218,9 +220,9 @@ export default function ChallengesPage() {
               gameType={c.game_profiles?.game_type ?? activeGame?.gameType ?? 'HIGH_SCORE'}
               entryFee={c.entry_fee ?? 0}
               prizePool={c.prize_pool ?? 0}
-              creatorName={c.created_by?.slice(0, 8) ?? 'player'}
+              creatorName={c.creator_username ?? c.created_by?.slice(0, 8) ?? 'player'}
               format={c.format ?? 'BO1'}
-              countryCode={c.country_code}
+              countryCode={c.creator_country_code || c.country_code}
               mode={c.mode ?? '1v1'}
               onAccept={() => handleAccept(c.id)}
             />

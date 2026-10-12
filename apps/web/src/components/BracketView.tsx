@@ -2,6 +2,7 @@
 
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
+import { CountryFlag } from './CountryFlag';
 import { Trophy, Swords } from 'lucide-react';
 
 interface MatchNode {
@@ -12,6 +13,10 @@ interface MatchNode {
   player_b: string | null;
   winner: string | null;
   status: string;
+  player_a_username?: string;
+  player_a_country?: string;
+  player_b_username?: string;
+  player_b_country?: string;
 }
 
 interface BracketViewProps {
@@ -73,8 +78,21 @@ export function BracketView({ matches }: BracketViewProps) {
                           : 'text-foreground'
                       }`}
                     >
-                      <span className="font-mono truncate">
-                        {match.player_a ? `Player #${match.player_a.slice(0, 6)}` : 'TBD'}
+                      <span className="font-mono truncate flex items-center gap-1.5">
+                        {match.player_a ? (
+                          <>
+                            <CountryFlag
+                              code={match.player_a_country}
+                              fallbackSeed={match.player_a_username || match.player_a}
+                              size="xs"
+                            />
+                            <span className="truncate">
+                              {match.player_a_username ? `@${match.player_a_username}` : `Player #${match.player_a.slice(0, 6)}`}
+                            </span>
+                          </>
+                        ) : (
+                          'TBD'
+                        )}
                       </span>
                       {isPlayerAWinner && (
                         <Trophy className="w-3.5 h-3.5 text-amber-400 flex-shrink-0 ml-1" />
@@ -91,8 +109,21 @@ export function BracketView({ matches }: BracketViewProps) {
                           : 'text-foreground'
                       }`}
                     >
-                      <span className="font-mono truncate">
-                        {match.player_b ? `Player #${match.player_b.slice(0, 6)}` : 'TBD'}
+                      <span className="font-mono truncate flex items-center gap-1.5">
+                        {match.player_b ? (
+                          <>
+                            <CountryFlag
+                              code={match.player_b_country}
+                              fallbackSeed={match.player_b_username || match.player_b}
+                              size="xs"
+                            />
+                            <span className="truncate">
+                              {match.player_b_username ? `@${match.player_b_username}` : `Player #${match.player_b.slice(0, 6)}`}
+                            </span>
+                          </>
+                        ) : (
+                          'TBD'
+                        )}
                       </span>
                       {isPlayerBWinner && (
                         <Trophy className="w-3.5 h-3.5 text-amber-400 flex-shrink-0 ml-1" />

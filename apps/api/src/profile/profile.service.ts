@@ -19,36 +19,49 @@ export class ProfileService {
       .maybeSingle();
 
     if (error || !data) throw new NotFoundException('Profile not found');
-    return data;
+    return {
+      ...data,
+      country_code: (data as Record<string, unknown>).country_code || data.region || null,
+    };
   }
 
   async getProfileByUsername(username: string) {
     const { data, error } = await this.supabase
       .from('profiles')
-      .select('id, username, display_name, avatar_url, region, country_code, rating, trust_score, role, created_at')
+      .select('id, username, display_name, avatar_url, region, trust_score, role, created_at')
       .eq('username', username)
       .maybeSingle();
 
     if (error || !data) throw new NotFoundException(`User @${username} not found`);
-    return data;
+    return {
+      ...data,
+      country_code: (data as Record<string, unknown>).country_code || data.region || null,
+    };
   }
 
-  async updateProfile(userId: string, updates: { displayName?: string; avatarUrl?: string; region?: string; phone?: string }) {
+  async updateProfile(
+    userId: string,
+    updates: { displayName?: string; avatarUrl?: string; region?: string; country_code?: string; phone?: string },
+  ) {
+    const resolvedRegion = updates.country_code || updates.region;
     const { data, error } = await this.supabase
       .from('profiles')
       .update({
         display_name: updates.displayName,
         avatar_url: updates.avatarUrl,
-        region: updates.region,
+        region: resolvedRegion,
         phone: updates.phone,
         updated_at: new Date().toISOString(),
       })
       .eq('id', userId)
-      .select('id, username, display_name, avatar_url, region, country_code, phone, rating, trust_score, role')
+      .select('id, username, display_name, avatar_url, region, phone, trust_score, role')
       .single();
 
     if (error) throw new Error(error.message);
-    return data;
+    return {
+      ...data,
+      country_code: data.region || null,
+    };
   }
 
   async getUserMatches(username: string) {

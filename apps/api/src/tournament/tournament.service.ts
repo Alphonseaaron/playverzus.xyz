@@ -32,6 +32,37 @@ export class TournamentService {
       .maybeSingle();
 
     if (error || !data) throw new NotFoundException('Tournament not found');
+
+    const rawEntries = (data as any).tournament_entries as Array<{ user_id: string }> | undefined;
+    if (rawEntries && rawEntries.length > 0) {
+      const userIds = Array.from(new Set(rawEntries.map((e) => e.user_id).filter(Boolean)));
+      if (userIds.length > 0) {
+        const { data: profiles } = await this.supabase
+          .from('profiles')
+          .select('id, username, region')
+          .in('id', userIds);
+
+        const profileMap = new Map(
+          (profiles || []).map((p) => [
+            p.id,
+            {
+              username: p.username,
+              country_code: ((p as Record<string, unknown>).country_code as string) || p.region || undefined,
+            },
+          ]),
+        );
+
+        (data as any).tournament_entries = rawEntries.map((entry) => {
+          const prof = profileMap.get(entry.user_id);
+          return {
+            ...entry,
+            username: prof?.username,
+            country_code: prof?.country_code,
+          };
+        });
+      }
+    }
+
     return data;
   }
 
@@ -133,6 +164,38 @@ export class TournamentService {
       .order('bracket_position', { ascending: true });
 
     if (error) throw new Error(error.message);
-    return matches;
+    if (!matches || matches.length === 0) return [];
+
+    const userIds = Array.from(
+      new Set(matches.flatMap((m) => [m.player_a, m.player_b]).filter((id): id is string => Boolean(id))),
+    );
+    if (userIds.length === 0) return matches;
+
+    const { data: profiles } = await this.supabase
+      .from('profiles')
+      .select('id, username, region')
+      .in('id', userIds);
+
+    const profileMap = new Map(
+      (profiles || []).map((p) => [
+        p.id,
+        {
+          username: p.username,
+          country: ((p as Record<string, unknown>).country_code as string) || p.region || undefined,
+        },
+      ]),
+    );
+
+    return matches.map((m) => {
+      const profA = m.player_a ? profileMap.get(m.player_a) : undefined;
+      const profB = m.player_b ? profileMap.get(m.player_b) : undefined;
+      return {
+        ...m,
+        player_a_username: profA?.username,
+        player_a_country: profA?.country,
+        player_b_username: profB?.username,
+        player_b_country: profB?.country,
+      };
+    });
   }
 }

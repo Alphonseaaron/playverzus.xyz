@@ -9,11 +9,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
+import { CountryFlag } from '../../../components/CountryFlag';
 
 interface UserProfile {
   id: string;
   username: string;
   email: string | null;
+  country_code?: string;
+  region?: string;
   role: 'PLAYER' | 'REVIEWER' | 'ADMIN' | 'SUPER_ADMIN';
   is_banned: boolean;
   ban_reason: string | null;
@@ -121,7 +124,14 @@ export default function AdminUsersPage() {
                   <TableRow key={u.id}>
                     <TableCell>
                       <div className="flex flex-col">
-                        <span className="font-bold text-foreground">@{u.username}</span>
+                        <span className="font-bold text-foreground flex items-center gap-1.5">
+                          <CountryFlag
+                            code={u.country_code || u.region}
+                            fallbackSeed={u.username || u.id}
+                            size="xs"
+                          />
+                          <span>@{u.username}</span>
+                        </span>
                         <span className="text-[10px] text-muted-foreground font-mono">
                           ID: {u.id.substring(0, 8)}...
                         </span>

@@ -23,6 +23,7 @@ import { notifyUser } from '../lib/notifications';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Input } from './ui/input';
+import { CountryFlag } from './CountryFlag';
 
 export function PartyBar() {
   const router = useRouter();
@@ -43,9 +44,9 @@ export function PartyBar() {
 
   const { activeGame } = useGameStore();
 
-  const { data: userProfile } = useQuery<{ id: string; username: string; rating?: number } | null>({
+  const { data: userProfile } = useQuery<{ id: string; username: string; rating?: number; country_code?: string; region?: string } | null>({
     queryKey: ['party-bar-profile'],
-    queryFn: () => apiClient<{ id: string; username: string; rating?: number }>('/profile/me').catch(() => null),
+    queryFn: () => apiClient<{ id: string; username: string; rating?: number; country_code?: string; region?: string }>('/profile/me').catch(() => null),
     staleTime: 60000,
   });
 
@@ -196,6 +197,7 @@ export function PartyBar() {
                 const displayName = member.id === 'me' && userProfile?.username ? userProfile.username : member.username;
                 const displayElo = member.id === 'me' && userProfile?.rating ? userProfile.rating : member.elo;
                 const displayLevel = Math.min(10, Math.max(1, Math.floor(displayElo / 200) + 1));
+                const memberCountry = member.id === 'me' ? userProfile?.country_code || userProfile?.region : undefined;
 
                 return (
                   <div
@@ -211,6 +213,11 @@ export function PartyBar() {
                     >
                       {displayName.slice(0, 2).toUpperCase()}
                     </div>
+
+                    {/* Country Flag Pip */}
+                    <span className="absolute -bottom-1 -left-1">
+                      <CountryFlag code={memberCountry} fallbackSeed={displayName} size="xs" />
+                    </span>
 
                     {/* Level Badge Pip */}
                     <span className="absolute -bottom-1 -right-1 bg-background border border-border px-1 rounded text-[9px] font-mono font-bold text-muted-foreground">

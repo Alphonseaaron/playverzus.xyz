@@ -21,6 +21,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { EloBadge } from '../../components/EloBadge';
+import { CountryFlag, resolveCountryInfo } from '../../components/CountryFlag';
 import { GamePoster } from '../../components/GamePoster';
 import { AuthGuard } from '../../components/AuthGuard';
 import { apiClient } from '../../lib/api';
@@ -79,6 +80,7 @@ interface UserProfileData {
   display_name?: string;
   rating?: number;
   region?: string;
+  country_code?: string;
   trust_score?: number;
 }
 
@@ -125,7 +127,7 @@ function DashboardContent() {
 
   const elo = userProfile?.rating ?? 1000;
   const username = userProfile?.username || 'Competitor';
-  const region = userProfile?.region || 'DE';
+  const countryInfo = resolveCountryInfo(userProfile?.country_code || userProfile?.region, username);
   const trustScore = userProfile?.trust_score ?? 980;
 
   // Match calculations
@@ -208,12 +210,14 @@ function DashboardContent() {
                   <Badge variant="secondary" className="font-mono text-[10px]">
                     LEVEL {Math.min(10, Math.max(1, Math.floor(elo / 150)))} ELO
                   </Badge>
-                  <Badge variant="outline" className="font-mono text-[10px]">
-                    📍 {region} · ZERO DISPUTES
+                  <Badge variant="outline" className="font-mono text-[10px] flex items-center gap-1.5">
+                    <CountryFlag code={countryInfo.code} size="xs" />
+                    <span>{countryInfo.name} ({countryInfo.code}) · ZERO DISPUTES</span>
                   </Badge>
                 </div>
 
-                <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <CountryFlag code={countryInfo.code} size="lg" />
                   <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight truncate">
                     @{username}
                   </h1>

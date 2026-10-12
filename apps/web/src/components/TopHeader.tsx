@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { useGameStore } from '../lib/gameStore';
 import { EloBadge } from './EloBadge';
+import { CountryFlag } from './CountryFlag';
 import { NotificationBell } from './NotificationBell';
 import { apiClient } from '../lib/api';
 import { getSupabaseClient } from '../lib/supabase';
@@ -49,6 +50,8 @@ interface HeaderProfile {
   username: string;
   display_name?: string;
   rating?: number;
+  country_code?: string;
+  region?: string;
   role?: 'PLAYER' | 'REVIEWER' | 'ADMIN' | 'SUPER_ADMIN';
 }
 
@@ -512,8 +515,15 @@ export function TopHeader() {
             </div>
           </div>
           <div className="hidden sm:flex flex-col text-left leading-none">
-            <span className="text-xs font-bold text-foreground group-hover:text-primary transition-colors truncate max-w-[80px]">
-              {me?.username ? `@${me.username}` : 'Gamer'}
+            <span className="text-xs font-bold text-foreground group-hover:text-primary transition-colors flex items-center gap-1.5">
+              <CountryFlag
+                code={me?.country_code || me?.region}
+                fallbackSeed={me?.username || me?.id || 'me'}
+                size="xs"
+              />
+              <span className="truncate max-w-[90px]">
+                {me?.username ? `@${me.username}` : 'Gamer'}
+              </span>
             </span>
             <span className="text-[10px] font-mono text-muted-foreground mt-0.5">
               {eloRating} <span className="text-[8px] uppercase">ELO</span>

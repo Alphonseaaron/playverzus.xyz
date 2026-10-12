@@ -6,6 +6,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../lib/api';
 import { getSupabaseClient } from '../../lib/supabase';
 import { CountrySelect } from '../../components/CountrySelect';
+import { CountryFlag } from '../../components/CountryFlag';
 import { AuthGuard } from '../../components/AuthGuard';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
@@ -19,6 +20,7 @@ interface MyProfile {
   username: string;
   display_name?: string;
   region?: string;
+  country_code?: string;
   phone?: string;
 }
 
@@ -38,7 +40,7 @@ function SettingsContent() {
   useEffect(() => {
     if (profile) {
       setDisplayName(profile.display_name || '');
-      setRegion(profile.region || '');
+      setRegion(profile.country_code || profile.region || '');
       setPhone(profile.phone || '');
     }
   }, [profile]);
@@ -49,8 +51,11 @@ function SettingsContent() {
     try {
       await apiClient('/profile/me', {
         method: 'PATCH',
-        body: JSON.stringify({ displayName, region, phone }),
+        body: JSON.stringify({ displayName, region, country_code: region, phone }),
       });
+      await queryClient.invalidateQueries({ queryKey: ['me-settings'] });
+      await queryClient.invalidateQueries({ queryKey: ['header-me'] });
+      await queryClient.invalidateQueries({ queryKey: ['dashboard-profile'] });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err: unknown) {
@@ -84,8 +89,13 @@ function SettingsContent() {
               <div className="flex items-center gap-2 mb-0.5">
                 <Badge variant="copper">PREFERENCES</Badge>
                 {profile?.username && (
-                  <Badge variant="secondary" className="font-mono text-[10px]">
-                    @{profile.username}
+                  <Badge variant="secondary" className="font-mono text-[10px] flex items-center gap-1.5">
+                    <CountryFlag
+                      code={region || profile.country_code || profile.region}
+                      fallbackSeed={profile.username}
+                      size="xs"
+                    />
+                    <span>@{profile.username}</span>
                   </Badge>
                 )}
               </div>

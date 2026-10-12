@@ -14,6 +14,50 @@ export class MatchService {
     this.coreMatchService = new CoreMatchService({ client: this.supabase });
   }
 
+  private async enrichMatchesWithProfiles(matches: any[]) {
+    if (!matches || matches.length === 0) return [];
+    const userIds = Array.from(
+      new Set(
+        matches
+          .flatMap((m) => [m.player_a, m.player_b, m.created_by, m.playerA, m.playerB])
+          .filter(Boolean),
+      ),
+    );
+    if (userIds.length === 0) return matches;
+
+    const { data: profiles } = await this.supabase
+      .from('profiles')
+      .select('id, username, region')
+      .in('id', userIds);
+
+    const profileMap = new Map(
+      (profiles || []).map((p) => [
+        p.id,
+        {
+          username: p.username,
+          countryCode: ((p as Record<string, unknown>).country_code as string) || p.region || undefined,
+        },
+      ]),
+    );
+
+    return matches.map((m) => {
+      const creatorId = m.player_a || m.created_by || m.playerA;
+      const opponentId = m.player_b || m.playerB;
+      const creator = creatorId ? profileMap.get(creatorId) : undefined;
+      const opponent = opponentId ? profileMap.get(opponentId) : undefined;
+      return {
+        ...m,
+        created_by: m.created_by || creatorId,
+        creator_username: creator?.username,
+        creator_country_code: creator?.countryCode,
+        playerAUsername: creator?.username,
+        playerACountry: creator?.countryCode,
+        playerBUsername: opponent?.username,
+        playerBCountry: opponent?.countryCode,
+      };
+    });
+  }
+
   async getMyMatches(userId: string) {
     const { data, error } = await this.supabase
       .from('matches')
@@ -30,9 +74,9 @@ export class MatchService {
         .or(`player_a.eq.${userId},player_b.eq.${userId}`)
         .order('created_at', { ascending: false })
         .limit(50);
-      return fallback.data || [];
+      return this.enrichMatchesWithProfiles(fallback.data || []);
     }
-    return data || [];
+    return this.enrichMatchesWithProfiles(data || []);
   }
 
   async getOpenMatches(profileId?: string) {
@@ -56,9 +100,9 @@ export class MatchService {
         .eq('status', 'OPEN')
         .order('created_at', { ascending: false })
         .limit(50);
-      return fallback.data || [];
+      return this.enrichMatchesWithProfiles(fallback.data || []);
     }
-    return data || [];
+    return this.enrichMatchesWithProfiles(data || []);
   }
 
   async createMatch(
@@ -88,7 +132,8 @@ export class MatchService {
   async getMatch(matchId: string) {
     const match = await this.coreMatchService.get(matchId);
     if (!match) throw new NotFoundException('Match not found');
-    return match;
+    const [enriched] = await this.enrichMatchesWithProfiles([match]);
+    return enriched || match;
   }
 
   async acceptMatch(matchId: string, userId: string) {

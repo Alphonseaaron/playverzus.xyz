@@ -1,6 +1,8 @@
 'use client';
 
+import Link from 'next/link';
 import { EloBadge } from './EloBadge';
+import { CountryFlag } from './CountryFlag';
 import { Card, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import {
@@ -66,6 +68,7 @@ export function LeaderboardTable({ entries, gameType, gameTitle, gameIcon }: Lea
             const isTop1 = index === 0;
             const isTop2 = index === 1;
             const isTop3 = index === 2;
+            const tag = e.username ? `@${e.username}` : `Player #${e.userId.slice(0, 8)}`;
 
             return (
               <TableRow
@@ -87,7 +90,23 @@ export function LeaderboardTable({ entries, gameType, gameTitle, gameIcon }: Lea
                   <EloBadge elo={e.rating} size="sm" />
                 </TableCell>
                 <TableCell className="font-sans font-bold text-foreground">
-                  {e.username ? `@${e.username}` : `Player #${e.userId.slice(0, 8)}`}
+                  <div className="flex items-center gap-2">
+                    <CountryFlag
+                      code={e.countryCode}
+                      fallbackSeed={e.username || e.userId}
+                      size="sm"
+                    />
+                    {e.username ? (
+                      <Link
+                        href={`/profile/${e.username}`}
+                        className="hover:text-primary transition-colors"
+                      >
+                        {tag}
+                      </Link>
+                    ) : (
+                      <span>{tag}</span>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell className="font-black text-foreground">{e.rating}</TableCell>
                 <TableCell>

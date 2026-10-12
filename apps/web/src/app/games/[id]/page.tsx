@@ -47,6 +47,8 @@ interface ChallengeItem {
   entry_fee?: number;
   prize_pool?: number;
   created_by?: string;
+  creator_username?: string;
+  creator_country_code?: string;
   format?: string;
   country_code?: string;
   mode?: string;
@@ -288,9 +290,9 @@ export default function GameHubPage() {
                   gameType={c.game_profiles?.game_type || resolvedProfile.gameType}
                   entryFee={c.entry_fee ?? 0}
                   prizePool={c.prize_pool ?? 0}
-                  creatorName={c.created_by?.slice(0, 8) || 'Player'}
+                  creatorName={c.creator_username || c.created_by?.slice(0, 8) || 'Player'}
                   format={c.format || 'BO1'}
-                  countryCode={c.country_code}
+                  countryCode={c.creator_country_code || c.country_code}
                   mode={c.mode || '1v1'}
                 />
               ))}

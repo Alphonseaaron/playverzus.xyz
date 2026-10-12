@@ -5,6 +5,7 @@ import { COUNTRIES, GLOBAL_REGIONS, searchCountries, type Country, type GlobalRe
 import { ChevronDown, Search, X, Check } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { Input } from './ui/input';
+import { CountryFlag } from './CountryFlag';
 
 interface CountrySelectProps {
   value?: string; // Country code (e.g. 'FR', 'DE')
@@ -73,7 +74,7 @@ export function CountrySelect({
         <span className="flex items-center gap-2.5 truncate">
           {selectedCountry ? (
             <>
-              <span className="text-base">{selectedCountry.flag}</span>
+              <CountryFlag code={selectedCountry.code} size="md" />
               <span className="font-bold text-foreground">{selectedCountry.name}</span>
               <span className="text-[10px] text-muted-foreground font-mono">({selectedCountry.code})</span>
             </>
@@ -156,8 +157,8 @@ export function CountrySelect({
                         : 'hover:bg-secondary text-foreground'
                     }`}
                   >
-                    <span className="flex items-center gap-2">
-                      <span className="text-base">{c.flag}</span>
+                    <span className="flex items-center gap-2.5">
+                      <CountryFlag code={c.code} size="md" />
                       <span>{c.name}</span>
                     </span>
                     <div className="flex items-center gap-1.5">

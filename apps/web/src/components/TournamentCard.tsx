@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { formatEUR } from '../lib/currency';
 import { getCountryByCode } from '@playverzus/core';
+import { CountryFlag } from './CountryFlag';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
@@ -77,8 +78,18 @@ export function TournamentCard({
             <Badge variant="copper">
               {resolvedFormat.replace(/_/g, ' ')}
             </Badge>
-            <Badge variant="secondary" className="flex items-center gap-1 font-mono text-[10px]">
-              {country ? `${country.flag} ${country.name}` : `🌍 ${resolvedRegion}`}
+            <Badge variant="secondary" className="flex items-center gap-1.5 font-mono text-[10px]">
+              {country ? (
+                <>
+                  <CountryFlag code={country.code} size="xs" />
+                  <span>{country.name}</span>
+                </>
+              ) : (
+                <>
+                  <CountryFlag code={resolvedRegion} fallbackSeed={resolvedName} size="xs" />
+                  <span>{resolvedRegion}</span>
+                </>
+              )}
             </Badge>
           </div>
 

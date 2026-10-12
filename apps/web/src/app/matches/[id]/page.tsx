@@ -15,6 +15,10 @@ interface MatchDetails {
   playerB: string | null;
   status: string;
   roomCode?: string | null;
+  playerAUsername?: string;
+  playerACountry?: string;
+  playerBUsername?: string;
+  playerBCountry?: string;
 }
 
 function MatchDetailContent() {
@@ -32,9 +36,9 @@ function MatchDetailContent() {
     enabled: !!match?.profileId,
   });
 
-  const { data: me } = useQuery<{ id: string }>({
+  const { data: me } = useQuery<{ id: string; username?: string; country_code?: string; region?: string }>({
     queryKey: ['me'],
-    queryFn: () => apiClient<{ id: string }>('/profile/me'),
+    queryFn: () => apiClient<{ id: string; username?: string; country_code?: string; region?: string }>('/profile/me'),
   });
 
   if (loadingMatch || loadingProfile) {
@@ -45,6 +49,9 @@ function MatchDetailContent() {
     return <div className="p-12 text-center text-destructive font-bold text-sm">Match or game profile not found.</div>;
   }
 
+  const isMeA = me?.id === match.playerA;
+  const isMeB = me?.id === match.playerB;
+
   return (
     <MatchRoom
       matchId={match.id}
@@ -54,6 +61,10 @@ function MatchDetailContent() {
       currentUserId={me?.id ?? ''}
       status={match.status}
       roomCode={match.roomCode}
+      playerAUsername={match.playerAUsername || (isMeA ? me?.username : undefined)}
+      playerACountry={match.playerACountry || (isMeA ? me?.country_code || me?.region : undefined)}
+      playerBUsername={match.playerBUsername || (isMeB ? me?.username : undefined)}
+      playerBCountry={match.playerBCountry || (isMeB ? me?.country_code || me?.region : undefined)}
     />
   );
 }

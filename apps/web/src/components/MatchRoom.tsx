@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useCapturePipeline as useMatchCapture } from '../hooks/useCapturePipeline';
 import { LiveScore } from './LiveScore';
+import { CountryFlag } from './CountryFlag';
 import { GamePoster } from './GamePoster';
 import { notifyUser, requestNotificationPermission } from '../lib/notifications';
 import { useGameAccountsStore } from '../lib/gameAccountsStore';
@@ -36,6 +37,10 @@ interface MatchRoomProps {
   currentUserId: string;
   status: string;
   roomCode?: string | null;
+  playerAUsername?: string;
+  playerACountry?: string;
+  playerBUsername?: string;
+  playerBCountry?: string;
 }
 
 export function MatchRoom({
@@ -46,6 +51,10 @@ export function MatchRoom({
   currentUserId,
   status,
   roomCode,
+  playerAUsername,
+  playerACountry,
+  playerBUsername,
+  playerBCountry,
 }: MatchRoomProps) {
   const catalogGame = getGameById(profile.id);
   const capture = useMatchCapture(matchId, profile);
@@ -288,8 +297,19 @@ export function MatchRoom({
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Host</span>
           </div>
 
-          <div className="font-mono text-sm font-bold text-foreground truncate max-w-[200px]">
-            {isPlayerA ? 'You (@Host)' : `Player #${playerAId.slice(0, 8)}`}
+          <div className="font-mono text-sm font-bold text-foreground flex items-center gap-2 max-w-[220px]">
+            <CountryFlag
+              code={playerACountry}
+              fallbackSeed={playerAUsername || playerAId}
+              size="sm"
+            />
+            <span className="truncate">
+              {playerAUsername
+                ? `@${playerAUsername}${isPlayerA ? ' (You)' : ''}`
+                : isPlayerA
+                ? 'You (@Host)'
+                : `Player #${playerAId.slice(0, 8)}`}
+            </span>
           </div>
 
           {/* Verified In-Game Gamertag */}
@@ -359,8 +379,25 @@ export function MatchRoom({
             </span>
           </div>
 
-          <div className="font-mono text-sm font-bold text-foreground truncate max-w-[200px]">
-            {playerBId ? (!isPlayerA ? 'You (@Challenger)' : `Player #${playerBId.slice(0, 8)}`) : 'Waiting for Opponent...'}
+          <div className="font-mono text-sm font-bold text-foreground flex items-center gap-2 max-w-[220px]">
+            {playerBId ? (
+              <>
+                <CountryFlag
+                  code={playerBCountry}
+                  fallbackSeed={playerBUsername || playerBId}
+                  size="sm"
+                />
+                <span className="truncate">
+                  {playerBUsername
+                    ? `@${playerBUsername}${isPlayerB ? ' (You)' : ''}`
+                    : !isPlayerA
+                    ? 'You (@Challenger)'
+                    : `Player #${playerBId.slice(0, 8)}`}
+                </span>
+              </>
+            ) : (
+              <span>Waiting for Opponent...</span>
+            )}
           </div>
 
           {/* Opponent In-Game Gamertag */}

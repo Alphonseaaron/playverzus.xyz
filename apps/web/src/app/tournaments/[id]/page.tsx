@@ -8,6 +8,7 @@ import { formatEUR } from '../../../lib/currency';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../../components/ui/card';
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
+import { CountryFlag } from '../../../components/CountryFlag';
 import { Trophy, Users, CheckCircle2, ArrowRight, Clock, Coins, Medal, Gamepad2 } from 'lucide-react';
 import { notifyUser } from '../../../lib/notifications';
 
@@ -22,7 +23,13 @@ interface TournamentDetails {
   status: string;
   starts_at?: string;
   game_profiles?: { display_name: string; platform: string; game_type: string };
-  tournament_entries?: Array<{ user_id: string; seed?: number; checked_in: boolean }>;
+  tournament_entries?: Array<{
+    user_id: string;
+    seed?: number;
+    checked_in: boolean;
+    username?: string;
+    country_code?: string;
+  }>;
 }
 
 export default function TournamentDetailPage() {
@@ -227,8 +234,13 @@ export default function TournamentDetailPage() {
                   <span className="w-6 h-6 rounded-lg bg-card border border-border flex items-center justify-center font-mono font-bold text-[10px] text-muted-foreground flex-shrink-0">
                     #{idx + 1}
                   </span>
+                  <CountryFlag
+                    code={entry.country_code}
+                    fallbackSeed={entry.username || entry.user_id}
+                    size="xs"
+                  />
                   <span className="font-mono font-bold text-foreground truncate">
-                    Player {entry.user_id.slice(0, 6)}
+                    {entry.username ? `@${entry.username}` : `Player ${entry.user_id.slice(0, 6)}`}
                   </span>
                 </div>
                 {entry.checked_in && (

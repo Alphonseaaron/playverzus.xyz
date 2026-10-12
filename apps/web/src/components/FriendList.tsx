@@ -4,6 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Avatar, AvatarFallback } from './ui/avatar';
+import { CountryFlag } from './CountryFlag';
 import { Users, Swords } from 'lucide-react';
 import Link from 'next/link';
 
@@ -12,6 +13,8 @@ interface Friend {
   requesterId: string;
   addresseeId: string;
   status: string;
+  friendUsername?: string;
+  friendCountryCode?: string;
 }
 
 interface FriendListProps {
@@ -53,7 +56,8 @@ export function FriendList({ friends, currentUserId }: FriendListProps) {
       <CardContent className="p-0 divide-y divide-border">
         {friends.map((f) => {
           const friendId = f.requesterId === currentUserId ? f.addresseeId : f.requesterId;
-          const initials = friendId.slice(0, 2).toUpperCase();
+          const displayTag = f.friendUsername ? `@${f.friendUsername}` : `Player #${friendId.slice(0, 8)}`;
+          const initials = (f.friendUsername || friendId).slice(0, 2).toUpperCase();
 
           return (
             <div key={f.id} className="p-4 flex items-center justify-between gap-3 hover:bg-secondary/30 transition-colors">
@@ -65,8 +69,13 @@ export function FriendList({ friends, currentUserId }: FriendListProps) {
                 </Avatar>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
+                    <CountryFlag
+                      code={f.friendCountryCode}
+                      fallbackSeed={f.friendUsername || friendId}
+                      size="sm"
+                    />
                     <span className="font-bold text-sm text-foreground truncate">
-                      Player #{friendId.slice(0, 8)}
+                      {displayTag}
                     </span>
                     <Badge variant="success" className="text-[9px] font-mono px-1 py-0">
                       ONLINE

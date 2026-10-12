@@ -31,6 +31,7 @@ import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { Input } from './ui/input';
+import { CountryFlag } from './CountryFlag';
 
 interface CashierModalProps {
   open: boolean;
@@ -313,8 +314,10 @@ export function CashierModal({
                 <span className="font-semibold text-foreground flex items-center gap-1.5">
                   <Globe className="w-3.5 h-3.5 text-primary" /> Region & Banking Rails:
                 </span>
-                <span className="text-[11px] font-mono text-muted-foreground">
-                  Current: {profile.countryName} ({profile.currency})
+                <span className="text-[11px] font-mono text-muted-foreground flex items-center gap-1.5">
+                  <span>Current:</span>
+                  <CountryFlag code={selectedCountry} size="xs" />
+                  <span>{profile.countryName} ({profile.currency})</span>
                 </span>
               </div>
 
@@ -332,7 +335,7 @@ export function CashierModal({
                           : 'bg-muted/40 hover:bg-muted border-border text-muted-foreground'
                       }`}
                     >
-                      <span className="text-base">{c.flag}</span>
+                      <CountryFlag code={c.code} size="sm" />
                       <span className="truncate font-medium text-[11px]">{c.name}</span>
                     </button>
                   );

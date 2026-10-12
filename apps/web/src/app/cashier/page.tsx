@@ -32,6 +32,7 @@ import { useWalletModeStore, type WalletMode } from '../../lib/walletModeStore';
 import { apiClient } from '../../lib/api';
 import { formatEUR, formatPoints } from '../../lib/currency';
 import { AuthGuard } from '../../components/AuthGuard';
+import { CountryFlag } from '../../components/CountryFlag';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/card';
@@ -344,26 +345,41 @@ function CashierContent() {
               </div>
 
               {/* Country & Local Payment Gateway Selector */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
-                    <Globe className="w-3.5 h-3.5 text-primary" />
-                    <span>Banking Region / Country:</span>
-                  </label>
-                  <select
-                    value={selectedCountry}
-                    onChange={(e) => {
-                      setSelectedCountry(e.target.value);
-                      setSelectedRailId('');
-                    }}
-                    className="w-full p-2.5 rounded-xl bg-muted border border-border text-foreground text-xs font-bold focus:outline-none focus:border-primary transition"
-                  >
-                    {SUPPORTED_COUNTRY_LIST.map((c) => (
-                      <option key={c.code} value={c.code}>
-                        {c.flag} {c.name} ({c.currency})
-                      </option>
-                    ))}
-                  </select>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <label className="font-bold text-muted-foreground flex items-center gap-1.5">
+                      <Globe className="w-3.5 h-3.5 text-primary" />
+                      <span>Banking Region / Country:</span>
+                    </label>
+                    <span className="text-[11px] font-mono text-muted-foreground flex items-center gap-1.5">
+                      <CountryFlag code={selectedCountry} size="xs" />
+                      <span>{profile.countryName} ({profile.currency})</span>
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                    {SUPPORTED_COUNTRY_LIST.map((c) => {
+                      const isSelected = selectedCountry === c.code;
+                      return (
+                        <button
+                          key={c.code}
+                          type="button"
+                          onClick={() => {
+                            setSelectedCountry(c.code);
+                            setSelectedRailId('');
+                          }}
+                          className={`p-2.5 rounded-xl text-left border text-xs transition flex items-center gap-2 ${
+                            isSelected
+                              ? 'bg-primary/10 border-primary text-foreground font-bold shadow-sm'
+                              : 'bg-muted/40 hover:bg-muted border-border text-muted-foreground'
+                          }`}
+                        >
+                          <CountryFlag code={c.code} size="sm" />
+                          <span className="truncate font-medium text-[11px]">{c.name}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 <div className="space-y-1.5">

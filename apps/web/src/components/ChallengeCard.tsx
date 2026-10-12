@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { formatEUR } from '../lib/currency';
-import { getCountryByCode } from '@playverzus/core';
+import { CountryFlag } from './CountryFlag';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
@@ -32,8 +32,6 @@ export function ChallengeCard({
   mode = '1v1',
   onAccept,
 }: ChallengeCardProps) {
-  const country = countryCode ? getCountryByCode(countryCode) : null;
-
   return (
     <Card className="flex flex-col justify-between hover:border-primary/50 transition-all duration-200 group">
       <CardHeader className="space-y-3 pb-3">
@@ -44,8 +42,8 @@ export function ChallengeCard({
           </div>
 
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-mono">
-            {country && <span title={country.name} className="text-sm">{country.flag}</span>}
-            <span>@{creatorName}</span>
+            <CountryFlag code={countryCode} fallbackSeed={creatorName || id} size="sm" />
+            <span className="font-bold text-foreground">@{creatorName}</span>
           </div>
         </div>
 

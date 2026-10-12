@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { apiClient } from '../../../lib/api';
 import { EloBadge } from '../../../components/EloBadge';
+import { CountryFlag, resolveCountryInfo } from '../../../components/CountryFlag';
 import { GamePoster } from '../../../components/GamePoster';
 import { useGameStore } from '../../../lib/gameStore';
 import { getGameById, OFFICIAL_GAMES } from '../../../lib/gamesCatalog';
@@ -48,6 +49,7 @@ interface UserProfile {
   trust_score: number;
   role: string;
   region?: string;
+  country_code?: string;
   rating?: number;
 }
 
@@ -188,24 +190,38 @@ export default function PublicProfilePage() {
 
               {/* Names, Tags & Badges */}
               <div className="space-y-2 min-w-0 pb-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Badge variant="copper">VERIFIED PLAYER</Badge>
-                  <Badge variant="secondary" className="font-mono text-[10px]">
-                    {profile.role.toUpperCase()}
-                  </Badge>
-                  <Badge variant="outline" className="font-mono text-[10px]">
-                    🌍 {profile.region || 'GLOBAL'}
-                  </Badge>
-                </div>
+                {(() => {
+                  const countryInfo = resolveCountryInfo(
+                    profile.country_code || profile.region,
+                    profile.username || profile.id,
+                  );
+                  return (
+                    <>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant="copper">VERIFIED PLAYER</Badge>
+                        <Badge variant="secondary" className="font-mono text-[10px]">
+                          {profile.role.toUpperCase()}
+                        </Badge>
+                        <Badge variant="outline" className="font-mono text-[10px] flex items-center gap-1.5">
+                          <CountryFlag code={countryInfo.code} size="xs" />
+                          <span>{countryInfo.name} ({countryInfo.code})</span>
+                        </Badge>
+                      </div>
 
-                <div>
-                  <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight truncate leading-tight">
-                    {profile.display_name || profile.username}
-                  </h1>
-                  <p className="text-xs sm:text-sm text-muted-foreground font-mono mt-0.5">
-                    @{profile.username}
-                  </p>
-                </div>
+                      <div>
+                        <div className="flex items-center gap-2.5">
+                          <CountryFlag code={countryInfo.code} size="lg" />
+                          <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight truncate leading-tight">
+                            {profile.display_name || profile.username}
+                          </h1>
+                        </div>
+                        <p className="text-xs sm:text-sm text-muted-foreground font-mono mt-0.5 flex items-center gap-1.5">
+                          <span>@{profile.username}</span>
+                        </p>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             </div>
 
