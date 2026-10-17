@@ -1,9 +1,18 @@
-import { Controller, Post } from '@nestjs/common';
+import { Body, Controller, Headers, Post } from '@nestjs/common';
 import { WebhooksService } from './webhooks.service';
 
 @Controller('webhooks')
 export class WebhooksController {
   constructor(private readonly webhooksService: WebhooksService) {}
+
+  @Post('crossmint')
+  crossmint(
+    @Body() body: any,
+    @Headers('x-signature') sig?: string,
+    @Headers('crossmint-signature') altSig?: string,
+  ) {
+    return this.webhooksService.handleCrossmint(body, sig || altSig);
+  }
 
   @Post('paystack')
   paystack() {
@@ -15,3 +24,4 @@ export class WebhooksController {
     return this.webhooksService.handleMoonpay();
   }
 }
+

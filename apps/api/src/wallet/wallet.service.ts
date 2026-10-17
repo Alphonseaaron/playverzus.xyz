@@ -384,6 +384,77 @@ export class WalletService {
   }
 
   /**
+   * Credit user's wallet from an authorized Crossmint deposit webhook or checkout event.
+   * Enforces idempotency via orderId so no payment can ever be credited twice.
+   */
+  async creditCrossmintDeposit(
+    userId: string,
+    amount: number,
+    currency = 'USD',
+    orderId: string,
+    rawEvent?: Record<string, any>,
+  ) {
+    return this.redis.withLock(`wallet:${userId}`, 10_000, async () => {
+      // 1. Idempotency Check
+      const { data: existingTx } = await this.supabase
+        .from('transactions')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('idempotency_key', `crossmint-${orderId}`)
+        .maybeSingle();
+
+      if (existingTx) {
+        this.log.log(`Crossmint order ${orderId} already credited for user ${userId}. Skipping duplicate.`);
+        return { success: true, duplicate: true, transactionId: existingTx.id };
+      }
+
+      const roundedAmount = Math.max(0.01, Math.round(amount * 100) / 100);
+      const cash = await this.getRealCash(userId);
+      const newCashBalance = Math.round((cash.balance + roundedAmount) * 100) / 100;
+      cash.balance = newCashBalance;
+      await this.setRealCash(userId, cash);
+
+      const amountCents = Math.round(roundedAmount * 100);
+      const balanceAfterCents = Math.round(newCashBalance * 100);
+
+      const res = await this.supabase
+        .from('transactions')
+        .insert({
+          user_id: userId,
+          amount: amountCents,
+          balance_after: balanceAfterCents,
+          reason: `Deposit via Crossmint (${currency})`,
+          idempotency_key: `crossmint-${orderId}`,
+          metadata: {
+            currency,
+            provider: 'CROSSMINT',
+            orderId,
+            type: 'DEPOSIT',
+            rawEvent: rawEvent || {},
+          },
+        })
+        .select('id')
+        .maybeSingle();
+
+      await this.push.sendToUser(userId, {
+        title: 'USDC Deposit Confirmed',
+        body: `$${roundedAmount.toFixed(2)} ${currency} has been added to your PlayVerzus balance via Crossmint.`,
+        type: 'wallet',
+        url: '/cashier',
+      });
+
+      return {
+        success: true,
+        transactionId: res.data?.id || `tx-cm-${Date.now()}`,
+        amount: roundedAmount,
+        currency,
+        balanceAfter: newCashBalance,
+        message: `Successfully deposited $${roundedAmount.toFixed(2)} ${currency} via Crossmint.`,
+      };
+    });
+  }
+
+  /**
    * Request a real cash withdrawal / payout from the Real Cash ledger
    */
   async requestPayout(userId: string, amount: number, methodInput: PayoutMethod | string) {

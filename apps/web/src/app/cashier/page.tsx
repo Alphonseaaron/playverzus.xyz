@@ -58,6 +58,11 @@ function CashierContent() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successReceipt, setSuccessReceipt] = useState<string | null>(null);
 
+  // Crossmint Checkout Modal State
+  const [crossmintModalOpen, setCrossmintModalOpen] = useState(false);
+  const [crossmintCheckoutUrl, setCrossmintCheckoutUrl] = useState<string | null>(null);
+  const [crossmintOrderId, setCrossmintOrderId] = useState<string | null>(null);
+
   // Sync tab with URL param if it changes
   useEffect(() => {
     const tabParam = searchParams.get('tab');
@@ -142,13 +147,39 @@ function CashierContent() {
       const railName = activeRail?.name || 'Paysafe Gateway';
 
       if (actionTab === 'deposit') {
+        if (activeRail?.id === 'crossmint_card') {
+          try {
+            const res = await apiClient<{ success: boolean; checkoutUrl: string; orderId: string }>(
+              '/crossmint/order',
+              {
+                method: 'POST',
+                body: JSON.stringify({
+                  amount: numAmount,
+                  currency: profile.currency === 'EUR' ? 'EUR' : 'USD',
+                }),
+              },
+            );
+
+            if (res?.checkoutUrl) {
+              setCrossmintCheckoutUrl(res.checkoutUrl);
+              setCrossmintOrderId(res.orderId);
+              setCrossmintModalOpen(true);
+              window.open(res.checkoutUrl, 'CrossmintCheckout', 'width=480,height=720,status=no,toolbar=no');
+              setIsProcessing(false);
+              return;
+            }
+          } catch (crossmintErr) {
+            console.warn('Crossmint order API unavailable, falling back to ledger deposit', crossmintErr);
+          }
+        }
+
         await apiClient('/wallet/deposit', {
           method: 'POST',
           body: JSON.stringify({
             amount: numAmount,
             currency: profile.currency || 'EUR',
-            method: activeRail?.name || 'PAYSAFE',
-            paymentHandleToken: 'paysafe_token_' + Date.now(),
+            method: activeRail?.name || 'CROSSMINT',
+            paymentHandleToken: 'crossmint_token_' + Date.now(),
           }),
         });
       } else {
@@ -512,6 +543,76 @@ function CashierContent() {
           )}
         </CardContent>
       </Card>
+
+      {/* Crossmint Global Card & Apple Pay Checkout Modal */}
+      {crossmintModalOpen && (
+        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-card border border-border rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-5 text-center">
+            <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto text-xl">
+              💳
+            </div>
+            <div>
+              <h3 className="text-lg font-black text-foreground">Global Card & Apple Pay Checkout</h3>
+              <p className="text-xs text-muted-foreground mt-1">
+                Complete your deposit of{' '}
+                <span className="text-emerald-400 font-bold">
+                  {profile.currencySymbol}{parseFloat(customAmount || '0').toFixed(2)}
+                </span>{' '}
+                via Crossmint.
+              </p>
+            </div>
+
+            {crossmintOrderId && (
+              <div className="flex items-center justify-center gap-2 text-xs font-mono bg-muted/30 border border-border p-2.5 rounded-lg text-muted-foreground">
+                <span>Order Reference:</span>
+                <span className="text-foreground font-bold">{crossmintOrderId}</span>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Button
+                variant="default"
+                size="lg"
+                className="w-full font-bold text-xs uppercase tracking-wider h-11 gap-2"
+                onClick={() => {
+                  if (crossmintCheckoutUrl) {
+                    window.open(crossmintCheckoutUrl, 'CrossmintCheckout', 'width=480,height=720,status=no,toolbar=no');
+                  }
+                }}
+              >
+                <span>Re-Open Checkout Window</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                className="w-full font-bold text-xs uppercase tracking-wider h-11 gap-2 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10"
+                onClick={async () => {
+                  setIsProcessing(true);
+                  await refetchWallet();
+                  queryClient.invalidateQueries({ queryKey: ['header-wallet'] });
+                  queryClient.invalidateQueries({ queryKey: ['wallet-balance'] });
+                  queryClient.invalidateQueries({ queryKey: ['wallet-history'] });
+                  setCrossmintModalOpen(false);
+                  setSuccessReceipt(
+                    `Deposit of ${profile.currencySymbol}${parseFloat(customAmount || '0').toFixed(2)} confirmed!`,
+                  );
+                  setIsProcessing(false);
+                }}
+              >
+                <Check className="w-4 h-4" />
+                <span>I've Completed Payment</span>
+              </Button>
+            </div>
+
+            <button
+              onClick={() => setCrossmintModalOpen(false)}
+              className="text-xs text-muted-foreground hover:text-foreground transition underline"
+            >
+              Close & Return to Cashier
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,0 +1,80 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { CrossmintService } from '../src/crossmint/crossmint.service';
+
+describe('CrossmintService', () => {
+  let crossmintService: CrossmintService;
+  let mockWalletService: any;
+
+  beforeEach(() => {
+    mockWalletService = {
+      creditCrossmintDeposit: vi.fn().mockResolvedValue({
+        success: true,
+        transactionId: 'tx-123',
+        amount: 25,
+        currency: 'USD',
+        balanceAfter: 125,
+      }),
+    };
+    crossmintService = new CrossmintService(mockWalletService);
+  });
+
+  it('returns valid client configuration', () => {
+    const config = crossmintService.getConfig();
+    expect(config).toBeDefined();
+    expect(config.environment).toBeDefined();
+    expect(config.supportedCurrencies).toContain('USDC');
+    expect(config.supportedMethods).toContain('card');
+  });
+
+  it('creates deposit order session with valid amount and metadata', async () => {
+    const order = await crossmintService.createDepositOrder('user-abc-123', 'gamer@playverzus.xyz', 25, 'USD');
+    expect(order.success).toBe(true);
+    expect(order.orderId).toBeDefined();
+    expect(order.amount).toBe(25);
+    expect(order.checkoutUrl).toBeDefined();
+  });
+
+  it('rejects deposit order with amount below minimum threshold', async () => {
+    await expect(
+      crossmintService.createDepositOrder('user-abc-123', 'gamer@playverzus.xyz', 0.5),
+    ).rejects.toThrow();
+  });
+
+  it('processes valid Crossmint order completed webhook and credits user wallet', async () => {
+    const webhookPayload = {
+      type: 'orders.delivery.completed',
+      data: {
+        orderId: 'cm-order-777',
+        payment: {
+          amount: 50,
+          currency: 'usd',
+        },
+        metadata: {
+          userId: 'user-winner-1',
+          platform: 'playverzus',
+        },
+      },
+    };
+
+    const res = await crossmintService.handleWebhook(webhookPayload);
+    expect(res.success).toBe(true);
+    expect(mockWalletService.creditCrossmintDeposit).toHaveBeenCalledWith(
+      'user-winner-1',
+      50,
+      'USD',
+      'cm-order-777',
+      webhookPayload,
+    );
+  });
+
+  it('safely ignores non-completion webhook events without throwing', async () => {
+    const webhookPayload = {
+      type: 'orders.item.in_transit',
+      data: { orderId: 'cm-order-888' },
+    };
+
+    const res = await crossmintService.handleWebhook(webhookPayload);
+    expect(res.ignored).toBe(true);
+    expect(mockWalletService.creditCrossmintDeposit).not.toHaveBeenCalled();
+  });
+});

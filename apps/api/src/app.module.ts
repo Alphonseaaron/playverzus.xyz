@@ -22,6 +22,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
 import { RealtimeModule } from './realtime/realtime.module';
 import { WorkersModule } from './workers/workers.module';
 import { MailModule } from './mail/mail.module';
+import { CrossmintModule } from './crossmint/crossmint.module';
 
 import { RateLimitInterceptor } from './common/interceptors/rate-limit.interceptor';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor';
@@ -51,6 +52,7 @@ import { AuditInterceptor } from './common/interceptors/audit.interceptor';
     RealtimeModule,
     WorkersModule,
     MailModule,
+    CrossmintModule,
   ],
   providers: [
     {
