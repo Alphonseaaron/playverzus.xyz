@@ -455,6 +455,45 @@ export class WalletService {
   }
 
   /**
+   * Record a failed Crossmint deposit attempt in transactions audit log
+   * and alert the user with an in-app push notification.
+   */
+  async recordFailedCrossmintDeposit(
+    userId: string,
+    orderId: string,
+    reason: string,
+    rawEvent?: Record<string, any>,
+  ) {
+    try {
+      await this.supabase
+        .from('transactions')
+        .insert({
+          user_id: userId,
+          amount: 0,
+          balance_after: 0,
+          reason: `Deposit Failed via Crossmint: ${reason.slice(0, 80)}`,
+          idempotency_key: `crossmint-failed-${orderId}`,
+          metadata: {
+            provider: 'CROSSMINT',
+            orderId,
+            type: 'DEPOSIT_FAILED',
+            errorReason: reason,
+            rawEvent: rawEvent || {},
+          },
+        });
+    } catch {
+      // Non-fatal if table insert fails
+    }
+
+    await this.push.sendToUser(userId, {
+      title: 'Deposit Unsuccessful',
+      body: `Your deposit could not be completed: ${reason}`,
+      type: 'wallet',
+      url: '/cashier',
+    });
+  }
+
+  /**
    * Request a real cash withdrawal / payout from the Real Cash ledger
    */
   async requestPayout(userId: string, amount: number, methodInput: PayoutMethod | string) {

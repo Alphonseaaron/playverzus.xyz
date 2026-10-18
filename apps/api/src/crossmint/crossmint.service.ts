@@ -137,6 +137,32 @@ export class CrossmintService {
       'checkout.succeeded',
     ].includes(eventType);
 
+    const isFailed = [
+      'orders.delivery.failed',
+      'orders.payment.failed',
+      'purchase.failed',
+    ].includes(eventType);
+
+    if (isFailed) {
+      const orderData = payload.data || payload;
+      const userId = orderData.metadata?.userId || payload.metadata?.userId;
+      const orderId = orderData.orderId || orderData.id || `cm-${Date.now()}`;
+      const reason =
+        orderData.error?.message ||
+        orderData.payment?.errorMessage ||
+        orderData.payment?.error ||
+        orderData.message ||
+        'Payment was declined by payment provider or bank.';
+
+      this.log.warn(`Crossmint deposit failed for order ${orderId} (user: ${userId}): ${reason}`);
+
+      if (userId) {
+        await this.walletService.recordFailedCrossmintDeposit(userId, orderId, reason, payload);
+      }
+
+      return { received: true, status: 'FAILED', orderId, reason };
+    }
+
     if (!isCompleted) {
       return { received: true, ignored: true, eventType };
     }

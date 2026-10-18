@@ -67,6 +67,28 @@ describe('CrossmintService', () => {
     );
   });
 
+  it('handles failed Crossmint order webhooks by recording audit and alerting user', async () => {
+    mockWalletService.recordFailedCrossmintDeposit = vi.fn().mockResolvedValue(undefined);
+
+    const webhookPayload = {
+      type: 'orders.payment.failed',
+      data: {
+        orderId: 'cm-order-failed-999',
+        error: { message: 'Card declined: Insufficient funds' },
+        metadata: { userId: 'user-winner-1' },
+      },
+    };
+
+    const res = await crossmintService.handleWebhook(webhookPayload);
+    expect(res.status).toBe('FAILED');
+    expect(mockWalletService.recordFailedCrossmintDeposit).toHaveBeenCalledWith(
+      'user-winner-1',
+      'cm-order-failed-999',
+      'Card declined: Insufficient funds',
+      webhookPayload,
+    );
+  });
+
   it('safely ignores non-completion webhook events without throwing', async () => {
     const webhookPayload = {
       type: 'orders.item.in_transit',
