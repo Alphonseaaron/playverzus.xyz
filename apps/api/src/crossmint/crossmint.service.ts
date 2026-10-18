@@ -154,6 +154,7 @@ export class CrossmintService {
       'wallets.transfer.out',
       'wallets.transfer.in',
       'wallets.transfer.transaction.update',
+      'wallets.signer.exported',
     ].includes(eventType);
 
     // 1. Handle Failed Events
