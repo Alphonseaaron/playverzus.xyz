@@ -8,10 +8,9 @@ export class WebhooksController {
   @Post('crossmint')
   crossmint(
     @Body() body: any,
-    @Headers('x-signature') sig?: string,
-    @Headers('crossmint-signature') altSig?: string,
+    @Headers() headers: Record<string, string>,
   ) {
-    return this.webhooksService.handleCrossmint(body, sig || altSig);
+    return this.webhooksService.handleCrossmint(body, headers);
   }
 
   @Post('paystack')

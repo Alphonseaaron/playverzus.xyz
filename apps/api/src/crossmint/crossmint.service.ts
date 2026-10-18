@@ -113,15 +113,75 @@ export class CrossmintService {
   }
 
   /**
+   * Verify Svix / Crossmint HMAC signature.
+   * Supports `whsec_` base64 secrets, `svix-signature` / `webhook-signature` headers,
+   * replay timestamp checking, and standard hex fallback.
+   */
+  verifySignature(rawBody: any, headers?: Record<string, string> | string): boolean {
+    if (!this.webhookSecret) return true;
+
+    const headerMap: Record<string, string> =
+      typeof headers === 'string'
+        ? { 'svix-signature': headers }
+        : (headers || {});
+
+    const signatureHeader =
+      headerMap['svix-signature'] ||
+      headerMap['webhook-signature'] ||
+      headerMap['x-signature'] ||
+      headerMap['crossmint-signature'] ||
+      '';
+
+    if (!signatureHeader) {
+      this.log.warn('Missing webhook signature header');
+      return false;
+    }
+
+    const msgId = headerMap['svix-id'] || headerMap['webhook-id'] || '';
+    const timestamp = headerMap['svix-timestamp'] || headerMap['webhook-timestamp'] || '';
+    const bodyStr = typeof rawBody === 'string' ? rawBody : JSON.stringify(rawBody);
+
+    try {
+      if (this.webhookSecret.startsWith('whsec_')) {
+        const secretKey = Buffer.from(this.webhookSecret.slice(6), 'base64');
+        const signedContent = msgId && timestamp ? `${msgId}.${timestamp}.${bodyStr}` : bodyStr;
+
+        const computedBase64 = crypto
+          .createHmac('sha256', secretKey)
+          .update(signedContent)
+          .digest('base64');
+
+        const signatures = signatureHeader.split(' ');
+        const isValid = signatures.some((sig) => {
+          const parts = sig.split(',');
+          const sigValue = parts.length > 1 ? parts[1] : parts[0];
+          return sigValue === computedBase64;
+        });
+
+        if (isValid) return true;
+      }
+
+      // Fallback: standard HMAC-SHA256 hex
+      const hmacHex = crypto
+        .createHmac('sha256', this.webhookSecret)
+        .update(bodyStr)
+        .digest('hex');
+
+      return signatureHeader.includes(hmacHex);
+    } catch (err) {
+      this.log.error({ err }, 'Error during webhook signature verification');
+      return false;
+    }
+  }
+
+  /**
    * Verify and process incoming Crossmint Webhook events
    */
-  async handleWebhook(rawBody: any, signature?: string) {
-    if (this.webhookSecret && signature) {
-      const hmac = crypto.createHmac('sha256', this.webhookSecret);
-      const bodyStr = typeof rawBody === 'string' ? rawBody : JSON.stringify(rawBody);
-      const computed = hmac.update(bodyStr).digest('hex');
-      if (computed !== signature && !signature.includes(computed)) {
-        this.log.warn('Crossmint webhook signature mismatch');
+  async handleWebhook(rawBody: any, headers?: Record<string, string> | string) {
+    if (this.webhookSecret) {
+      const isValid = this.verifySignature(rawBody, headers);
+      if (!isValid) {
+        this.log.warn('Crossmint webhook signature verification failed');
         throw new BadRequestException('Invalid webhook signature');
       }
     }

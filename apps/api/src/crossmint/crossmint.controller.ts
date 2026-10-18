@@ -29,9 +29,8 @@ export class CrossmintController {
   @Post('webhook')
   async handleWebhook(
     @Body() body: any,
-    @Headers('x-signature') sig?: string,
-    @Headers('crossmint-signature') altSig?: string,
+    @Headers() headers: Record<string, string>,
   ) {
-    return this.crossmintService.handleWebhook(body, sig || altSig);
+    return this.crossmintService.handleWebhook(body, headers);
   }
 }

@@ -5,8 +5,8 @@ import { CrossmintService } from '../crossmint/crossmint.service';
 export class WebhooksService {
   constructor(private readonly crossmintService: CrossmintService) {}
 
-  handleCrossmint(body: any, signature?: string) {
-    return this.crossmintService.handleWebhook(body, signature);
+  handleCrossmint(body: any, headers?: Record<string, string> | string) {
+    return this.crossmintService.handleWebhook(body, headers);
   }
 
   handlePaystack() {

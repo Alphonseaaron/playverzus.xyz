@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import * as crypto from 'crypto';
 import { CrossmintService } from '../src/crossmint/crossmint.service';
 
 describe('CrossmintService', () => {
@@ -16,6 +17,35 @@ describe('CrossmintService', () => {
       }),
     };
     crossmintService = new CrossmintService(mockWalletService);
+  });
+
+  it('correctly verifies Svix whsec_ Base64 cryptographic signatures', () => {
+    const testSecret = 'whsec_rBMGCSCENLfYSQ9znTDH+43CX6qZm/ex';
+    (crossmintService as any).webhookSecret = testSecret;
+
+    const body = { type: 'orders.delivery.completed', id: '123' };
+    const bodyStr = JSON.stringify(body);
+    const msgId = 'msg_test_123';
+    const timestamp = '1729249000';
+    const signedContent = `${msgId}.${timestamp}.${bodyStr}`;
+
+    const secretKey = Buffer.from(testSecret.slice(6), 'base64');
+    const signature = crypto.createHmac('sha256', secretKey).update(signedContent).digest('base64');
+
+    const headers = {
+      'svix-id': msgId,
+      'svix-timestamp': timestamp,
+      'svix-signature': `v1,${signature}`,
+    };
+
+    const isValid = crossmintService.verifySignature(body, headers);
+    expect(isValid).toBe(true);
+
+    const isInvalid = crossmintService.verifySignature(body, {
+      ...headers,
+      'svix-signature': 'v1,fake_tampered_signature',
+    });
+    expect(isInvalid).toBe(false);
   });
 
   it('returns valid client configuration', () => {
