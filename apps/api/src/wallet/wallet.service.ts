@@ -494,6 +494,55 @@ export class WalletService {
   }
 
   /**
+   * Record an in-progress / initiated Crossmint deposit state
+   * and alert the user with a real-time push notification.
+   */
+  async recordPendingCrossmintDeposit(
+    userId: string,
+    orderId: string,
+    amount: number,
+    status: string,
+    rawEvent?: Record<string, any>,
+  ) {
+    this.log.log(`Crossmint deposit ${orderId} in progress for user ${userId} (status: ${status})`);
+
+    await this.push.sendToUser(userId, {
+      title: 'Deposit In Progress',
+      body: `Your deposit of $${amount.toFixed(2)} is being processed on the blockchain.`,
+      type: 'wallet',
+      url: '/cashier',
+    });
+  }
+
+  /**
+   * Record an outbound wallet transfer update (such as an admin treasury payout or player withdrawal).
+   */
+  async recordTransferUpdate(
+    transferId: string,
+    status: string,
+    txHash?: string,
+    rawEvent?: Record<string, any>,
+  ) {
+    this.log.log(
+      `Crossmint outbound transfer ${transferId} updated: status=${status}, txHash=${txHash || 'pending'}`,
+    );
+
+    // If metadata contains a user ID, notify them
+    const userId = rawEvent?.metadata?.userId || rawEvent?.userId;
+    if (userId) {
+      const isConfirmed = status.toLowerCase().includes('confirmed') || status.toLowerCase().includes('succeeded');
+      await this.push.sendToUser(userId, {
+        title: isConfirmed ? 'Withdrawal Confirmed' : 'Withdrawal Processing',
+        body: isConfirmed
+          ? `Your withdrawal transfer has completed on-chain.${txHash ? ` Tx: ${txHash.slice(0, 10)}...` : ''}`
+          : `Your withdrawal transfer is currently ${status}.`,
+        type: 'wallet',
+        url: '/cashier',
+      });
+    }
+  }
+
+  /**
    * Request a real cash withdrawal / payout from the Real Cash ledger
    */
   async requestPayout(userId: string, amount: number, methodInput: PayoutMethod | string) {

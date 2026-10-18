@@ -143,6 +143,20 @@ export class CrossmintService {
       'purchase.failed',
     ].includes(eventType);
 
+    const isPending = [
+      'orders.delivery.intiated',
+      'orders.quote.created',
+      'orders.updated',
+    ].includes(eventType);
+
+    const isTransfer = [
+      'wallets.experimental.tranfer.updated',
+      'wallets.transfer.out',
+      'wallets.transfer.in',
+      'wallets.transfer.transaction.update',
+    ].includes(eventType);
+
+    // 1. Handle Failed Events
     if (isFailed) {
       const orderData = payload.data || payload;
       const userId = orderData.metadata?.userId || payload.metadata?.userId;
@@ -163,6 +177,40 @@ export class CrossmintService {
       return { received: true, status: 'FAILED', orderId, reason };
     }
 
+    // 2. Handle Pending / In-Progress Events
+    if (isPending) {
+      const orderData = payload.data || payload;
+      const userId = orderData.metadata?.userId || payload.metadata?.userId;
+      const orderId = orderData.orderId || orderData.id || `cm-${Date.now()}`;
+      const amount = Number(
+        orderData.payment?.amount ||
+        orderData.amount ||
+        orderData.lineItems?.[0]?.callData?.totalPrice ||
+        orderData.totalPrice ||
+        10,
+      );
+
+      this.log.log(`Crossmint deposit in progress for order ${orderId} (user: ${userId}) event: ${eventType}`);
+
+      if (userId) {
+        await this.walletService.recordPendingCrossmintDeposit(userId, orderId, amount, eventType, payload);
+      }
+
+      return { received: true, status: 'IN_PROGRESS', orderId, eventType };
+    }
+
+    // 3. Handle Wallet / Outbound Transfer Events (Admin / Treasury Payouts)
+    if (isTransfer) {
+      const transferData = payload.data || payload;
+      const transferId = transferData.id || transferData.transferId || `tx-${Date.now()}`;
+      const status = transferData.status || eventType;
+      const txHash = transferData.txHash || transferData.hash || transferData.transactionHash;
+
+      await this.walletService.recordTransferUpdate(transferId, status, txHash, payload);
+      return { received: true, status: 'TRANSFER_UPDATED', transferId };
+    }
+
+    // 4. Handle Completion Events
     if (!isCompleted) {
       return { received: true, ignored: true, eventType };
     }

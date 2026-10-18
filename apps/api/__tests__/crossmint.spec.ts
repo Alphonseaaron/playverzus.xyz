@@ -89,9 +89,56 @@ describe('CrossmintService', () => {
     );
   });
 
+  it('handles in-progress / initiated Crossmint order webhooks without crediting balance early', async () => {
+    mockWalletService.recordPendingCrossmintDeposit = vi.fn().mockResolvedValue(undefined);
+
+    const webhookPayload = {
+      type: 'orders.delivery.intiated',
+      data: {
+        orderId: 'cm-order-pending-555',
+        amount: 25,
+        metadata: { userId: 'user-winner-1' },
+      },
+    };
+
+    const res = await crossmintService.handleWebhook(webhookPayload);
+    expect(res.status).toBe('IN_PROGRESS');
+    expect(mockWalletService.recordPendingCrossmintDeposit).toHaveBeenCalledWith(
+      'user-winner-1',
+      'cm-order-pending-555',
+      25,
+      'orders.delivery.intiated',
+      webhookPayload,
+    );
+    expect(mockWalletService.creditCrossmintDeposit).not.toHaveBeenCalled();
+  });
+
+  it('handles outbound wallet transfer updates for treasury payouts', async () => {
+    mockWalletService.recordTransferUpdate = vi.fn().mockResolvedValue(undefined);
+
+    const webhookPayload = {
+      type: 'wallets.experimental.tranfer.updated',
+      data: {
+        id: 'tx-transfer-777',
+        status: 'CONFIRMED',
+        txHash: '0xabc123def456',
+        metadata: { userId: 'admin-user-1' },
+      },
+    };
+
+    const res = await crossmintService.handleWebhook(webhookPayload);
+    expect(res.status).toBe('TRANSFER_UPDATED');
+    expect(mockWalletService.recordTransferUpdate).toHaveBeenCalledWith(
+      'tx-transfer-777',
+      'CONFIRMED',
+      '0xabc123def456',
+      webhookPayload,
+    );
+  });
+
   it('safely ignores non-completion webhook events without throwing', async () => {
     const webhookPayload = {
-      type: 'orders.item.in_transit',
+      type: 'unknown.custom.event',
       data: { orderId: 'cm-order-888' },
     };
 
