@@ -23,7 +23,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Home',
-          headerTitle: 'VERZUSXYZ',
+          headerTitle: 'PLAYVERZUS.XYZ',
           tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>⚡</Text>,
         }}
       />

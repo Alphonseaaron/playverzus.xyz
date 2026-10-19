@@ -39,9 +39,9 @@ self.addEventListener('push', (event) => {
     payload = { title: 'PlayVerzus', body: event.data.text() };
   }
 
-  const title = payload.title || 'PlayVerzus Arena';
+  const title = payload.title || 'Playverzus.xyz';
   const options = {
-    body: payload.body || 'Check the arena for updates.',
+    body: payload.body || 'Check Playverzus.xyz for updates.',
     icon: payload.icon || '/icon.png',
     badge: payload.badge || '/icon.png',
     tag: payload.tag || 'playverzus',

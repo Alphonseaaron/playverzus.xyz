@@ -516,7 +516,7 @@ export function CashierModal({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     <div className="p-2.5 rounded-lg bg-card border border-border">
                       <span className="text-[10px] uppercase font-mono text-muted-foreground block font-bold">
-                        {actionTab === 'deposit' ? 'You Receive in Arena' : 'Deducted from Arena Balance'}
+                        {actionTab === 'deposit' ? 'You Receive in Playverzus.xyz' : 'Deducted from Playverzus.xyz Balance'}
                       </span>
                       <span className="font-mono text-sm font-black text-foreground">
                         {numAmount.toFixed(2)} USDC

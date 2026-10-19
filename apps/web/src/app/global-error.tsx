@@ -27,7 +27,7 @@ export default function GlobalError({
               RECOVERY MODE ACTIVE
             </span>
             <h1 className="text-2xl font-black tracking-tight text-white">
-              PlayVerzus Arena
+              Playverzus.xyz
             </h1>
             <p className="text-xs text-gray-400 leading-relaxed">
               An unexpected layout error occurred. Your game progress and balance data are safely persisted.

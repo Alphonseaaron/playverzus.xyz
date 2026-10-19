@@ -77,7 +77,7 @@ describe('Brevo Transactional Mail Integration Suite', () => {
       expect(spy).toHaveBeenCalledTimes(1);
       const callArg = spy.mock.calls[0]![0];
       expect(callArg.to[0]?.email).toBe('newplayer@playverzus.xyz');
-      expect(callArg.subject).toContain('Welcome to PlayVerzus');
+      expect(callArg.subject).toContain('Welcome to Playverzus.xyz');
       expect(callArg.htmlContent).toContain('support@playverzus.xyz');
       expect(callArg.htmlContent).toContain('playverzus.xyz');
     });

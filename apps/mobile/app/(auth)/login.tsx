@@ -69,8 +69,8 @@ export default function LoginScreen() {
     >
       <View style={styles.inner}>
         <View style={styles.brandContainer}>
-          <Text style={styles.logoTitle}>VERZUSXYZ</Text>
-          <Text style={styles.logoSubtitle}>Universal Esports Arena</Text>
+          <Text style={styles.logoTitle}>PLAYVERZUS.XYZ</Text>
+          <Text style={styles.logoSubtitle}>Competitive Esports Platform</Text>
         </View>
 
         {errorMessage ? (

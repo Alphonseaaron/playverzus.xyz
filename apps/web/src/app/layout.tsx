@@ -9,7 +9,7 @@ import { NotificationToastContainer } from '../components/NotificationToastConta
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://playverzus.xyz'),
-  title: 'PlayVerzus.xyz — Universal Esports Arena',
+  title: 'Playverzus.xyz — Competitive Esports Platform',
   description: 'Skill-based esports matchmaking, party duels, and tournaments with automated instant match verification and anti-cheat.',
   icons: {
     icon: [
@@ -21,23 +21,23 @@ export const metadata: Metadata = {
     ],
   },
   openGraph: {
-    title: 'PlayVerzus.xyz — Universal Esports Arena',
+    title: 'Playverzus.xyz — Competitive Esports Platform',
     description: 'Skill-based esports matchmaking, party duels, and tournaments with automated instant match verification.',
     url: 'https://playverzus.xyz',
-    siteName: 'PlayVerzus.xyz',
+    siteName: 'Playverzus.xyz',
     images: [
       {
         url: '/images/logo.png',
         width: 770,
         height: 148,
-        alt: 'PlayVerzus.xyz Arena',
+        alt: 'Playverzus.xyz',
       },
     ],
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'PlayVerzus.xyz — Universal Esports Arena',
+    title: 'Playverzus.xyz — Competitive Esports Platform',
     description: 'Skill-based esports matchmaking, party duels, and tournaments with automated instant match verification.',
     images: ['/images/logo.png'],
   },

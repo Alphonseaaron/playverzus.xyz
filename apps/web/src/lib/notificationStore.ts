@@ -39,7 +39,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   notifications: [
     {
       id: 'welcome-init',
-      title: 'Welcome to PlayVerzus Arena',
+      title: 'Welcome to Playverzus.xyz',
       body: 'Automated game sync active. Join duels or browse cups.',
       type: 'info',
       timestamp: 1728500000000,

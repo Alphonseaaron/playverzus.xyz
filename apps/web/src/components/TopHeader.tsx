@@ -67,7 +67,7 @@ function getPageContext(pathname: string): { title: string; subtitle?: string } 
   if (pathname.startsWith('/settings')) return { title: 'Settings', subtitle: 'Preferences' };
   if (pathname.startsWith('/admin')) return { title: 'Operations Console', subtitle: 'Administration' };
   if (pathname.startsWith('/profile')) return { title: 'Player Profile', subtitle: 'Career Dossier' };
-  return { title: 'PlayVerzus.xyz', subtitle: 'Esports Platform' };
+  return { title: 'Playverzus.xyz', subtitle: 'Esports Platform' };
 }
 
 export function TopHeader() {

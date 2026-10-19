@@ -314,7 +314,7 @@ export class WalletService {
             amount: Math.round(roundedAmount * 100),
             currencyCode: currency,
             paymentHandleToken,
-            description: `PlayVerzus ${currency} Competitive Deposit via ${method}`,
+            description: `Playverzus.xyz ${currency} Competitive Deposit via ${method}`,
           });
 
           if (res.status === 'FAILED') {
@@ -438,7 +438,7 @@ export class WalletService {
 
       await this.push.sendToUser(userId, {
         title: 'USDC Deposit Confirmed',
-        body: `$${roundedAmount.toFixed(2)} ${currency} has been added to your PlayVerzus balance via Crossmint.`,
+        body: `$${roundedAmount.toFixed(2)} ${currency} has been added to your Playverzus.xyz balance via Crossmint.`,
         type: 'wallet',
         url: '/cashier',
       });

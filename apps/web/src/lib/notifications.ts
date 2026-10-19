@@ -152,7 +152,7 @@ export function notifyUser(
     try {
       useNotificationStore.getState().addNotification({
         title,
-        body: options?.body || 'Check the Verzus arena room for updates.',
+        body: options?.body || 'Check the Playverzus.xyz room for updates.',
         type: options?.type || (options?.sound === 'victory' ? 'success' : options?.sound === 'connect' ? 'match' : 'info'),
         actionLabel: options?.actionLabel,
         actionUrl: options?.actionUrl,
@@ -167,7 +167,7 @@ export function notifyUser(
   if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
     try {
       new Notification(title, {
-        body: options?.body || 'Check the Verzus arena room for updates.',
+        body: options?.body || 'Check the Playverzus.xyz room for updates.',
         icon: '/favicon.ico',
       });
     } catch {

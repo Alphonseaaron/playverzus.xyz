@@ -845,7 +845,7 @@ function HomeContent() {
               height={18}
               className="h-4 w-auto object-contain"
             />
-            <span>© 2026 PlayVerzus Arena. All rights reserved.</span>
+            <span>© 2026 Playverzus.xyz. All rights reserved.</span>
           </div>
           <span className="font-mono text-[10px]">Premier competitive esports infrastructure</span>
         </div>

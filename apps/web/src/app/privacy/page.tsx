@@ -16,8 +16,8 @@ import { Card } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 
 export const metadata = {
-  title: 'Privacy Policy | Verzus Arena',
-  description: 'Player Privacy Policy and Zero Video Storage Guarantee for Verzus Arena.',
+  title: 'Privacy Policy | Playverzus.xyz',
+  description: 'Player Privacy Policy and Zero Video Storage Guarantee for Playverzus.xyz.',
 };
 
 export default function PrivacyPolicyPage() {
@@ -31,7 +31,7 @@ export default function PrivacyPolicyPage() {
             className="inline-flex items-center gap-1.5 text-xs font-mono text-muted-foreground hover:text-foreground mb-6 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Back to Arena</span>
+            <span>Back to Playverzus.xyz</span>
           </Link>
 
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-6">
@@ -73,7 +73,7 @@ export default function PrivacyPolicyPage() {
               <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-2xl">
                 During competitive match sessions, screen captures and video telemetry feeds are processed transiently
                 in <strong className="text-foreground">volatile device and server memory</strong> solely to verify scoreboards and prevent fraud.
-                Verzus <strong className="text-foreground">never records, never archives, and never retains full video streams</strong> or personal desktop recordings.
+                Playverzus.xyz <strong className="text-foreground">never records, never archives, and never retains full video streams</strong> or personal desktop recordings.
               </p>
             </div>
             <Badge variant="success" className="px-3 py-1 font-mono text-xs flex-shrink-0">
@@ -91,7 +91,7 @@ export default function PrivacyPolicyPage() {
               <span>Our Privacy Philosophy</span>
             </h2>
             <p>
-              At Verzus Arena, we believe competitive integrity and personal privacy must coexist. We adhere to the
+              At Playverzus.xyz, we believe competitive integrity and personal privacy must coexist. We adhere to the
               principles of <strong>Data Minimization</strong> and <strong>Privacy by Design</strong> under global data protection
               regulations, including the European Union General Data Protection Regulation (GDPR) and the Kenya Data Protection Act (2019).
               We collect only the minimum information required to operate fair matchmaking, enforce anti-cheat rules, and settle financial escrow.
@@ -115,8 +115,8 @@ export default function PrivacyPolicyPage() {
               </li>
               <li>
                 <strong>Financial & Transactional Records:</strong> Ledger entries (deposits, entry fee locks, prize payouts, withdrawals),
-                currency amounts, and payment transaction identifiers provided by our licensed payment processor (Paysafe).
-                <em> Note: Full payment card numbers and CVV codes are transmitted directly to PCI-DSS Level 1 compliant processors and are never received or stored on Verzus servers.</em>
+                currency amounts, and payment transaction identifiers provided by our licensed payment processors.
+                <em> Note: Full payment card numbers and CVV codes are transmitted directly to PCI-DSS Level 1 compliant processors and are never received or stored on Playverzus.xyz servers.</em>
               </li>
               <li>
                 <strong>Anti-Fraud & Device Telemetry:</strong> Ephemeral device fingerprints (derived from display properties and WebGL environment),
@@ -176,8 +176,8 @@ export default function PrivacyPolicyPage() {
             </p>
             <ul className="list-disc pl-5 space-y-1.5">
               <li>
-                <strong>Regulated Payment Institutions:</strong> Paysafe Payment Solutions and affiliated banking partners for processing
-                deposits, SEPA transfers, and identity verification.
+                <strong>Regulated Payment Institutions:</strong> Licensed payment processors (Crossmint, Paysafe) and affiliated banking partners for processing
+                deposits, card checkouts, and payouts.
               </li>
               <li>
                 <strong>Infrastructure & Hosting Providers:</strong> Cloud infrastructure providers operating under strict European and
@@ -197,7 +197,7 @@ export default function PrivacyPolicyPage() {
               <span>Cookies & Session Security</span>
             </h2>
             <p>
-              Verzus Arena utilizes essential authentication cookies and encrypted local storage tokens strictly to maintain your
+              Playverzus.xyz utilizes essential authentication cookies and encrypted local storage tokens strictly to maintain your
               logged-in session state and interface preferences. We do not use third-party behavioral advertising trackers or cross-site
               ad tracking networks.
             </p>
@@ -245,7 +245,7 @@ export default function PrivacyPolicyPage() {
 
         {/* Footer info */}
         <div className="pt-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground font-mono">
-          <span>Verzus Arena — Privacy by Design & Zero-Storage Architecture</span>
+          <span>Playverzus.xyz — Privacy by Design & Zero-Storage Architecture</span>
           <Link href="/terms" className="text-primary hover:underline">
             View Terms of Service →
           </Link>

@@ -55,7 +55,7 @@ export default function SignupScreen() {
       <View style={styles.inner}>
         <View style={styles.brandContainer}>
           <Text style={styles.logoTitle}>CREATE ACCOUNT</Text>
-          <Text style={styles.logoSubtitle}>Join VerzusXYZ & claim 1,000 demo POINTS</Text>
+          <Text style={styles.logoSubtitle}>Join Playverzus.xyz & claim 1,000 demo POINTS</Text>
         </View>
 
         {errorMessage ? (

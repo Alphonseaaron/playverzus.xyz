@@ -175,7 +175,7 @@ export default function AdminSponsorsPage() {
             Active Brand Partners
           </CardTitle>
           <CardDescription className="text-xs text-muted-foreground">
-            Organizations and advertisers powering prize guarantees on VerzusXYZ.
+            Organizations and advertisers powering prize guarantees on Playverzus.xyz.
           </CardDescription>
         </CardHeader>
 

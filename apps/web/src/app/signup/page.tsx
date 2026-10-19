@@ -49,7 +49,7 @@ function SignUpForm() {
     }
 
     if (!ageConfirmed) {
-      setError('You must confirm your age and agree to the Verzus competitive rules.');
+      setError('You must confirm your age and agree to the Playverzus.xyz competitive rules.');
       return;
     }
 

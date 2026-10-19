@@ -32,7 +32,7 @@ export class BrevoService {
   private readonly logger = new Logger(BrevoService.name);
   private readonly apiKey = process.env.BREVO_API_KEY;
   private readonly senderEmail = process.env.BREVO_SENDER_EMAIL || 'support@playverzus.xyz';
-  private readonly senderName = process.env.BREVO_SENDER_NAME || 'PlayVerzus Arena';
+  private readonly senderName = process.env.BREVO_SENDER_NAME || 'Playverzus.xyz';
   private readonly appUrl = process.env.WEB_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://playverzus.xyz';
 
   /**
@@ -63,7 +63,7 @@ export class BrevoService {
           to: options.to,
           replyTo: options.replyTo || {
             email: 'support@playverzus.xyz',
-            name: 'PlayVerzus Support',
+            name: 'Playverzus.xyz Support',
           },
           subject: options.subject,
           htmlContent: options.htmlContent,
@@ -88,7 +88,7 @@ export class BrevoService {
   }
 
   /**
-   * Sends a welcome email upon user registration on PlayVerzus Arena.
+   * Sends a welcome email upon user registration on Playverzus.xyz.
    */
   async sendWelcomeEmail(toEmail: string, username: string) {
     const htmlContent = `
@@ -108,14 +108,14 @@ export class BrevoService {
       </head>
       <body>
         <div class="container">
-          <div class="logo">PlayVerzus Arena</div>
-          <h1>Welcome to PlayVerzus, ${username}!</h1>
+          <div class="logo">Playverzus.xyz</div>
+          <h1>Welcome to Playverzus.xyz, ${username}!</h1>
           <p>Your competitive esports account is ready. You now have access to verified 1v1 challenges, championship cups, and automated score settlements.</p>
           <p>We've credited your account with <strong>1,000 Practice Points</strong> to start competing immediately with zero fiat risk.</p>
-          <a href="${this.appUrl}/dashboard" class="btn">Enter The Arena</a>
+          <a href="${this.appUrl}/dashboard" class="btn">Enter Playverzus.xyz</a>
           <div class="footer">
             <p>Need assistance or have match inquiries? Contact our team at <a href="mailto:support@playverzus.xyz" style="color: #38bdf8;">support@playverzus.xyz</a>.</p>
-            <p>© 2026 PlayVerzus Arena (playverzus.xyz). All rights reserved.</p>
+            <p>© 2026 Playverzus.xyz. All rights reserved.</p>
           </div>
         </div>
       </body>
@@ -124,9 +124,9 @@ export class BrevoService {
 
     return this.sendEmail({
       to: [{ email: toEmail, name: username }],
-      subject: 'Welcome to PlayVerzus Arena — Your Account is Ready',
+      subject: 'Welcome to Playverzus.xyz — Your Account is Ready',
       htmlContent,
-      textContent: `Welcome to PlayVerzus Arena, ${username}! Access your dashboard at ${this.appUrl}. Support: support@playverzus.xyz`,
+      textContent: `Welcome to Playverzus.xyz, ${username}! Access your dashboard at ${this.appUrl}. Support: support@playverzus.xyz`,
     });
   }
 
@@ -142,7 +142,7 @@ export class BrevoService {
       <html>
       <body style="font-family: sans-serif; background: #0b0e14; color: #f1f5f9; padding: 24px;">
         <div style="max-width: 580px; margin: 0 auto; background: #121824; border: 1px solid #1e293b; border-radius: 16px; padding: 32px;">
-          <h2 style="color: #38bdf8; margin-top: 0;">PlayVerzus Support Center</h2>
+          <h2 style="color: #38bdf8; margin-top: 0;">Playverzus.xyz Support Center</h2>
           <p style="color: #94a3b8; font-size: 14px;">Hello ${dto.name},</p>
           <p style="color: #94a3b8; font-size: 14px;">We received your inquiry regarding <strong>"${dto.subject}"</strong>. Our team is reviewing it under ticket reference <strong>#${ticketId}</strong>.</p>
           <div style="background: #1e293b; border-radius: 8px; padding: 16px; margin: 20px 0; font-size: 13px; color: #cbd5e1;">
@@ -151,7 +151,7 @@ export class BrevoService {
           </div>
           <p style="color: #94a3b8; font-size: 13px;">Our compliance and support agents typically respond within 15 to 30 minutes for active match disputes, and within 24 hours for general account inquiries.</p>
           <div style="margin-top: 24px; border-top: 1px solid #1e293b; padding-top: 16px; font-size: 12px; color: #64748b;">
-            PlayVerzus Support Team &bull; <a href="mailto:support@playverzus.xyz" style="color: #38bdf8;">support@playverzus.xyz</a> &bull; <a href="${this.appUrl}" style="color: #38bdf8;">playverzus.xyz</a>
+            Playverzus.xyz Support Team &bull; <a href="mailto:support@playverzus.xyz" style="color: #38bdf8;">support@playverzus.xyz</a> &bull; <a href="${this.appUrl}" style="color: #38bdf8;">playverzus.xyz</a>
           </div>
         </div>
       </body>
@@ -177,7 +177,7 @@ export class BrevoService {
     `;
 
     await this.sendEmail({
-      to: [{ email: 'support@playverzus.xyz', name: 'PlayVerzus Support Desk' }],
+      to: [{ email: 'support@playverzus.xyz', name: 'Playverzus.xyz Support Desk' }],
       replyTo: { email: dto.email, name: dto.name },
       subject: `[Support Desk #${ticketId}] ${dto.subject} from ${dto.name}`,
       htmlContent: staffHtml,

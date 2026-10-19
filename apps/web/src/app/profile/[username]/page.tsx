@@ -103,12 +103,12 @@ export default function PublicProfilePage() {
               Player @{username} not found
             </h2>
             <p className="text-xs text-muted-foreground">
-              This competitor tag does not exist or has not enrolled in the Verzus arena yet.
+              This competitor tag does not exist or has not enrolled in Playverzus.xyz yet.
             </p>
           </div>
           <Link href="/" className="inline-block pt-2">
             <Button variant="default" size="sm">
-              Return to Arena
+              Return to Playverzus.xyz
             </Button>
           </Link>
         </Card>

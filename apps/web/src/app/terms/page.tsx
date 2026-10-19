@@ -16,8 +16,8 @@ import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 
 export const metadata = {
-  title: 'Terms of Service | Verzus Arena',
-  description: 'Terms of Service and Competitive Skill Gaming Rules for Verzus Arena.',
+  title: 'Terms of Service | Playverzus.xyz',
+  description: 'Terms of Service and Competitive Skill Gaming Rules for Playverzus.xyz.',
 };
 
 export default function TermsOfServicePage() {
@@ -31,7 +31,7 @@ export default function TermsOfServicePage() {
             className="inline-flex items-center gap-1.5 text-xs font-mono text-muted-foreground hover:text-foreground mb-6 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Back to Arena</span>
+            <span>Back to Playverzus.xyz</span>
           </Link>
 
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-6">
@@ -48,7 +48,7 @@ export default function TermsOfServicePage() {
                 Terms of Service & Rules
               </h1>
               <p className="text-sm text-muted-foreground mt-1">
-                Governing competitive skill contests, escrow settlement, and fair-play participation on Verzus Arena.
+                Governing competitive skill contests, escrow settlement, and fair-play participation on Playverzus.xyz.
               </p>
             </div>
 
@@ -104,14 +104,14 @@ export default function TermsOfServicePage() {
               <span>Acceptance of Agreement & Eligibility</span>
             </h2>
             <p>
-              By creating an account, connecting a game stream, or entering any contest on Verzus Arena (the &ldquo;Platform&rdquo;),
+              By creating an account, connecting a game stream, or entering any contest on Playverzus.xyz (the &ldquo;Platform&rdquo;),
               you agree to be bound by these Terms of Service (&ldquo;Terms&rdquo;), our Privacy Policy, and all official game rules.
               If you do not agree to these Terms, you must not use or access the Platform.
             </p>
             <p>
               <strong>Age Limitations:</strong> You must be at least thirteen (13) years of age to access free-to-play Practice
               contests. You must be at least eighteen (18) years of age, or the legal age of majority in your jurisdiction,
-              to deposit funds, enter real-money EUR cash contests, or request payouts.
+              to deposit funds, enter real-money contests, or request payouts.
             </p>
             <p>
               <strong>Jurisdictional Compliance:</strong> You are solely responsible for ensuring that participation in skill-based
@@ -127,13 +127,13 @@ export default function TermsOfServicePage() {
               <span>Classification as Contests of Pure Skill</span>
             </h2>
             <p>
-              Verzus Arena operates exclusively as an esports platform hosting contests governed by the <strong>Predominance Test</strong>.
+              Playverzus.xyz operates exclusively as an esports platform hosting contests governed by the <strong>Predominance Test</strong>.
               Match outcomes depend predominantly upon the physical dexterity, reaction speed, strategic decision-making, game knowledge,
               and execution of the competing players.
             </p>
             <p>
               Games of chance, lotteries, slots, roulette, dice, and house-banked games are strictly barred from the Platform catalog.
-              Verzus Arena does not offer house odds, act as a bookmaker, or wager against players. Prize pools are funded by participant
+              Playverzus.xyz does not offer house odds, act as a bookmaker, or wager against players. Prize pools are funded by participant
               entry fees, and administrative contest facilitation fees are fixed and non-contingent upon match outcomes.
             </p>
           </section>
@@ -155,7 +155,7 @@ export default function TermsOfServicePage() {
               </li>
               <li>
                 <strong>Proprietary Technology Protections:</strong> All visual verification engines, mathematical algorithms, detection models,
-                and validation architectures are strictly proprietary trade secrets of Verzus Arena. No licenses, technical schematics,
+                and validation architectures are strictly proprietary trade secrets of Playverzus.xyz. No licenses, technical schematics,
                 or blueprints are granted to players or third parties.
               </li>
               <li>
@@ -173,7 +173,7 @@ export default function TermsOfServicePage() {
               <span>Anti-Cheat, Anti-Fraud & Fair Play Policy</span>
             </h2>
             <p>
-              Verzus Arena enforces a zero-tolerance policy against all forms of cheating, unsportsmanlike conduct, and fraud.
+              Playverzus.xyz enforces a zero-tolerance policy against all forms of cheating, unsportsmanlike conduct, and fraud.
               Prohibited behaviors include, but are not limited to:
             </p>
             <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-4 space-y-2 text-foreground text-xs">
@@ -204,7 +204,7 @@ export default function TermsOfServicePage() {
               <span>Financial Ledgers, Escrow & AML Wagering Requirements</span>
             </h2>
             <p>
-              The Platform maintains a segregated dual-ledger accounting architecture separating Practice Coins from real EUR cash balances.
+              The Platform maintains a segregated dual-ledger accounting architecture separating Practice Coins from real USDC balances.
             </p>
             <ul className="list-disc pl-5 space-y-2">
               <li>
@@ -212,19 +212,19 @@ export default function TermsOfServicePage() {
                 Practice coins have zero fiat currency value and cannot be exchanged, withdrawn, or transferred for real currency.
               </li>
               <li>
-                <strong>Contest Escrow Vault:</strong> When you enter a cash match or tournament, your entry fee is locked in a secure
+                <strong>Contest Escrow Vault:</strong> When you enter a match or tournament, your entry fee is locked in a secure
                 escrow ledger. Upon authoritative match validation, the entire prize pool (less platform service fees) is instantly credited
                 to the victor&apos;s available balance.
               </li>
               <li>
                 <strong>Anti-Money Laundering (AML) 1x Rollover Invariant:</strong> To prevent payment fraud, stolen credit card abuse,
-                and money laundering, all deposited cash funds must be wagered at least once (1x rollover) in competitive matches before
+                and money laundering, all deposited funds must be wagered at least once (1x rollover) in competitive matches before
                 becoming eligible for withdrawal. Net winnings resulting from completed matches are immediately withdrawable.
               </li>
               <li>
-                <strong>Transaction Thresholds:</strong> The minimum deposit is €5.00; maximum single deposit is €5,000.00.
-                The minimum withdrawal is €10.00; maximum single withdrawal is €10,000.00. Payout requests are processed through regulated
-                banking gateways (including Paysafe direct banking and SEPA transfers).
+                <strong>Transaction Thresholds:</strong> The minimum deposit is 5.00 USDC; maximum single deposit is 5,000.00 USDC.
+                The minimum withdrawal is 10.00 USDC; maximum single withdrawal is 10,000.00 USDC. Payout requests are processed through regulated
+                banking and stablecoin gateways.
               </li>
             </ul>
           </section>
@@ -253,8 +253,8 @@ export default function TermsOfServicePage() {
               <span>Intellectual Property & Proprietary Rights</span>
             </h2>
             <p>
-              The Platform name, Verzus Arena logo, visual interfaces, automated verification engines, anti-cheat detection mechanisms,
-              and trade dress are the exclusive property of Verzus Arena. All third-party game titles, trademarks, and artwork referenced
+              The Platform name, Playverzus.xyz logo, visual interfaces, automated verification engines, anti-cheat detection mechanisms,
+              and trade dress are the exclusive property of Playverzus.xyz. All third-party game titles, trademarks, and artwork referenced
               on the Platform belong to their respective publishers and copyright holders. Reference to third-party games does not imply
               sponsorship, endorsement, or affiliation.
             </p>
@@ -267,8 +267,8 @@ export default function TermsOfServicePage() {
               <span>Limitation of Liability & Indemnification</span>
             </h2>
             <p>
-              The Platform is provided on an &ldquo;AS IS&rdquo; and &ldquo;AS AVAILABLE&rdquo; basis. Verzus Arena disclaims all warranties
-              of any kind, whether express or implied. Under no circumstances shall Verzus Arena, its directors, or affiliates be liable
+              The Platform is provided on an &ldquo;AS IS&rdquo; and &ldquo;AS AVAILABLE&rdquo; basis. Playverzus.xyz disclaims all warranties
+              of any kind, whether express or implied. Under no circumstances shall Playverzus.xyz, its directors, or affiliates be liable
               for any indirect, incidental, special, consequential, or punitive damages arising out of your participation in matches or inability
               to access the service.
             </p>
@@ -289,7 +289,7 @@ export default function TermsOfServicePage() {
 
         {/* Footer info */}
         <div className="pt-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground font-mono">
-          <span>Verzus Arena — Operating under International Skill Contest Standards</span>
+          <span>Playverzus.xyz — Operating under International Skill Contest Standards</span>
           <Link href="/privacy" className="text-primary hover:underline">
             View Privacy Policy →
           </Link>
