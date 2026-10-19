@@ -7,7 +7,7 @@ describe('HealthController', () => {
     const res = controller.check();
 
     expect(res.status).toBe('ok');
-    expect(res.service).toBe('verzusxyz-api');
+    expect(res.service).toBe('playverzus-api');
     expect(typeof res.uptime).toBe('number');
     expect(res.timestamp).toBeDefined();
   });

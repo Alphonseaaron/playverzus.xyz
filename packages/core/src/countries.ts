@@ -1,5 +1,5 @@
 /**
- * ISO 3166-1 Global Country Dataset for VerzusXYZ
+ * ISO 3166-1 Global Country Dataset for Playverzus.xyz
  * Comprehensive dataset covering all officially assigned countries and territories.
  * Used for:
  * 1. Player registration, KYC, residency & age verification (13+ Free / 18+ Cash)

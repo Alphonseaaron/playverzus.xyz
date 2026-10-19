@@ -105,7 +105,7 @@ export class PaysafeClient {
       amount: params.amount,
       currencyCode: params.currencyCode || 'EUR',
       paymentHandleToken: params.paymentHandleToken,
-      description: params.description || 'Verzus Esports Competitive Deposit',
+      description: params.description || 'Playverzus.xyz Competitive Deposit',
       settleWithAuth: params.settleWithAuth !== false,
       dupCheck: params.dupCheck ?? true,
     };
@@ -173,7 +173,7 @@ export class PaysafeClient {
       merchantRefNum: params.merchantRefNum,
       amount: params.amount,
       currencyCode: params.currencyCode || 'EUR',
-      description: 'Verzus Esports Competitive Ledger Withdrawal',
+      description: 'Playverzus.xyz Competitive Ledger Withdrawal',
       dupCheck: true,
     };
 

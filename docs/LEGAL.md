@@ -28,7 +28,7 @@ PlayVerzus operates strictly on games governed by the **Predominance Test**:
 - **Demo Mode**: Because PlayVerzus operates in `WALLET_MODE=demo` (POINTS have no cash value and cannot be converted to KES), no gaming license is required during initial rollout.
 
 ### 2. Kenya Data Protection Act (2019) & GDPR Compliance
-- **Principle of Minimization**: Verzus enforces an authoritative **Zero Video Storage Policy**. Match frames and visual feeds submitted for verification are analyzed transiently in volatile device/server memory. Only verified numeric match results and mathematical integrity signatures are permanently persisted.
+- **Principle of Minimization**: Playverzus.xyz enforces an authoritative **Zero Video Storage Policy**. Match frames and visual feeds submitted for verification are analyzed transiently in volatile device/server memory. Only verified numeric match results and mathematical integrity signatures are permanently persisted.
 - **Consent**: Explicit terms of service agree to automated visual telemetry analysis of designated game HUD regions during active match sessions.
 
 ### 3. Consumer Protection Act (2012)
@@ -52,7 +52,7 @@ PlayVerzus operates strictly on games governed by the **Predominance Test**:
 
 ## 🛡️ Anti-Cheat & Fair Play Compliance
 
-To maintain legitimacy as a pure skill platform, Verzus implements:
+To maintain legitimacy as a pure skill platform, Playverzus.xyz implements:
 - Rate limit thresholds on score increments and temporal sanity checks.
 - Proprietary visual validation preventing pre-recorded video or edited screen insertions.
 - Hardware/device fingerprinting and network subnet collision guards to prevent multi-accounting.

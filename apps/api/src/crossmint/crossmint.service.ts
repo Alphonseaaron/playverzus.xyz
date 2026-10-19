@@ -66,7 +66,7 @@ export class CrossmintService {
       ],
       metadata: {
         userId,
-        platform: 'playverzus',
+        platform: 'playverzus.xyz',
         type: 'DEPOSIT',
       },
     };

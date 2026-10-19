@@ -52,7 +52,7 @@ async function bootstrap() {
 
   const port = process.env.PORT || 4000;
   await app.listen(port);
-  log.info({ port }, 'VerzusXYZ Backend API server listening with security hardening');
+  log.info({ port }, 'Playverzus.xyz Backend API server listening with security hardening');
 }
 
 void bootstrap();

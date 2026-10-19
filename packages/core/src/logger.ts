@@ -7,7 +7,7 @@ export function getLogger(): Logger {
   if (rootLogger) return rootLogger;
   rootLogger = pino({
     level: process.env.LOG_LEVEL ?? 'info',
-    base: { service: 'verzusxyz-core' },
+    base: { service: 'playverzus-core' },
     timestamp: pino.stdTimeFunctions.isoTime,
   });
   return rootLogger;

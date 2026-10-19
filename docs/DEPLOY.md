@@ -46,7 +46,7 @@ This guide documents the complete procedure to deploy PlayVerzus across free-tie
 1. Create a free account at [render.com](https://render.com).
 2. Click **New + > Web Service** and connect your GitHub repository.
 3. Configure the service settings:
-   - **Name**: `verzusxyz-api`
+   - **Name**: `playverzus-api`
    - **Environment**: `Node`
    - **Root Directory**: leave blank or specify `apps/api`
    - **Build Command**:
@@ -66,7 +66,7 @@ This guide documents the complete procedure to deploy PlayVerzus across free-tie
    - `REDIS_URL`: `<your-upstash-redis-url>`
    - `WALLET_MODE`: `demo`
    - `CORS_ORIGIN`: `https://<your-vercel-domain>.vercel.app`
-5. Click **Create Web Service**. Note the assigned URL: `https://verzusxyz-api.onrender.com`.
+5. Click **Create Web Service**. Note the assigned URL: `https://playverzus-api.onrender.com` (or `https://api.playverzus.xyz`).
 
 ---
 
@@ -82,7 +82,7 @@ This guide documents the complete procedure to deploy PlayVerzus across free-tie
 4. Add Environment Variables:
    - `NEXT_PUBLIC_SUPABASE_URL`: `https://<your-project>.supabase.co`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: `<your-anon-key>`
-   - `NEXT_PUBLIC_API_URL`: `https://verzusxyz-api.onrender.com`
+   - `NEXT_PUBLIC_API_URL`: `https://api.playverzus.xyz` (or `https://playverzus-api.onrender.com`)
    - `NEXT_PUBLIC_WALLET_MODE`: `demo`
 5. Click **Deploy**. Vercel will build and assign your production domain.
 
@@ -95,7 +95,7 @@ This guide documents the complete procedure to deploy PlayVerzus across free-tie
    ```bash
    EXPO_PUBLIC_SUPABASE_URL=https://<your-project>.supabase.co
    EXPO_PUBLIC_SUPABASE_ANON_KEY=<your-anon-key>
-   EXPO_PUBLIC_API_URL=https://verzusxyz-api.onrender.com
+   EXPO_PUBLIC_API_URL=https://api.playverzus.xyz
    ```
 3. Run local simulator or device:
    ```bash

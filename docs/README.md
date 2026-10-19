@@ -1,8 +1,8 @@
-# VerzusXYZ — Universal Esports Platform
+# Playverzus.xyz — Universal Esports Platform
 
 > **Any Game. Any Device. Zero Developer APIs. 100% Free-Tier Infrastructure.**
 
-VerzusXYZ is a globally accessible, skill-based esports infrastructure that enables competitive 1v1 matchmaking and single-elimination bracket tournaments across **any game** (mobile, PC, console, or physical table games) using proprietary automated visual verification, video stream telemetry ingestion, and a human-in-the-loop (HITL) review audit trail.
+Playverzus.xyz is a globally accessible, skill-based esports infrastructure that enables competitive 1v1 matchmaking and single-elimination bracket tournaments across **any game** (mobile, PC, console, or physical table games) using proprietary automated visual verification, video stream telemetry ingestion, and a human-in-the-loop (HITL) review audit trail.
 
 ---
 
@@ -54,7 +54,7 @@ VerzusXYZ is a globally accessible, skill-based esports infrastructure that enab
 1. **Zero-Cost Operation**:
    Every service used operates strictly within permanent free tiers (Supabase, Vercel, Render, Upstash Redis, Cloudflare R2).
 2. **Zero Game Developer APIs**:
-   Verzus does not rely on third-party developer APIs. Matches are verified by capturing video frames or screen snapshots, cropping defined Regions of Interest (ROI), and performing automated visual verification and match integrity validation.
+   Playverzus.xyz does not rely on third-party developer APIs. Matches are verified by capturing video frames or screen snapshots, cropping defined Regions of Interest (ROI), and performing automated visual verification and match integrity validation.
 3. **Zero Screenshot Storage**:
    To comply with privacy laws, zero-storage limits, and minimize bandwidth, full gameplay frames are processed ephemerally in volatile memory. Only extracted numeric data, confidence scores, and integrity hashes are permanently stored.
 4. **Legally Compliant Skill-Based Model**:
