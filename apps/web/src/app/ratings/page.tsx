@@ -1,5 +1,7 @@
 'use client';
 
+import { AuthGuard } from '../../components/AuthGuard';
+
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { Trophy, BarChart3, Swords, Gamepad2, ArrowRight } from 'lucide-react';
@@ -27,7 +29,7 @@ interface UserProfile {
   rating?: number;
 }
 
-export default function MyRatingsPage() {
+function MyRatingsContent() {
   const { setActiveGame } = useGameStore();
 
   const { data: userProfile } = useQuery<UserProfile | null>({
@@ -161,5 +163,14 @@ export default function MyRatingsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+
+export default function MyRatingsPage() {
+  return (
+    <AuthGuard>
+      <MyRatingsContent />
+    </AuthGuard>
   );
 }

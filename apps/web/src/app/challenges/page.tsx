@@ -1,5 +1,7 @@
 'use client';
 
+import { AuthGuard } from '../../components/AuthGuard';
+
 import { useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
@@ -34,7 +36,7 @@ interface ChallengeItem {
   mode?: string;
 }
 
-export default function ChallengesPage() {
+function ChallengesContent() {
   const router = useRouter();
   const { activeGame, setActiveGame } = useGameStore();
   const [filterGameOnly, setFilterGameOnly] = useState(true);
@@ -259,5 +261,14 @@ export default function ChallengesPage() {
         />
       )}
     </div>
+  );
+}
+
+
+export default function ChallengesPage() {
+  return (
+    <AuthGuard>
+      <ChallengesContent />
+    </AuthGuard>
   );
 }

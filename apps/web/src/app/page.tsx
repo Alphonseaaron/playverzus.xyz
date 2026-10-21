@@ -45,8 +45,6 @@ import { Skeleton } from '../components/ui/skeleton';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '../components/ui/card';
-import { SEEDED_TOURNAMENTS } from '../lib/seededTournaments';
-import { SEEDED_CHAMPIONS } from '../lib/seededLeaderboards';
 
 interface UserProfile {
   id: string;
@@ -114,30 +112,28 @@ function HomeContent() {
   }, [loadingProfile, isAuthenticated, wantsLanding, router]);
 
   // Query real tournaments from API — fall back to seeded data if API fails or returns empty
-  const { data: tournaments, isLoading: loadingTournaments } = useQuery<HomeTournament[]>({
+  const { data: tournaments = [], isLoading: loadingTournaments } = useQuery<HomeTournament[]>({
     queryKey: ['home-tournaments'],
     queryFn: async () => {
       try {
         const res = await apiClient<HomeTournament[]>('/tournaments');
-        if (res && res.length > 0) return res;
-        return SEEDED_TOURNAMENTS as HomeTournament[];
+        return res || [];
       } catch {
-        return SEEDED_TOURNAMENTS as HomeTournament[];
+        return [];
       }
     },
     staleTime: 30000,
   });
 
   // Query real leaderboard champions from API — fall back to seeded data if API fails or returns empty
-  const { data: champions, isLoading: loadingChampions } = useQuery<HomeLeaderboardEntry[]>({
+  const { data: champions = [], isLoading: loadingChampions } = useQuery<HomeLeaderboardEntry[]>({
     queryKey: ['home-champions'],
     queryFn: async () => {
       try {
         const res = await apiClient<HomeLeaderboardEntry[]>('/leaderboard/HEAD_TO_HEAD');
-        if (res && res.length > 0) return res;
-        return SEEDED_CHAMPIONS as HomeLeaderboardEntry[];
+        return res || [];
       } catch {
-        return SEEDED_CHAMPIONS as HomeLeaderboardEntry[];
+        return [];
       }
     },
     staleTime: 30000,
@@ -268,13 +264,13 @@ function HomeContent() {
         <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 w-full sm:w-auto pt-2">
           {!isAuthenticated ? (
             <>
-              <Link href="/signup" className="w-full sm:w-auto">
+              <Link href="/signup?redirect=/challenges" className="w-full sm:w-auto">
                 <Button size="lg" className="w-full sm:w-auto font-black text-sm uppercase tracking-wider px-8 h-12 gap-2 shadow-xl shadow-primary/20">
                   <Rocket className="w-4 h-4" />
                   <span>Play For Free</span>
                 </Button>
               </Link>
-              <Link href="/login" className="w-full sm:w-auto">
+              <Link href="/login?redirect=/dashboard" className="w-full sm:w-auto">
                 <Button variant="secondary" size="lg" className="w-full sm:w-auto font-bold text-sm uppercase tracking-wider px-6 h-12 gap-2">
                   <LogIn className="w-4 h-4" />
                   <span>Sign In</span>
@@ -761,7 +757,7 @@ function HomeContent() {
 
         <div className="flex flex-col sm:flex-row items-center gap-3">
           {!isAuthenticated ? (
-            <Link href="/signup">
+            <Link href="/signup?redirect=/challenges">
               <Button size="lg" className="font-black text-sm uppercase tracking-wider px-8 h-12 shadow-xl shadow-primary/20 gap-2">
                 <Rocket className="w-4 h-4" />
                 <span>Create Free Player Account</span>

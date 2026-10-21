@@ -146,6 +146,16 @@ export function TopHeader() {
     ...(me ? [{ href: '/?view=landing', label: 'Landing Page', icon: Globe }] : []),
   ];
 
+  // Hide top navigation header on standalone document / auth pages
+  if (
+    pathname === '/privacy' ||
+    pathname === '/terms' ||
+    pathname === '/login' ||
+    pathname === '/signup'
+  ) {
+    return null;
+  }
+
   // Dedicated Public Marketing Header for Landing Page
   if (pathname === '/') {
     return (

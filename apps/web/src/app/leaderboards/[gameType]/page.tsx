@@ -6,7 +6,6 @@ import { useQuery } from '@tanstack/react-query';
 import { LeaderboardTable } from '../../../components/LeaderboardTable';
 import { apiClient } from '../../../lib/api';
 import { OFFICIAL_GAMES, getGameById } from '../../../lib/gamesCatalog';
-import { SEEDED_CHAMPIONS } from '../../../lib/seededLeaderboards';
 import { Card } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import { ArrowLeft, Swords } from 'lucide-react';
@@ -32,21 +31,18 @@ export default function GameLeaderboardDynamicPage() {
 
   const engineType = matchedGame.gameType;
 
-  const { data: rawEntries, isLoading } = useQuery<LeaderboardEntry[]>({
+  const { data: entries = [], isLoading } = useQuery<LeaderboardEntry[]>({
     queryKey: ['leaderboard', engineType],
     queryFn: async () => {
       try {
-        const res = await apiClient<LeaderboardEntry[]>(`/leaderboard/${engineType}`);
-        if (res && res.length > 0) return res;
-        return SEEDED_CHAMPIONS;
+        const res = await apiClient<LeaderboardEntry[]>('/leaderboard/' + engineType);
+        return res || [];
       } catch {
-        return SEEDED_CHAMPIONS;
+        return [];
       }
     },
     staleTime: 10000,
   });
-
-  const entries = rawEntries && rawEntries.length > 0 ? rawEntries : SEEDED_CHAMPIONS;
 
   return (
     <div className="flex flex-col gap-6 max-w-7xl mx-auto my-6">

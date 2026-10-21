@@ -11,7 +11,6 @@ import { useGameStore } from '../../lib/gameStore';
 import { OFFICIAL_GAMES, getGameById, type CatalogGame } from '../../lib/gamesCatalog';
 import { GamePoster } from '../../components/GamePoster';
 import { GameContextBar } from '../../components/GameContextBar';
-import { SEEDED_CHAMPIONS } from '../../lib/seededLeaderboards';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
@@ -70,21 +69,18 @@ export default function LeaderboardsPage() {
   });
 
   // 2. Fetch Leaderboard for the selected game's engine type
-  const { data: rawEntries, isLoading } = useQuery<LeaderboardEntry[]>({
+  const { data: entries = [], isLoading } = useQuery<LeaderboardEntry[]>({
     queryKey: ['leaderboard', selectedGame.gameType],
     queryFn: async () => {
       try {
-        const res = await apiClient<LeaderboardEntry[]>(`/leaderboard/${selectedGame.gameType}`);
-        if (res && res.length > 0) return res;
-        return SEEDED_CHAMPIONS;
+        const res = await apiClient<LeaderboardEntry[]>('/leaderboard/' + selectedGame.gameType);
+        return res || [];
       } catch {
-        return SEEDED_CHAMPIONS;
+        return [];
       }
     },
     staleTime: 10000,
   });
-
-  const entries = rawEntries && rawEntries.length > 0 ? rawEntries : SEEDED_CHAMPIONS;
 
   // 3. Fetch user's individual rank in this ladder
   const { data: userRankData } = useQuery<UserRankResponse | null>({

@@ -95,8 +95,18 @@ export function PartyBar() {
     setChatInput('');
   };
 
-  // Hide squad bar on public marketing landing page and admin panel
-  if (pathname === '/' || pathname.startsWith('/admin')) {
+  // Hide squad dock on landing, admin, legal, auth, and live matchroom pages
+  const hideParty =
+    pathname === '/' ||
+    pathname.startsWith('/admin') ||
+    pathname === '/privacy' ||
+    pathname === '/terms' ||
+    pathname === '/login' ||
+    pathname === '/signup' ||
+    pathname.startsWith('/matches/room/') ||
+    (pathname.startsWith('/matches/') && pathname !== '/matches/new');
+
+  if (hideParty) {
     return null;
   }
 

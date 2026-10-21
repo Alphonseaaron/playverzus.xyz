@@ -13,7 +13,6 @@ import { OFFICIAL_GAMES } from '../../lib/gamesCatalog';
 import { GamePoster } from '../../components/GamePoster';
 import { GameContextBar } from '../../components/GameContextBar';
 import { EmptyState } from '../../components/EmptyState';
-import { SEEDED_TOURNAMENTS } from '../../lib/seededTournaments';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Skeleton } from '../../components/ui/skeleton';
@@ -46,21 +45,18 @@ export default function TournamentsPage() {
     staleTime: 30000,
   });
 
-  const { data: rawTournaments, isLoading } = useQuery<TournamentItem[]>({
+  const { data: tournaments = [], isLoading } = useQuery<TournamentItem[]>({
     queryKey: ['tournaments-list'],
     queryFn: async () => {
       try {
         const res = await apiClient<TournamentItem[]>('/tournaments');
-        if (res && res.length > 0) return res;
-        return SEEDED_TOURNAMENTS;
+        return res || [];
       } catch {
-        return SEEDED_TOURNAMENTS;
+        return [];
       }
     },
     staleTime: 15000,
   });
-
-  const tournaments = rawTournaments && rawTournaments.length > 0 ? rawTournaments : SEEDED_TOURNAMENTS;
 
   const filteredTournaments = (tournaments || []).filter((t) => {
     if (filterGameOnly && activeGame) {

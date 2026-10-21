@@ -41,14 +41,14 @@ export function GameRail() {
   const { data: games } = useQuery<GameProfile[]>({
     queryKey: ['approved-games-rail'],
     queryFn: () => apiClient<GameProfile[]>('/games'),
-    enabled: pathname !== '/' && !pathname.startsWith('/admin'),
+    enabled: !['/', '/privacy', '/terms', '/login', '/signup'].includes(pathname) && !pathname.startsWith('/admin') && !pathname.startsWith('/matches/room/') && !(pathname.startsWith('/matches/') && pathname !== '/matches/new'),
   });
 
   const { data: me } = useQuery<{ id: string; role?: string } | null>({
     queryKey: ['gamerail-me'],
     queryFn: () => apiClient<{ id: string; role?: string }>('/profile/me').catch(() => null),
     staleTime: 30000,
-    enabled: pathname !== '/' && !pathname.startsWith('/admin'),
+    enabled: !['/', '/privacy', '/terms', '/login', '/signup'].includes(pathname) && !pathname.startsWith('/admin') && !pathname.startsWith('/matches/room/') && !(pathname.startsWith('/matches/') && pathname !== '/matches/new'),
   });
 
   const isStaff = me?.role === 'ADMIN' || me?.role === 'SUPER_ADMIN' || me?.role === 'REVIEWER';
@@ -70,8 +70,17 @@ export function GameRail() {
     }
   }, [games, initializeDefaultGame]);
 
-  // Landing page does not include the sidebar
-  if (pathname === '/') {
+  // Landing page, standalone documents, and live match arena do not include the sidebar
+  const hideSidebar =
+    pathname === '/' ||
+    pathname === '/privacy' ||
+    pathname === '/terms' ||
+    pathname === '/login' ||
+    pathname === '/signup' ||
+    pathname.startsWith('/matches/room/') ||
+    (pathname.startsWith('/matches/') && pathname !== '/matches/new');
+
+  if (hideSidebar) {
     return null;
   }
 

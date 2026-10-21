@@ -19,7 +19,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
 
   // Safely extract redirect destination, preventing open redirect vulnerabilities
-  const redirectParam = searchParams.get('redirect');
+  const redirectParam = searchParams.get('redirect') || searchParams.get('next') || searchParams.get('returnUrl');
   const target =
     redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//')
       ? redirectParam
