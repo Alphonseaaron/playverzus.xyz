@@ -159,7 +159,7 @@ export function TopHeader() {
   // Dedicated Public Marketing Header for Landing Page
   if (pathname === '/') {
     return (
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8 max-w-full">
+      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border h-14 sm:h-16 flex items-center justify-between px-3 sm:px-6 lg:px-8 max-w-full">
         {/* Left: Brand Logo */}
         <div className="flex items-center gap-3">
           <Link href={me ? '/dashboard' : '/'} className="flex items-center gap-2 group">
@@ -168,7 +168,7 @@ export function TopHeader() {
               alt="playverzus.xyz"
               width={160}
               height={36}
-              className="h-8 sm:h-9 w-auto object-contain transition group-hover:opacity-90"
+              className="h-7 sm:h-9 w-auto object-contain transition group-hover:opacity-90"
               priority
             />
           </Link>
@@ -212,7 +212,7 @@ export function TopHeader() {
         <div className="flex items-center gap-2 sm:gap-3">
           {!me ? (
             <>
-              <Link href="/login">
+              <Link href="/login" className="hidden sm:inline-flex">
                 <Button variant="ghost" size="sm" className="font-bold text-xs uppercase tracking-wider">
                   Sign In
                 </Button>
@@ -220,7 +220,7 @@ export function TopHeader() {
               <Link href="/signup">
                 <Button
                   size="sm"
-                  className="font-bold text-xs uppercase tracking-wider bg-primary hover:bg-primary/90 text-primary-foreground shadow-md shadow-primary/20"
+                  className="font-bold text-[11px] sm:text-xs uppercase tracking-wider bg-primary hover:bg-primary/90 text-primary-foreground shadow-md shadow-primary/20 h-8 sm:h-9 px-3 sm:px-4"
                 >
                   Play For Free
                 </Button>
@@ -366,7 +366,7 @@ export function TopHeader() {
   }
 
   return (
-    <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-border h-16 flex items-center justify-between px-4 sm:px-6 gap-3 sm:gap-4 max-w-full">
+    <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-border h-14 sm:h-16 flex items-center justify-between px-3 sm:px-6 gap-2 sm:gap-4 max-w-full">
       {/* 1. Left Zone: Mobile Drawer Trigger + Active Arena Pill + Context Breadcrumb */}
       <div className="flex items-center gap-2 sm:gap-3 min-w-0">
         {/* Mobile menu toggle */}
@@ -374,8 +374,7 @@ export function TopHeader() {
           variant="ghost"
           size="icon"
           onClick={() => setMobileMenuOpen(true)}
-          className="lg:hidden text-muted-foreground hover:text-foreground"
-          aria-label="Toggle navigation drawer"
+          className="lg:hidden text-muted-foreground hover:text-foreground w-8 h-8 sm:w-9 sm:h-9 flex-shrink-0" aria-label="Toggle navigation drawer"
         >
           <Menu className="w-5 h-5" />
         </Button>
@@ -390,12 +389,12 @@ export function TopHeader() {
             alt="playverzus.xyz"
             width={28}
             height={28}
-            className="w-7 h-7 object-contain"
+            className="w-6 h-6 sm:w-7 sm:h-7 object-contain"
           />
         </Link>
 
         {/* Active Game Dropdown Switcher (Anchored dropdown - NO sticky popup modals) */}
-        <div className="relative">
+        <div className="relative hidden sm:block">
           <button
             type="button"
             onClick={() => setGameDropdownOpen((prev) => !prev)}
@@ -458,12 +457,12 @@ export function TopHeader() {
       {/* 3. Right Zone: Wallet Capsule + Notification Bell + Gamer Profile Chip */}
       <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
         {/* Wallet Balance Capsule */}
-        <div className="flex items-center bg-card border border-border rounded-lg p-1 gap-1 shadow-sm">
+        <div className="flex items-center bg-card border border-border rounded-lg p-0.5 sm:p-1 gap-1 shadow-sm">
           {/* Real vs Demo Toggle */}
           <button
             type="button"
             onClick={toggleWalletMode}
-            className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-mono font-bold tracking-wider transition ${
+            className={`hidden sm:flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-mono font-bold tracking-wider transition ${
               walletMode === 'REAL'
                 ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25'
                 : 'bg-purple-500/15 text-purple-300 border border-purple-500/30 hover:bg-purple-500/25'
@@ -482,9 +481,15 @@ export function TopHeader() {
           {/* Active Balance Display */}
           <Link
             href="/cashier"
-            className="px-2 py-0.5 font-mono font-bold text-xs hover:text-primary transition flex items-center gap-1"
+            className="px-2 py-1 font-mono font-bold text-xs hover:text-primary transition flex items-center gap-1.5"
             title="Open Cashier & Balance Management"
           >
+            {/* Mobile indicator dot */}
+            <span
+              className={`sm:hidden w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                walletMode === 'REAL' ? 'bg-emerald-400' : 'bg-purple-400'
+              }`}
+            />
             {walletMode === 'REAL' ? (
               <span className="text-emerald-400 font-semibold">{formatEUR(cashAmount)}</span>
             ) : (
@@ -495,7 +500,7 @@ export function TopHeader() {
           </Link>
 
           {/* Top-up Button */}
-          <Link href="/cashier?tab=deposit">
+          <Link href="/cashier?tab=deposit" className="hidden sm:inline-flex">
             <Button
               size="icon"
               variant="default"
@@ -568,6 +573,36 @@ export function TopHeader() {
             />
           </div>
         </SheetHeader>
+
+        {/* Mobile Wallet Mode & Deposit Controls */}
+        <div className="space-y-2 mb-4">
+          <div className="flex items-center justify-between p-2.5 rounded-xl bg-card border border-border">
+            <div className="flex items-center gap-2">
+              <Wallet className="w-4 h-4 text-primary" />
+              <span className="text-xs font-bold text-foreground">Play Mode</span>
+            </div>
+            <button
+              type="button"
+              onClick={toggleWalletMode}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-bold tracking-wider transition ${
+                walletMode === 'REAL'
+                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                  : 'bg-purple-500/20 text-purple-300 border border-purple-500/40'
+              }`}
+            >
+              <span className={`w-2 h-2 rounded-full ${walletMode === 'REAL' ? 'bg-emerald-400' : 'bg-purple-400'}`} />
+              <span>{walletMode === 'REAL' ? 'REAL CASH' : 'DEMO PTS'}</span>
+              <ArrowLeftRight className="w-3 h-3 opacity-70 ml-0.5" />
+            </button>
+          </div>
+
+          <Link href="/cashier?tab=deposit" onClick={() => setMobileMenuOpen(false)}>
+            <Button variant="default" size="sm" className="w-full text-xs font-bold gap-1.5 shadow-sm">
+              <Plus className="w-3.5 h-3.5" />
+              <span>Deposit / Top Up Balance</span>
+            </Button>
+          </Link>
+        </div>
 
         {/* Current Arena Quick Switcher in Drawer */}
         <div className="mb-6">
