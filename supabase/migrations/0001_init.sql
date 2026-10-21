@@ -7,8 +7,10 @@
 -- ---------------------------------------------------------------------------
 -- EXTENSIONS
 -- ---------------------------------------------------------------------------
-create extension if not exists "pgcrypto";
-create extension if not exists "pg_trgm";
+create schema if not exists extensions;
+create extension if not exists "pgcrypto" with schema extensions;
+create extension if not exists "pg_trgm" with schema extensions;
+grant usage on schema extensions to public, anon, authenticated, service_role;
 
 -- ---------------------------------------------------------------------------
 -- ENUMS
@@ -406,7 +408,7 @@ create index if not exists idx_audit_entity on public.audit_log(entity_type, ent
 
 create or replace function public.current_role()
 returns role_enum
-language sql stable security definer set search_path = public as $$
+language sql stable security invoker set search_path = public as $$
   select coalesce(
     (select role from public.profiles where id = auth.uid()),
     'PLAYER'::role_enum
@@ -415,19 +417,19 @@ $$;
 
 create or replace function public.is_admin()
 returns boolean
-language sql stable security definer set search_path = public as $$
+language sql stable security invoker set search_path = public as $$
   select public.current_role() in ('ADMIN','SUPER_ADMIN');
 $$;
 
 create or replace function public.is_reviewer()
 returns boolean
-language sql stable security definer set search_path = public as $$
+language sql stable security invoker set search_path = public as $$
   select public.current_role() in ('REVIEWER','ADMIN','SUPER_ADMIN');
 $$;
 
 create or replace function public.is_match_participant(p_match_id uuid)
 returns boolean
-language sql stable security definer set search_path = public as $$
+language sql stable security invoker set search_path = public as $$
   select exists(
     select 1 from public.matches m
     where m.id = p_match_id
@@ -437,7 +439,7 @@ $$;
 
 create or replace function public.is_tournament_participant(p_tournament_id uuid)
 returns boolean
-language sql stable security definer set search_path = public as $$
+language sql stable security invoker set search_path = public as $$
   select exists(
     select 1 from public.tournament_entries e
     where e.tournament_id = p_tournament_id and e.user_id = auth.uid()
@@ -1049,8 +1051,13 @@ create policy "profiles_select_all" on public.profiles for select using (true);
 create policy "profiles_update_self" on public.profiles for update
   using (id = auth.uid())
   with check (id = auth.uid());
-create policy "profiles_admin_all" on public.profiles for all
-  using (public.is_admin()) with check (public.is_admin());
+create policy "profiles_admin_insert" on public.profiles for insert
+  with check (public.is_admin());
+create policy "profiles_admin_update" on public.profiles for update
+  using (public.is_admin())
+  with check (public.is_admin());
+create policy "profiles_admin_delete" on public.profiles for delete
+  using (public.is_admin());
 
 -- FRIENDSHIPS
 create policy "friendships_select_own" on public.friendships for select
@@ -1173,6 +1180,33 @@ alter publication supabase_realtime add table public.tournaments;
 alter publication supabase_realtime add table public.tournament_entries;
 alter publication supabase_realtime add table public.disputes;
 alter publication supabase_realtime add table public.review_tasks;
+
+-- ============================================================================
+-- PERMISSIONS & ACCESS CONTROL (Hardened Security)
+-- ============================================================================
+
+-- Strip default EXECUTE from public, anon, and authenticated
+revoke execute on all functions in schema public from public;
+revoke execute on all functions in schema public from anon;
+revoke execute on all functions in schema public from authenticated;
+
+alter default privileges in schema public revoke execute on functions from public;
+alter default privileges in schema public revoke execute on functions from anon;
+alter default privileges in schema public revoke execute on functions from authenticated;
+
+-- Grant execute on backend functions exclusively to service_role and postgres
+grant execute on all functions in schema public to service_role, postgres;
+alter default privileges in schema public grant execute on functions to service_role, postgres;
+
+-- Explicit trigger execute for Supabase Auth
+grant execute on function public.handle_new_user() to supabase_auth_admin, service_role, postgres;
+
+-- Grant execute on SECURITY INVOKER helpers for RLS evaluation
+grant execute on function public.current_role() to anon, authenticated, service_role, postgres;
+grant execute on function public.is_admin() to anon, authenticated, service_role, postgres;
+grant execute on function public.is_reviewer() to anon, authenticated, service_role, postgres;
+grant execute on function public.is_match_participant(uuid) to anon, authenticated, service_role, postgres;
+grant execute on function public.is_tournament_participant(uuid) to anon, authenticated, service_role, postgres;
 
 -- ============================================================================
 -- END
