@@ -130,7 +130,7 @@ export default function AdminSponsorsPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-foreground mb-1">
-                    Committed Prize Liquidity (€ EUR)
+                    Committed Prize Liquidity ($ USDC)
                   </label>
                   <Input
                     type="number"

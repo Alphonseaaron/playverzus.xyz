@@ -243,14 +243,14 @@ export class AdminService {
         },
         {
           id: 'tournament_margins',
-          name: 'Tournament Ticket Entries & Bracket Margins',
+          name: '5-Player Sit & Go Blitz Pools & Cup Margins (10% - 20% Rake)',
           category: 'COMPETITIVE_EVENTS',
           grossVolumeEur: Math.round(tournamentEntryVolumeEur * 100) / 100,
           netRevenueEur: tournamentMarginEur,
           takeRatePercent: tournamentEntryVolumeEur > 0 ? Math.round((tournamentMarginEur / tournamentEntryVolumeEur) * 1000) / 10 : 15.0,
           marginPercent: 85.0,
           status: tournamentEntryVolumeEur > 0 ? 'ACTIVE_EARNING' : 'AWAITING_TOURNAMENTS',
-          description: 'Entry ticket fees retained after prize pool distributions in Swiss & single elimination cups.',
+          description: 'Tiered 10% (Micro $0.50), 15% (Challenger $2.50), and 20% (Champion $10.00) platform rakes retained from 5-player Sit & Go blitz pools.',
         },
         {
           id: 'brand_sponsorships',

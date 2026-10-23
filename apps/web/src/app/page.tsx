@@ -297,7 +297,7 @@ function HomeContent() {
         {/* Live Proof Metrics Strip */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 w-full pt-8 sm:pt-12 border-t border-border/60">
           <div className="p-4 rounded-xl bg-card border border-border shadow-sm flex flex-col items-center">
-            <span className="font-mono text-xl sm:text-2xl font-black text-emerald-400">€150,000+</span>
+            <span className="font-mono text-xl sm:text-2xl font-black text-emerald-400">$150,000+</span>
             <span className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider mt-0.5">Prize Cash Won</span>
           </div>
 
@@ -521,7 +521,7 @@ function HomeContent() {
             </div>
             <h3 className="font-bold text-sm text-foreground">Dual-Ledger Wallet</h3>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Play for free using daily Practice Points or compete for real EUR cash via Paysafe instant banking in over 50 countries.
+              Play for free using daily Practice Points or compete for real USDC cash via Crossmint instant checkout in over 180 countries.
             </p>
           </Card>
 
@@ -751,7 +751,7 @@ function HomeContent() {
             Ready to Prove Your Skill?
           </h2>
           <p className="text-xs sm:text-base text-muted-foreground leading-relaxed">
-            Create your player profile in under 60 seconds. Claim 1,000 practice points instantly or deposit cash via Paysafe to enter high-stakes duels.
+            Create your player profile in under 60 seconds. Claim 1,000 practice points instantly or deposit USDC via Crossmint to enter high-stakes duels.
           </p>
         </div>
 
@@ -816,7 +816,7 @@ function HomeContent() {
               <li><Link href="/terms" className="hover:text-foreground">Terms of Service</Link></li>
               <li><Link href="/privacy" className="hover:text-foreground">Player Privacy Policy</Link></li>
               <li><a href="mailto:support@playverzus.xyz" className="text-primary hover:underline font-mono">support@playverzus.xyz</a></li>
-              <li><span className="text-muted-foreground/80">Paysafe Banking Hub</span></li>
+              <li><span className="text-muted-foreground/80">Crossmint Smart Custody Hub</span></li>
             </ul>
           </div>
 
@@ -824,7 +824,7 @@ function HomeContent() {
             <h4 className="font-bold text-foreground text-xs uppercase tracking-wider">Platform Security</h4>
             <div className="flex items-center gap-1.5 text-emerald-400 font-mono text-[10px]">
               <ShieldCheck className="w-4 h-4" />
-              <span>Paysafe Certified Escrow</span>
+              <span>Regulated USDC Escrow</span>
             </div>
             <p className="text-[10px] text-muted-foreground">
               All financial transactions are encrypted with 256-bit SSL and processed via licensed payment institutions.

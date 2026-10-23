@@ -187,7 +187,7 @@ function ChallengesContent() {
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                {mode === 'ALL' ? 'All Stakes' : mode === 'FREE' ? 'Free (0€)' : 'Cash EUR (€)'}
+                {mode === 'ALL' ? 'All Stakes' : mode === 'FREE' ? 'Free Demo (PTS)' : 'Real Cash ($ USDC)'}
               </button>
             ))}
           </div>

@@ -87,7 +87,7 @@ export function AuthPromptModal({
         </div>
 
         <div className="text-center text-[10px] text-muted-foreground font-mono">
-          Free Demo Mode (PTS) & Real Stakes (€ EUR) Available
+          Free Demo Mode (PTS) & Real Stakes ($ USDC) Available
         </div>
       </div>
     </div>

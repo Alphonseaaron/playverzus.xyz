@@ -204,10 +204,10 @@ function CashierContent() {
           }),
         });
       } else {
-        let payoutType = 'PAYSAFE';
+        let payoutType = 'CROSSMINT';
         if (activeRail?.category === 'mobile_money') payoutType = 'MPESA';
         else if (activeRail?.category === 'crypto') payoutType = 'CRYPTO';
-        else payoutType = 'PAYSAFE';
+        else payoutType = 'CROSSMINT';
 
         await apiClient('/wallet/payout', {
           method: 'POST',

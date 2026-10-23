@@ -179,12 +179,12 @@ describe('Master Bizarre & Edge Case Audit Suite', () => {
 
       // Below MIN_WITHDRAWAL_EUR (10)
       await expect(wallet.payout('u1', 9.99, { type: 'BANK_ACCOUNT' } as any)).rejects.toThrowError(
-        `minimum withdrawal threshold is €${MIN_WITHDRAWAL_EUR.toFixed(2)}`,
+        `minimum withdrawal threshold is $${MIN_WITHDRAWAL_EUR.toFixed(2)} USDC`,
       );
 
-      // Above MAX_WITHDRAWAL_EUR (5000)
-      await expect(wallet.payout('u1', 5000.01, { type: 'BANK_ACCOUNT' } as any)).rejects.toThrowError(
-        `maximum withdrawal limit is €${MAX_WITHDRAWAL_EUR.toFixed(2)}`,
+      // Above MAX_WITHDRAWAL_EUR
+      await expect(wallet.payout('u1', MAX_WITHDRAWAL_EUR + 0.01, { type: 'BANK_ACCOUNT' } as any)).rejects.toThrowError(
+        `maximum withdrawal limit is $${MAX_WITHDRAWAL_EUR.toFixed(2)} USDC`,
       );
     });
   });

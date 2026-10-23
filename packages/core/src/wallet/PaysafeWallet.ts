@@ -3,10 +3,10 @@ import { WalletError } from '../errors';
 import { namedLogger } from '../logger';
 import { PaysafeClient } from './paysafe';
 import {
-  MIN_DEPOSIT_EUR,
-  MAX_DEPOSIT_EUR,
-  MIN_WITHDRAWAL_EUR,
-  MAX_WITHDRAWAL_EUR,
+  MIN_DEPOSIT_USDC,
+  MAX_DEPOSIT_USDC,
+  MIN_WITHDRAWAL_USDC,
+  MAX_WITHDRAWAL_USDC,
 } from '../constants';
 import type {
   CreditOptions,
@@ -44,11 +44,11 @@ interface DbLock {
 }
 
 /**
- * Real cash wallet service powered by Paysafe Payment Engine.
- * Operates primarily in EUR with real-money escrow locks and payouts.
+ * Real cash wallet service powered by Crossmint & Smart Custody rails.
+ * Operates strictly in USDC ($) with real-money escrow locks and payouts.
  * Implements strict Double-Entry and Segregated Client Asset accounting principles.
  */
-export class PaysafeWallet implements WalletService {
+export class RealCashWallet implements WalletService {
   private readonly client: TypedSupabaseClient;
   private readonly paysafe: PaysafeClient;
 
@@ -326,17 +326,17 @@ export class PaysafeWallet implements WalletService {
     }
 
     const roundedAmount = Math.round(amount * 100) / 100;
-    if (roundedAmount < MIN_WITHDRAWAL_EUR) {
+    if (roundedAmount < MIN_WITHDRAWAL_USDC) {
       throw new WalletError(
         'INVALID_AMOUNT',
-        `The minimum withdrawal threshold is €${MIN_WITHDRAWAL_EUR.toFixed(2)}.`,
+        `The minimum withdrawal threshold is $${MIN_WITHDRAWAL_USDC.toFixed(2)} USDC.`,
       );
     }
 
-    if (roundedAmount > MAX_WITHDRAWAL_EUR) {
+    if (roundedAmount > MAX_WITHDRAWAL_USDC) {
       throw new WalletError(
         'INVALID_AMOUNT',
-        `The maximum withdrawal limit is €${MAX_WITHDRAWAL_EUR.toFixed(2)}.`,
+        `The maximum withdrawal limit is $${MAX_WITHDRAWAL_USDC.toFixed(2)} USDC.`,
       );
     }
 
@@ -346,7 +346,7 @@ export class PaysafeWallet implements WalletService {
     if (available < roundedAmount) {
       throw new WalletError(
         'INSUFFICIENT_FUNDS',
-        `Cannot withdraw EUR ${roundedAmount.toFixed(2)}: available balance is only EUR ${available.toFixed(2)} (EUR ${snap.locked.toFixed(2)} locked in active contests)`,
+        `Cannot withdraw $${roundedAmount.toFixed(2)} USDC: available balance is only $${available.toFixed(2)} USDC ($${snap.locked.toFixed(2)} USDC locked in active contests)`,
       );
     }
 
@@ -354,17 +354,17 @@ export class PaysafeWallet implements WalletService {
     if (roundedAmount > rollover.withdrawableBalance) {
       throw new WalletError(
         'INSUFFICIENT_FUNDS',
-        `Under regulatory anti-money laundering (AML) standards, deposited funds must be wagered at least 1x before withdrawal. You currently have €${rollover.remainingRollover.toFixed(2)} in un-wagered deposits. Your withdrawable balance is €${rollover.withdrawableBalance.toFixed(2)}.`,
+        `Under regulatory anti-money laundering (AML) standards, deposited funds must be wagered at least 1x before withdrawal. You currently have $${rollover.remainingRollover.toFixed(2)} USDC in un-wagered deposits. Your withdrawable balance is $${rollover.withdrawableBalance.toFixed(2)} USDC.`,
       );
     }
 
     const merchantRefNum = `payout-${userId.slice(0, 8)}-${Date.now()}`;
 
-    // Execute Paysafe standalone credit payout
-    const paysafeRes = await this.paysafe.processPayout({
+    // Execute payout via smart custody rail
+    const payoutRes = await this.paysafe.processPayout({
       merchantRefNum,
       amount: Math.round(roundedAmount * 100), // in cents
-      currencyCode: 'EUR',
+      currencyCode: 'USD',
       destination: {
         type: 'BANK_ACCOUNT',
         iban: (method as any).iban,
@@ -372,25 +372,25 @@ export class PaysafeWallet implements WalletService {
       },
     });
 
-    if (paysafeRes.status === 'FAILED') {
-      throw new WalletError('PAYOUT_FAILED', paysafeRes.error?.message || 'Paysafe withdrawal failed');
+    if (payoutRes.status === 'FAILED') {
+      throw new WalletError('PAYOUT_FAILED', payoutRes.error?.message || 'Withdrawal failed');
     }
 
     // Debit the wallet balance
-    await this.debit(userId, amount, `Withdrawal Payout via Paysafe (${method.type})`, {
+    await this.debit(userId, amount, `Withdrawal Payout via Crossmint (${method.type})`, {
       metadata: {
-        paysafePaymentId: paysafeRes.id,
+        paymentId: payoutRes.id,
         merchantRefNum,
         method,
       },
     });
 
-    log.info(`Payout executed successfully via Paysafe: ${paysafeRes.id} for EUR ${amount}`);
+    log.info(`Payout executed successfully: ${payoutRes.id} for $${amount.toFixed(2)} USDC`);
 
     return {
       success: true,
-      reference: paysafeRes.id,
-      message: `Paysafe payout initiated for €${amount.toFixed(2)}`,
+      reference: payoutRes.id,
+      message: `USDC payout initiated for $${amount.toFixed(2)}`,
     };
   }
 
@@ -473,3 +473,6 @@ export class PaysafeWallet implements WalletService {
     return this.paysafe;
   }
 }
+
+export const PaysafeWallet = RealCashWallet;
+export type PaysafeWallet = RealCashWallet;

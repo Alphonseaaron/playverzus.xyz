@@ -31,6 +31,16 @@ export class TournamentController {
     return this.tournamentService.createTournament(user.id, body);
   }
 
+  @Get('blitz-pools')
+  async listBlitzPools() {
+    return this.tournamentService.listBlitzPools();
+  }
+
+  @Post('auto-seed')
+  async autoSeed() {
+    return this.tournamentService.ensureAutomatedTournaments();
+  }
+
   @Get(':id')
   async getOne(@Param('id') id: string) {
     return this.tournamentService.getTournament(id);

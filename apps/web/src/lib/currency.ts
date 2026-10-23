@@ -127,23 +127,24 @@ export async function fetchLiveFxRates(): Promise<Record<string, number>> {
 }
 
 /**
- * Format an amount in USDC (e.g. "25.00 USDC")
+ * Format an amount in USDC (e.g. "$25.00" or "$25.00 USDC")
  */
-export function formatUSDC(amount: number | null | undefined): string {
+export function formatUSDC(amount: number | null | undefined, includeTicker = false): string {
   if (amount === null || amount === undefined || isNaN(amount)) {
-    return '0.00 USDC';
+    return includeTicker ? '$0.00 USDC' : '$0.00';
   }
-  return `${new Intl.NumberFormat('en-US', {
+  const formatted = new Intl.NumberFormat('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(amount)} USDC`;
+  }).format(amount);
+  return includeTicker ? `$${formatted} USDC` : `$${formatted}`;
 }
 
 /**
  * Backwards compatibility alias: formatEUR points to formatUSDC
- * so all legacy calls across the application immediately display in USDC.
+ * so all legacy calls across the application immediately display in USDC ($).
  */
-export const formatEUR = formatUSDC;
+export const formatEUR = (amount: number | null | undefined) => formatUSDC(amount, false);
 
 /**
  * Format practice points

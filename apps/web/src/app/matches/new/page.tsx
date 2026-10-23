@@ -243,7 +243,7 @@ function NewMatchForm() {
                 variant={walletMode === 'REAL' ? 'success' : 'secondary'}
                 className="font-mono text-[10px]"
               >
-                {walletMode === 'REAL' ? 'REAL CASH (€ EUR)' : 'DEMO PLAY (PTS)'}
+                {walletMode === 'REAL' ? 'REAL CASH ($ USDC)' : 'DEMO PLAY (PTS)'}
               </Badge>
             </div>
             <span className="text-xs text-muted-foreground">
@@ -274,7 +274,7 @@ function NewMatchForm() {
                 {fee === 0
                   ? 'FREE'
                   : walletMode === 'REAL'
-                  ? `€${fee}`
+                  ? `$${fee}`
                   : `${fee} PTS`}
               </Button>
             ))}

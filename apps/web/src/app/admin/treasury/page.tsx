@@ -256,7 +256,7 @@ export default function AdminTreasuryPage() {
           </CardHeader>
           <CardContent className="space-y-1">
             <span className="text-[11px] text-muted-foreground block">
-              Total liquid assets in Paysafe merchant account & banking rails.
+              Total liquid assets in Crossmint smart custody & on-chain USDC treasury rails.
             </span>
           </CardContent>
         </Card>
@@ -470,7 +470,7 @@ export default function AdminTreasuryPage() {
           </div>
 
           <p className="text-[11px] text-muted-foreground leading-relaxed">
-            The €5.00 floor protects merchant margins from being consumed by Paysafe fixed transaction fees (€0.25 + 1.8%). Maximum €5,000.00 prevents unverified velocity abuse under AML standards.
+            The $5.00 floor protects merchant margins from micro-processing fees. Uncapped withdrawals empower high-volume players under AML compliance standards.
           </p>
         </Card>
 
@@ -503,7 +503,7 @@ export default function AdminTreasuryPage() {
           </div>
 
           <p className="text-[11px] text-muted-foreground leading-relaxed">
-            The €10.00 payout floor eliminates micro-payout bank transmission fees and ensures all payout requests have sufficient cleared funds. Daily limits above €5,000 require manual compliance audit.
+            The $10.00 payout floor eliminates micro-payout network transmission fees and ensures all payout requests have sufficient cleared funds.
           </p>
         </Card>
       </div>

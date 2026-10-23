@@ -3,13 +3,13 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { Trophy, Plus, Globe, Filter, Users, Sparkles } from 'lucide-react';
+import { Trophy, Plus, Globe, Filter, Users, Sparkles, Zap, ArrowRight, ShieldCheck, Flame } from 'lucide-react';
 import { TournamentCard } from '../../components/TournamentCard';
 import { apiClient } from '../../lib/api';
 import { useGameStore } from '../../lib/gameStore';
 import { useRouter } from 'next/navigation';
 import { GLOBAL_REGIONS } from '@playverzus/core';
-import { OFFICIAL_GAMES } from '../../lib/gamesCatalog';
+import { OFFICIAL_GAMES, getGameById } from '../../lib/gamesCatalog';
 import { GamePoster } from '../../components/GamePoster';
 import { GameContextBar } from '../../components/GameContextBar';
 import { EmptyState } from '../../components/EmptyState';
@@ -17,6 +17,7 @@ import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Skeleton } from '../../components/ui/skeleton';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
+import { formatUSDC } from '../../lib/currency';
 
 interface TournamentItem {
   id: string;
@@ -38,12 +39,43 @@ export default function TournamentsPage() {
   const [filterGameOnly, setFilterGameOnly] = useState(true);
   const [selectedRegion, setSelectedRegion] = useState<string>('All');
   const [feeFilter, setFeeFilter] = useState<'ALL' | 'FREE' | 'CASH'>('ALL');
+  const [blitzTierFilter, setBlitzTierFilter] = useState<number | 'ALL'>('ALL');
+  const [joiningPoolId, setJoiningPoolId] = useState<string | null>(null);
 
   const { data: userProfile } = useQuery<{ id: string } | null>({
     queryKey: ['tournaments-profile'],
     queryFn: () => apiClient<{ id: string }>('/profile/me').catch(() => null),
     staleTime: 30000,
   });
+
+  const { data: blitzPools = [], isLoading: loadingBlitz, refetch: refetchBlitz } = useQuery<any[]>({
+    queryKey: ['blitz-pools'],
+    queryFn: async () => {
+      try {
+        const res = await apiClient<any[]>('/tournaments/blitz-pools');
+        return res || [];
+      } catch {
+        return [];
+      }
+    },
+    refetchInterval: 8000,
+  });
+
+  const handleJoinBlitzPool = async (poolId: string) => {
+    if (!userProfile) {
+      router.push(`/login?redirect=/tournaments/${poolId}`);
+      return;
+    }
+    try {
+      setJoiningPoolId(poolId);
+      await apiClient(`/tournaments/${poolId}/join`, { method: 'POST' });
+      router.push(`/tournaments/${poolId}`);
+    } catch (err: any) {
+      alert(err?.message || 'Failed to enter tournament pool. Check your cash balance in Cashier.');
+    } finally {
+      setJoiningPoolId(null);
+    }
+  };
 
   const { data: tournaments = [], isLoading } = useQuery<TournamentItem[]>({
     queryKey: ['tournaments-list'],
@@ -120,6 +152,193 @@ export default function TournamentsPage() {
         </Link>
       </Card>
 
+      {/* 5-Player Sit & Go Blitz Pools (Instant Fill & Auto-Cloning) */}
+      <section className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+              <Zap className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-black tracking-tight text-foreground flex items-center gap-2">
+                  5-Player Blitz Sit & Go
+                  <Badge variant="success" className="animate-pulse text-[10px] py-0 px-1.5 uppercase font-black">
+                    Live Queues
+                  </Badge>
+                </h2>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Continuous 5-player pools for top esports titles. 1st & 2nd place win USDC cash. Auto-generates next tournament the second it fills!
+              </p>
+            </div>
+          </div>
+
+          {/* Tier Filters */}
+          <div className="flex items-center bg-muted/80 border border-border rounded-xl p-1 gap-1 text-xs font-semibold">
+            <button
+              onClick={() => setBlitzTierFilter('ALL')}
+              className={`px-3 py-1 rounded-lg transition ${
+                blitzTierFilter === 'ALL'
+                  ? 'bg-primary text-primary-foreground shadow-sm font-bold'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              All Tiers
+            </button>
+            <button
+              onClick={() => setBlitzTierFilter(1)}
+              className={`px-3 py-1 rounded-lg transition flex items-center gap-1 ${
+                blitzTierFilter === 1
+                  ? 'bg-emerald-500 text-white shadow-sm font-bold'
+                  : 'text-muted-foreground hover:text-emerald-400'
+              }`}
+            >
+              <span>Tier 1 ($0.50)</span>
+            </button>
+            <button
+              onClick={() => setBlitzTierFilter(2)}
+              className={`px-3 py-1 rounded-lg transition flex items-center gap-1 ${
+                blitzTierFilter === 2
+                  ? 'bg-blue-600 text-white shadow-sm font-bold'
+                  : 'text-muted-foreground hover:text-blue-400'
+              }`}
+            >
+              <span>Tier 2 ($2.50)</span>
+            </button>
+            <button
+              onClick={() => setBlitzTierFilter(3)}
+              className={`px-3 py-1 rounded-lg transition flex items-center gap-1 ${
+                blitzTierFilter === 3
+                  ? 'bg-purple-600 text-white shadow-sm font-bold'
+                  : 'text-muted-foreground hover:text-purple-400'
+              }`}
+            >
+              <span>Tier 3 ($10.00)</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Blitz Pools Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {blitzPools
+            .filter((p: any) => {
+              if (blitzTierFilter !== 'ALL' && p.tier !== blitzTierFilter) return false;
+              if (filterGameOnly && activeGame) {
+                const pName = (p.name + ' ' + (p.game_profiles?.display_name || '')).toLowerCase();
+                return pName.includes(activeGame.displayName.toLowerCase());
+              }
+              return true;
+            })
+            .map((pool: any) => {
+              const enrolled = pool.enrolled_count ?? 0;
+              const slotsLeft = Math.max(0, 5 - enrolled);
+              const isFull = enrolled >= 5;
+              const tierNum = pool.tier || 1;
+              const tierColor =
+                tierNum === 1
+                  ? 'border-emerald-500/40 bg-emerald-500/5'
+                  : tierNum === 2
+                  ? 'border-blue-500/40 bg-blue-500/5'
+                  : 'border-purple-500/40 bg-purple-500/5';
+              const tierBadgeColor =
+                tierNum === 1
+                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                  : tierNum === 2
+                  ? 'bg-blue-500/20 text-blue-300 border-blue-500/30'
+                  : 'bg-purple-500/20 text-purple-300 border-purple-500/30';
+
+              const gameCatalog = getGameById(pool.game_profiles?.id || pool.profile_id);
+
+              return (
+                <Card
+                  key={pool.id}
+                  className={`flex flex-col justify-between border ${tierColor} hover:border-primary/80 transition-all duration-200 group overflow-hidden shadow-md`}
+                >
+                  <CardHeader className="p-4 pb-3 space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <Badge className={`text-[10px] font-bold px-2 py-0.5 border ${tierBadgeColor}`}>
+                        {tierNum === 1
+                          ? 'TIER 1 · MICRO'
+                          : tierNum === 2
+                          ? 'TIER 2 · CHALLENGER'
+                          : 'TIER 3 · CHAMPION'}
+                      </Badge>
+                      <div className="flex items-center gap-1.5 text-[11px] font-mono text-muted-foreground">
+                        <Users className="w-3.5 h-3.5 text-primary" />
+                        <span className="font-bold text-foreground">{enrolled}/5</span> Players
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <div className="text-2xl">{gameCatalog.icon}</div>
+                      <div className="min-w-0">
+                        <CardTitle className="text-sm font-bold text-foreground truncate group-hover:text-primary transition-colors">
+                          {gameCatalog.displayName}
+                        </CardTitle>
+                        <p className="text-[11px] text-muted-foreground">Fast 5-Player Single Elim</p>
+                      </div>
+                    </div>
+                  </CardHeader>
+
+                  <CardContent className="p-4 pt-0 space-y-3">
+                    {/* Progress Bar */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[10px] font-mono text-muted-foreground">
+                        <span>Queue Status</span>
+                        <span className="text-emerald-400 font-bold">{slotsLeft} Slots Left</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-emerald-500 to-primary transition-all duration-300"
+                          style={{ width: `${(enrolled / 5) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Financial Economics Box */}
+                    <div className="grid grid-cols-2 gap-2 p-2.5 bg-background/80 border border-border/80 rounded-xl text-xs">
+                      <div>
+                        <span className="text-[9px] uppercase font-bold text-muted-foreground block">Entry Fee</span>
+                        <span className="font-mono font-bold text-foreground">
+                          {formatUSDC(pool.entry_fee)}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[9px] uppercase font-bold text-muted-foreground block">Prize Pool</span>
+                        <span className="font-mono font-bold text-emerald-400">
+                          {formatUSDC(pool.prize_pool)}
+                        </span>
+                      </div>
+                      <div className="col-span-2 pt-1 border-t border-border/40 flex justify-between text-[10px] text-muted-foreground">
+                        <span>1st (70%): <strong className="text-foreground">{formatUSDC(pool.prize_pool * 0.70)}</strong></span>
+                        <span>2nd (30%): <strong className="text-foreground">{formatUSDC(pool.prize_pool * 0.30)}</strong></span>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 pt-1">
+                      <Button
+                        size="sm"
+                        disabled={isFull || joiningPoolId === pool.id}
+                        onClick={() => handleJoinBlitzPool(pool.id)}
+                        className="flex-1 gap-1.5 font-bold shadow-sm"
+                      >
+                        <Zap className="w-3.5 h-3.5 text-amber-300" />
+                        <span>{joiningPoolId === pool.id ? 'Joining...' : isFull ? 'Starting...' : 'Join Pool'}</span>
+                      </Button>
+                      <Link href={`/tournaments/${pool.id}`}>
+                        <Button size="sm" variant="secondary" className="px-3" title="View Bracket">
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </Button>
+                      </Link>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+        </div>
+      </section>
+
       {/* Active Game Context Bar */}
       <GameContextBar
         title={filterGameOnly ? `${activeGame?.displayName || 'Arena'} Cups` : 'All Tournament Cups'}
@@ -142,7 +361,7 @@ export default function TournamentsPage() {
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                {mode === 'ALL' ? 'All Stakes' : mode === 'FREE' ? 'Free (0€)' : 'Cash EUR (€)'}
+                {mode === 'ALL' ? 'All Stakes' : mode === 'FREE' ? 'Free Demo (PTS)' : 'Real Cash ($ USDC)'}
               </button>
             ))}
           </div>

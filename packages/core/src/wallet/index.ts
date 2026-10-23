@@ -10,7 +10,7 @@ export * from './WalletService';
 export * from './paysafe';
 export { DemoWallet } from './DemoWallet';
 export { StubRealWallet } from './StubRealWallet';
-export { PaysafeWallet } from './PaysafeWallet';
+export { PaysafeWallet, RealCashWallet } from './PaysafeWallet';
 
 let cached: WalletService | null = null;
 

@@ -176,7 +176,7 @@ export default function PrivacyPolicyPage() {
             </p>
             <ul className="list-disc pl-5 space-y-1.5">
               <li>
-                <strong>Regulated Payment Institutions:</strong> Licensed payment processors (Crossmint, Paysafe) and affiliated banking partners for processing
+                <strong>Regulated Payment Institutions:</strong> Licensed payment processors (Crossmint) and custodial USDC rails for processing
                 deposits, card checkouts, and payouts.
               </li>
               <li>

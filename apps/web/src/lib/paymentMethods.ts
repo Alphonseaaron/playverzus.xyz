@@ -60,8 +60,8 @@ export const COUNTRY_PAYMENT_PROFILES: Record<string, CountryPaymentProfile> = {
         description: 'Instant online banking authorization.',
       },
       {
-        id: 'paysafecard',
-        name: 'Paysafecard Voucher',
+        id: 'voucher_pin',
+        name: 'Prepaid Digital Voucher',
         category: 'wallet',
         icon: '🎫',
         processingTime: 'Instant',
@@ -87,7 +87,7 @@ export const COUNTRY_PAYMENT_PROFILES: Record<string, CountryPaymentProfile> = {
       },
       {
         id: 'visa_mc',
-        name: 'Visa / Mastercard (Paysafe)',
+        name: 'Visa / Mastercard (Credit & Debit)',
         category: 'card',
         icon: '💳',
         processingTime: 'Instant',
@@ -373,7 +373,7 @@ export const COUNTRY_PAYMENT_PROFILES: Record<string, CountryPaymentProfile> = {
       },
       {
         id: 'card_us',
-        name: 'Visa / Mastercard / Amex (Paysafe)',
+        name: 'Visa / Mastercard / Amex (Instant Card)',
         category: 'card',
         icon: '💳',
         processingTime: 'Instant',

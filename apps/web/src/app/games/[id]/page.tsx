@@ -268,7 +268,7 @@ export default function GameHubPage() {
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                {m === 'ALL' ? 'ALL STAKES' : m === 'FREE' ? 'DEMO (0 PTS)' : 'REAL CASH (€)'}
+                {m === 'ALL' ? 'ALL STAKES' : m === 'FREE' ? 'DEMO (0 PTS)' : 'REAL CASH ($ USDC)'}
               </button>
             ))}
           </div>

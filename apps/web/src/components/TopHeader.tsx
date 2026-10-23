@@ -30,7 +30,7 @@ import { CountryFlag } from './CountryFlag';
 import { NotificationBell } from './NotificationBell';
 import { apiClient } from '../lib/api';
 import { getSupabaseClient } from '../lib/supabase';
-import { formatEUR, formatPoints } from '../lib/currency';
+import { formatUSDC, formatPoints } from '../lib/currency';
 import { useWalletModeStore } from '../lib/walletModeStore';
 import { OFFICIAL_GAMES, getGameById } from '../lib/gamesCatalog';
 import { GamePoster } from './GamePoster';
@@ -467,7 +467,7 @@ export function TopHeader() {
                 ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25'
                 : 'bg-purple-500/15 text-purple-300 border border-purple-500/30 hover:bg-purple-500/25'
             }`}
-            title="Click to toggle between Real Cash (€ EUR) and Free Demo Play (PTS)"
+            title="Click to toggle between Real Cash ($ USDC) and Free Demo Play (PTS)"
           >
             <span
               className={`w-1.5 h-1.5 rounded-full ${
@@ -491,7 +491,7 @@ export function TopHeader() {
               }`}
             />
             {walletMode === 'REAL' ? (
-              <span className="text-emerald-400 font-semibold">{formatEUR(cashAmount)}</span>
+              <span className="text-emerald-400 font-semibold">{formatUSDC(cashAmount)}</span>
             ) : (
               <span className="text-purple-300 font-semibold">
                 {formatPoints(pointsAmount)} <span className="text-[9px] text-muted-foreground font-sans">PTS</span>

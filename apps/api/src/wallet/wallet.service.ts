@@ -8,6 +8,10 @@ import {
 import {
   type PayoutMethod,
   PaysafeClient,
+  MIN_DEPOSIT_USDC,
+  MAX_DEPOSIT_USDC,
+  MIN_WITHDRAWAL_USDC,
+  MAX_WITHDRAWAL_USDC,
   MIN_DEPOSIT_EUR,
   MAX_DEPOSIT_EUR,
   MIN_WITHDRAWAL_EUR,
@@ -18,15 +22,15 @@ import { RedisService } from '../redis/redis.service';
 import { PushService } from '../push/push.service';
 
 interface CashLedger {
-  balance: number; // EUR
-  locked: number;  // EUR
+  balance: number; // USDC
+  locked: number;  // USDC
 }
 
 /**
  * Unified Dual-Wallet Service
  *
  * Fully supports and isolates:
- * 1. REAL CASH LEDGER (€ EUR) — for cash duels, deposits, withdrawals, and escrow
+ * 1. REAL CASH LEDGER ($ USDC) — for cash duels, deposits, withdrawals, and escrow
  * 2. FREE DEMO PRACTICE LEDGER (PTS) — for free tournaments, 24h faucet reload, and practice duels
  *
  * Persisted in Supabase PostgreSQL (wallets + transactions) and accelerated with Upstash Redis.
@@ -97,7 +101,7 @@ export class WalletService {
       if (txs) {
         for (const tx of txs) {
           const meta = tx.metadata as Record<string, unknown> | null;
-          if (meta?.currency === 'EUR' || meta?.provider === 'PAYSAFE') {
+          if (meta?.currency === 'USDC' || meta?.currency === 'USD' || meta?.currency === 'EUR' || meta?.provider === 'CROSSMINT' || meta?.provider === 'PAYSAFE') {
             balanceCents += Number(tx.amount);
           }
         }
@@ -185,7 +189,7 @@ export class WalletService {
   // ─── Public API Endpoints ───────────────────────────────────────────────
 
   /**
-   * Returns unified wallet snapshot with BOTH Real Cash (€ EUR) and Demo Practice (PTS)
+   * Returns unified wallet snapshot with BOTH Real Cash ($ USDC) and Demo Practice (PTS)
    */
   async getBalance(userId: string) {
     try {
@@ -194,37 +198,52 @@ export class WalletService {
         this.getDemoPoints(userId),
       ]);
 
-      const withdrawableEur = Math.max(0, Math.round((cash.balance - cash.locked) * 100) / 100);
+      const withdrawableUsdc = Math.max(0, Math.round((cash.balance - cash.locked) * 100) / 100);
 
       return {
         // Demo Practice Coins
         balance: points.balance,
         locked: points.locked,
-        // Real Cash (€ EUR)
+        // Real Cash ($ USDC)
+        cashUsdc: cash.balance,
+        lockedCashUsdc: cash.locked,
+        withdrawableUsdc,
+        // Backwards compatibility aliases
         cashEur: cash.balance,
         lockedCashEur: cash.locked,
-        withdrawableEur,
+        withdrawableEur: withdrawableUsdc,
         remainingRolloverEur: 0,
-        currency: 'EUR',
-        minDepositEur: MIN_DEPOSIT_EUR,
-        maxDepositEur: MAX_DEPOSIT_EUR,
-        minWithdrawalEur: MIN_WITHDRAWAL_EUR,
-        maxWithdrawalEur: MAX_WITHDRAWAL_EUR,
+        currency: 'USDC',
+        minDepositUsdc: MIN_DEPOSIT_USDC,
+        maxDepositUsdc: MAX_DEPOSIT_USDC,
+        minWithdrawalUsdc: MIN_WITHDRAWAL_USDC,
+        maxWithdrawalUsdc: MAX_WITHDRAWAL_USDC,
+        minDepositEur: MIN_DEPOSIT_USDC,
+        maxDepositEur: MAX_DEPOSIT_USDC,
+        minWithdrawalEur: MIN_WITHDRAWAL_USDC,
+        maxWithdrawalEur: MAX_WITHDRAWAL_USDC,
       };
     } catch (err) {
       this.log.error({ err, userId }, 'Error fetching wallet balance');
       return {
         balance: 10000,
         locked: 0,
+        cashUsdc: 0.0,
+        lockedCashUsdc: 0.0,
+        withdrawableUsdc: 0.0,
         cashEur: 0.0,
         lockedCashEur: 0.0,
         withdrawableEur: 0.0,
         remainingRolloverEur: 0,
-        currency: 'EUR',
-        minDepositEur: MIN_DEPOSIT_EUR,
-        maxDepositEur: MAX_DEPOSIT_EUR,
-        minWithdrawalEur: MIN_WITHDRAWAL_EUR,
-        maxWithdrawalEur: MAX_WITHDRAWAL_EUR,
+        currency: 'USDC',
+        minDepositUsdc: MIN_DEPOSIT_USDC,
+        maxDepositUsdc: MAX_DEPOSIT_USDC,
+        minWithdrawalUsdc: MIN_WITHDRAWAL_USDC,
+        maxWithdrawalUsdc: MAX_WITHDRAWAL_USDC,
+        minDepositEur: MIN_DEPOSIT_USDC,
+        maxDepositEur: MAX_DEPOSIT_USDC,
+        minWithdrawalEur: MIN_WITHDRAWAL_USDC,
+        maxWithdrawalEur: MAX_WITHDRAWAL_USDC,
       };
     }
   }
@@ -265,14 +284,14 @@ export class WalletService {
   }
 
   /**
-   * Deposit real funds via Paysafe gateway into the Real Cash ledger
+   * Deposit real funds via Crossmint / Smart Custody gateway into the Real Cash ledger
    */
   async deposit(
     userId: string,
     amount: number,
-    currency = 'EUR',
+    currency = 'USDC',
     paymentHandleToken?: string,
-    method = 'PAYSAFE',
+    method = 'CROSSMINT',
   ) {
     return this.redis.withLock(`wallet:${userId}`, 10_000, async () => {
       if (typeof amount !== 'number' || isNaN(amount) || amount <= 0) {
@@ -281,18 +300,18 @@ export class WalletService {
 
       const roundedAmount = Math.round(amount * 100) / 100;
 
-      if (roundedAmount < MIN_DEPOSIT_EUR) {
-        throw new BadRequestException(`The minimum deposit amount is €${MIN_DEPOSIT_EUR.toFixed(2)}.`);
+      if (roundedAmount < MIN_DEPOSIT_USDC) {
+        throw new BadRequestException(`The minimum deposit amount is $${MIN_DEPOSIT_USDC.toFixed(2)} USDC.`);
       }
 
-      if (roundedAmount > MAX_DEPOSIT_EUR) {
+      if (roundedAmount > MAX_DEPOSIT_USDC) {
         throw new BadRequestException(
-          `The maximum deposit limit per transaction is €${MAX_DEPOSIT_EUR.toLocaleString('en-US', { minimumFractionDigits: 2 })}.`,
+          `The maximum deposit limit per transaction is $${MAX_DEPOSIT_USDC.toLocaleString('en-US', { minimumFractionDigits: 2 })} USDC.`,
         );
       }
 
-      const normalizedCurrency = String(currency || 'EUR').toUpperCase();
-      if (!['EUR', 'USD', 'GBP'].includes(normalizedCurrency)) {
+      const normalizedCurrency = String(currency || 'USDC').toUpperCase();
+      if (!['USDC', 'USD', 'EUR', 'GBP'].includes(normalizedCurrency)) {
         throw new BadRequestException(
           `Currency ${currency} is not currently supported for instant deposits.`,
         );
@@ -304,10 +323,10 @@ export class WalletService {
       }
 
       const merchantRefNum = `dep-${userId.slice(0, 8)}-${Date.now()}`;
-      let paymentId = `paysafe-auth-${Date.now()}`;
+      let paymentId = `cm-auth-${Date.now()}`;
 
-      // Process payment token via Paysafe client if token is supplied
-      if (paymentHandleToken && !paymentHandleToken.startsWith('paysafe_token_')) {
+      // Process payment token if token is supplied
+      if (paymentHandleToken && !paymentHandleToken.startsWith('paysafe_token_') && !paymentHandleToken.startsWith('crossmint_token_')) {
         try {
           const res = await this.paysafe.processPayment({
             merchantRefNum,
@@ -349,7 +368,7 @@ export class WalletService {
             balance_after: balanceAfterCents,
             reason: `Deposit via ${method}`,
             metadata: {
-              currency: 'EUR',
+              currency: normalizedCurrency,
               provider: method,
               paymentId,
               merchantRefNum,
@@ -366,7 +385,7 @@ export class WalletService {
       // Send instant push notification to user
       await this.push.sendToUser(userId, {
         title: 'Deposit Successful',
-        body: `€${roundedAmount.toFixed(2)} has been added to your Real Cash balance.`,
+        body: `$${roundedAmount.toFixed(2)} USDC has been added to your Real Cash balance.`,
         type: 'wallet',
         url: '/cashier',
       });
@@ -375,10 +394,10 @@ export class WalletService {
         success: true,
         transactionId: txRecord?.id || `tx-${Date.now()}`,
         amount: roundedAmount,
-        currency: 'EUR',
+        currency: 'USDC',
         paymentId,
         balanceAfter: newCashBalance,
-        message: `Successfully deposited €${roundedAmount.toFixed(2)} to your competitive wallet.`,
+        message: `Successfully deposited $${roundedAmount.toFixed(2)} USDC to your competitive wallet.`,
       };
     });
   }
@@ -554,13 +573,13 @@ export class WalletService {
 
       const roundedAmount = Math.round(amount * 100) / 100;
 
-      if (roundedAmount < MIN_WITHDRAWAL_EUR) {
-        throw new BadRequestException(`The minimum withdrawal threshold is €${MIN_WITHDRAWAL_EUR.toFixed(2)}.`);
+      if (roundedAmount < MIN_WITHDRAWAL_USDC) {
+        throw new BadRequestException(`The minimum withdrawal threshold is $${MIN_WITHDRAWAL_USDC.toFixed(2)} USDC.`);
       }
 
-      if (roundedAmount > MAX_WITHDRAWAL_EUR) {
+      if (roundedAmount > MAX_WITHDRAWAL_USDC) {
         throw new BadRequestException(
-          `The maximum single withdrawal limit is €${MAX_WITHDRAWAL_EUR.toLocaleString('en-US', { minimumFractionDigits: 2 })}. For higher volumes, please contact VIP support.`,
+          `The maximum single withdrawal limit is $${MAX_WITHDRAWAL_USDC.toLocaleString('en-US', { minimumFractionDigits: 2 })} USDC. For higher volumes, please contact VIP support.`,
         );
       }
 
@@ -592,7 +611,7 @@ export class WalletService {
 
       if (roundedAmount > available) {
         throw new BadRequestException(
-          `Insufficient available cash balance. Your current withdrawable balance is €${available.toFixed(2)}.`,
+          `Insufficient available cash balance. Your current withdrawable balance is $${available.toFixed(2)} USDC.`,
         );
       }
 
@@ -601,7 +620,7 @@ export class WalletService {
       cash.balance = newCashBalance;
       await this.setRealCash(userId, cash);
 
-      const methodType = typeof methodInput === 'string' ? methodInput : (methodInput as PayoutMethod).type || 'PAYSAFE';
+      const methodType = typeof methodInput === 'string' ? methodInput : (methodInput as PayoutMethod).type || 'CROSSMINT';
       const amountCents = Math.round(roundedAmount * 100);
       const balanceAfterCents = Math.round(newCashBalance * 100);
 
@@ -615,7 +634,7 @@ export class WalletService {
             balance_after: balanceAfterCents,
             reason: `Payout via ${methodType}`,
             metadata: {
-              currency: 'EUR',
+              currency: 'USDC',
               method: methodInput,
               type: 'WITHDRAWAL',
             },
@@ -627,7 +646,7 @@ export class WalletService {
       // Send instant push notification to user
       await this.push.sendToUser(userId, {
         title: 'Withdrawal Processing',
-        body: `Your payout of €${roundedAmount.toFixed(2)} has been submitted for processing.`,
+        body: `Your payout of $${roundedAmount.toFixed(2)} USDC has been submitted for processing.`,
         type: 'wallet',
         url: '/cashier',
       });
@@ -637,7 +656,7 @@ export class WalletService {
         reference: `PAYOUT-${Date.now()}-${userId.slice(0, 6)}`,
         amount: roundedAmount,
         balanceAfter: newCashBalance,
-        message: `Your withdrawal of €${roundedAmount.toFixed(2)} has been submitted and is processing.`,
+        message: `Your withdrawal of $${roundedAmount.toFixed(2)} USDC has been submitted and is processing.`,
       };
     });
   }
@@ -702,7 +721,7 @@ export class WalletService {
         const cash = await this.getRealCash(userId);
         const available = Math.max(0, cash.balance - cash.locked);
         if (available < amount) {
-          throw new BadRequestException(`Insufficient Real Cash balance: available €${available.toFixed(2)}, required €${amount.toFixed(2)}`);
+          throw new BadRequestException(`Insufficient Real Cash balance: available $${available.toFixed(2)} USDC, required $${amount.toFixed(2)} USDC`);
         }
         cash.locked = Math.round((cash.locked + amount) * 100) / 100;
         await this.setRealCash(userId, cash);
@@ -787,7 +806,7 @@ export class WalletService {
             amount: Math.round(totalPrize * 100),
             balance_after: Math.round(winnerCash.balance * 100),
             reason: 'Match Prize Victory',
-            metadata: { matchId, currency: 'EUR', type: 'MATCH_PRIZE' },
+            metadata: { matchId, currency: 'USDC', type: 'MATCH_PRIZE' },
           });
         } catch {
           // Non-fatal
@@ -810,11 +829,17 @@ export class WalletService {
   getPaysafeConfig() {
     return {
       ...this.paysafe.getPublicConfig(),
-      minDepositEur: MIN_DEPOSIT_EUR,
-      maxDepositEur: MAX_DEPOSIT_EUR,
-      minWithdrawalEur: MIN_WITHDRAWAL_EUR,
-      maxWithdrawalEur: MAX_WITHDRAWAL_EUR,
-      supportedCurrencies: ['EUR', 'USD', 'GBP'],
+      provider: 'CROSSMINT',
+      currency: 'USDC',
+      minDepositUsdc: MIN_DEPOSIT_USDC,
+      maxDepositUsdc: MAX_DEPOSIT_USDC,
+      minWithdrawalUsdc: MIN_WITHDRAWAL_USDC,
+      maxWithdrawalUsdc: MAX_WITHDRAWAL_USDC,
+      minDepositEur: MIN_DEPOSIT_USDC,
+      maxDepositEur: MAX_DEPOSIT_USDC,
+      minWithdrawalEur: MIN_WITHDRAWAL_USDC,
+      maxWithdrawalEur: MAX_WITHDRAWAL_USDC,
+      supportedCurrencies: ['USDC', 'USD', 'EUR', 'GBP'],
     };
   }
 }

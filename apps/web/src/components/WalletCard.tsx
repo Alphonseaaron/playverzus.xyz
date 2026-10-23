@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../lib/api';
-import { formatEUR, formatPoints } from '../lib/currency';
+import { formatUSDC, formatPoints } from '../lib/currency';
 import { notifyUser } from '../lib/notifications';
 import { toUserFriendlyWalletError } from '../lib/walletErrors';
 import { Badge } from './ui/badge';
@@ -82,7 +82,7 @@ export function WalletCard() {
                 Competitive Ledger
               </h2>
               <Badge variant="success" className="font-mono text-[9px]">
-                € EUR
+                $ USDC
               </Badge>
             </div>
             <p className="text-xs text-muted-foreground">
@@ -97,7 +97,7 @@ export function WalletCard() {
                 size="sm"
                 className="text-xs font-bold"
               >
-                + Deposit €
+                + Deposit $
               </Button>
             </Link>
             <Button
@@ -118,18 +118,18 @@ export function WalletCard() {
           <div className="p-3.5 bg-secondary/70 rounded-xl border border-border flex flex-col justify-between gap-2 min-w-0">
             <div className="flex items-center justify-between">
               <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider font-mono">
-                Cash Balance (€ EUR)
+                Cash Balance ($ USDC)
               </span>
               <Badge variant="success" className="text-[9px] font-mono">
                 REAL CASH
               </Badge>
             </div>
             <div className="text-2xl font-black font-mono text-emerald-400">
-              {loadingBalance ? '...' : formatEUR(cashBalance)}
+              {loadingBalance ? '...' : formatUSDC(cashBalance)}
             </div>
             <div className="pt-2 border-t border-border flex items-center justify-between text-[11px] text-muted-foreground font-mono">
               <span>Locked in Escrow:</span>
-              <span className="text-foreground font-bold">{formatEUR(lockedCash)}</span>
+              <span className="text-foreground font-bold">{formatUSDC(lockedCash)}</span>
             </div>
           </div>
 

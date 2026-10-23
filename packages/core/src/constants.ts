@@ -72,16 +72,84 @@ export const ROOM_CODE_LENGTH = 6;
 /** Max candidates per queue match window. */
 export const QUICK_MATCH_ELO_WINDOW = 150;
 
-/** Financial & Treasury Accounting Thresholds (EUR) */
-export const MIN_DEPOSIT_EUR = 5.0;
-export const MAX_DEPOSIT_EUR = 100_000.0;
-export const MIN_WITHDRAWAL_EUR = 10.0;
-export const MAX_WITHDRAWAL_EUR = 1_000_000.0; // Effectively no maximum ceiling: bounded strictly by player available balance
+/** Financial & Treasury Accounting Thresholds (USDC) */
+export const MIN_DEPOSIT_USDC = 5.0;
+export const MAX_DEPOSIT_USDC = 100_000.0;
+export const MIN_WITHDRAWAL_USDC = 10.0;
+export const MAX_WITHDRAWAL_USDC = 1_000_000.0; // Effectively no maximum ceiling: bounded strictly by player available balance
+
+// Backward compatibility aliases
+export const MIN_DEPOSIT_EUR = MIN_DEPOSIT_USDC;
+export const MAX_DEPOSIT_EUR = MAX_DEPOSIT_USDC;
+export const MIN_WITHDRAWAL_EUR = MIN_WITHDRAWAL_USDC;
+export const MAX_WITHDRAWAL_EUR = MAX_WITHDRAWAL_USDC;
 
 /** Match stakes & fees */
-export const MIN_DUEL_STAKE_EUR = 1.0;
+export const MIN_DUEL_STAKE_USDC = 0.50; // Micro grass-roots entry
+export const MIN_DUEL_STAKE_EUR = MIN_DUEL_STAKE_USDC;
 export const MIN_DUEL_STAKE_POINTS = 50;
 export const PLATFORM_RAKE_PERCENT = 5.0; // 5% platform fee on cash matches
+
+/** 5-Player Sit & Go Blitz Tournament Tier Configurations */
+export interface TournamentTierConfig {
+  tier: 1 | 2 | 3;
+  name: string;
+  entryFee: number;
+  totalEntrants: 5;
+  totalPot: number;
+  rakePercent: number;
+  rakeAmount: number;
+  netPrizePool: number;
+  payouts: {
+    firstPlace: { percent: number; amount: number };
+    secondPlace: { percent: number; amount: number };
+  };
+}
+
+export const TOURNAMENT_TIERS: Record<1 | 2 | 3, TournamentTierConfig> = {
+  1: {
+    tier: 1,
+    name: 'Micro / Grassroots',
+    entryFee: 0.50,
+    totalEntrants: 5,
+    totalPot: 2.50,
+    rakePercent: 10.0,
+    rakeAmount: 0.25,
+    netPrizePool: 2.25,
+    payouts: {
+      firstPlace: { percent: 70.0, amount: 1.58 },
+      secondPlace: { percent: 30.0, amount: 0.67 },
+    },
+  },
+  2: {
+    tier: 2,
+    name: 'Challenger / Mid',
+    entryFee: 2.50,
+    totalEntrants: 5,
+    totalPot: 12.50,
+    rakePercent: 15.0,
+    rakeAmount: 1.88,
+    netPrizePool: 10.62,
+    payouts: {
+      firstPlace: { percent: 70.0, amount: 7.43 },
+      secondPlace: { percent: 30.0, amount: 3.19 },
+    },
+  },
+  3: {
+    tier: 3,
+    name: 'Champion / High-Roller',
+    entryFee: 10.00,
+    totalEntrants: 5,
+    totalPot: 50.00,
+    rakePercent: 20.0,
+    rakeAmount: 10.00,
+    netPrizePool: 40.00,
+    payouts: {
+      firstPlace: { percent: 70.0, amount: 28.00 },
+      secondPlace: { percent: 30.0, amount: 12.00 },
+    },
+  },
+};
 
 /** Treasury Liquidity Reserve Ratio Target (120% coverage of custodial liabilities) */
 export const TARGET_RESERVE_RATIO = 1.20;

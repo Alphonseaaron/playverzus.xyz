@@ -35,9 +35,9 @@ export class WalletController {
     return this.walletService.deposit(
       user.id,
       body.amount,
-      body.currency || 'EUR',
+      body.currency || 'USDC',
       body.paymentHandleToken,
-      body.method || 'PAYSAFE',
+      body.method || 'CROSSMINT',
     );
   }
 

@@ -256,7 +256,7 @@ function DashboardContent() {
                 </h3>
               </div>
               <span className="text-[11px] text-muted-foreground font-mono">
-                Standardized in € EUR · Zero exchange-rate slippage
+                Standardized in $ USDC · Zero exchange-rate slippage
               </span>
             </div>
 
