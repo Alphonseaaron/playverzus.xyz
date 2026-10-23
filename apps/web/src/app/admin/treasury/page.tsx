@@ -15,6 +15,14 @@ import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
 import {
   Landmark,
+  Server,
+  Cpu,
+  Zap,
+  Sparkles,
+  Lightbulb,
+  Layers,
+  Activity,
+  Clock,
   ShieldCheck,
   AlertTriangle,
   ArrowDownRight,
@@ -41,7 +49,55 @@ interface DiscrepancyItem {
   issue: string;
 }
 
+interface IncomeBookItem {
+  id: string;
+  name: string;
+  category: string;
+  grossVolumeEur: number;
+  netRevenueEur: number;
+  takeRatePercent: number;
+  marginPercent: number;
+  status: string;
+  description: string;
+}
+
+interface ExpenseBillItem {
+  service: string;
+  provider: string;
+  category: string;
+  monthlyCostEur: number;
+  billingCycle: string;
+  status: 'ACTIVE' | 'WARNING' | 'CRITICAL';
+  autoRenew: boolean;
+  description: string;
+}
+
+interface ExpenseTracker {
+  totalMonthlyInfraBurnEur: number;
+  calculatedRunwayDays: number;
+  runwayStatus: 'OPTIMAL' | 'HEALTHY' | 'WARNING';
+  bills: ExpenseBillItem[];
+}
+
+interface CompanyLimits {
+  minimumOperationalReserveEur: number;
+  maxCompanyWithdrawalEur: number;
+  operatingRunwayDays: number;
+}
+
+interface FinancialAdvisor {
+  solvencyGrade: 'A+' | 'A' | 'B' | 'C' | 'F';
+  financialHealthSummary: string;
+  spendOptimizations: string[];
+  growthStrategies: string[];
+  executiveActionPlan: string;
+}
+
 interface TreasuryReport {
+  incomeBooks?: IncomeBookItem[];
+  expenseTracker?: ExpenseTracker;
+  companyLimits?: CompanyLimits;
+  advisor?: FinancialAdvisor;
   grossCashEur: number;
   playerLiabilitiesEur: number;
   playerAvailableEur: number;
@@ -571,6 +627,306 @@ export default function AdminTreasuryPage() {
             </span>
           </div>
         )}
+      </Card>
+
+      {/* 3. Overall Accounts Advisor & AI Financial Auditor */}
+      {report.advisor && (
+        <Card className="p-6 sm:p-8 bg-card border-border shadow-xl space-y-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-border">
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center flex-shrink-0 shadow-inner">
+                <Sparkles className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-0.5">
+                  <Badge variant="copper">AI CHIEF FINANCIAL OFFICER</Badge>
+                  <Badge
+                    variant={
+                      report.advisor.solvencyGrade === 'A+' || report.advisor.solvencyGrade === 'A'
+                        ? 'success'
+                        : 'warning'
+                    }
+                    className="font-mono text-xs font-black"
+                  >
+                    SOLVENCY GRADE: {report.advisor.solvencyGrade}
+                  </Badge>
+                </div>
+                <CardTitle className="text-xl font-black text-foreground">
+                  Overall Accounts Advisor & Treasury Audit
+                </CardTitle>
+                <CardDescription className="text-xs text-muted-foreground">
+                  Autonomous financial intelligence on safe corporate withdrawals, cost cutting, and revenue acceleration.
+                </CardDescription>
+              </div>
+            </div>
+
+            <div className="p-3 bg-secondary/60 border border-border rounded-2xl flex items-center gap-3">
+              <Clock className="w-4 h-4 text-primary flex-shrink-0" />
+              <div className="text-xs">
+                <span className="text-muted-foreground block text-[10px]">Operational Runway</span>
+                <span className="font-mono font-bold text-foreground">
+                  {report.companyLimits?.operatingRunwayDays || 90} Days Buffer
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Spend Optimizations */}
+            <div className="p-5 rounded-2xl bg-secondary/30 border border-border space-y-3">
+              <div className="flex items-center gap-2 text-xs font-bold text-foreground">
+                <Lightbulb className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                <span>Spend Optimization & Cost Controls</span>
+              </div>
+              <ul className="space-y-2 text-xs text-muted-foreground">
+                {report.advisor.spendOptimizations.map((tip, idx) => (
+                  <li key={idx} className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400/80 mt-1.5 flex-shrink-0" />
+                    <span>{tip}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Growth Strategies */}
+            <div className="p-5 rounded-2xl bg-secondary/30 border border-border space-y-3">
+              <div className="flex items-center gap-2 text-xs font-bold text-foreground">
+                <TrendingUp className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                <span>Earning Opportunities & Revenue Expansion</span>
+              </div>
+              <ul className="space-y-2 text-xs text-muted-foreground">
+                {report.advisor.growthStrategies.map((strat, idx) => (
+                  <li key={idx} className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400/80 mt-1.5 flex-shrink-0" />
+                    <span>{strat}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          {/* Executive Action Banner */}
+          <div className="p-4 rounded-2xl bg-primary/5 border border-primary/20 flex items-center gap-3.5">
+            <ShieldCheck className="w-5 h-5 text-primary flex-shrink-0" />
+            <p className="text-xs font-medium text-foreground leading-relaxed">
+              <strong>Executive Directive:</strong> {report.advisor.executiveActionPlan}
+            </p>
+          </div>
+        </Card>
+      )}
+
+      {/* 4. Segregated Income Books (What Works vs What Doesn't) */}
+      <Card className="p-6 sm:p-8 bg-card border-border shadow-xl space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-border">
+          <div>
+            <div className="flex items-center gap-2 mb-0.5">
+              <Badge variant="copper">REVENUE SEGREGATION</Badge>
+              <Badge variant="secondary" className="font-mono text-[10px]">
+                {report.incomeBooks?.length || 5} SEGREGATED BOOKS
+              </Badge>
+            </div>
+            <CardTitle className="text-xl font-black text-foreground">
+              Income Streams & Revenue Books
+            </CardTitle>
+            <CardDescription className="text-xs text-muted-foreground">
+              Isolated profit-and-loss tracking to identify highest-performing gaming mechanics and ensure customer escrow remains 100% untouched.
+            </CardDescription>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {(report.incomeBooks || []).map((book) => (
+            <div
+              key={book.id}
+              className={`p-5 rounded-2xl border transition-all ${
+                book.id === 'custodial_escrow'
+                  ? 'bg-secondary/20 border-border opacity-85'
+                  : 'bg-secondary/40 border-border hover:border-primary/40'
+              } space-y-3 flex flex-col justify-between`}
+            >
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-mono text-[10px] uppercase font-bold text-muted-foreground">
+                    {book.category}
+                  </span>
+                  <Badge
+                    variant={book.id === 'custodial_escrow' ? 'outline' : 'success'}
+                    className="text-[9px] font-mono py-0.5 px-2"
+                  >
+                    {book.status}
+                  </Badge>
+                </div>
+
+                <div className="font-bold text-sm text-foreground">{book.name}</div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  {book.description}
+                </p>
+              </div>
+
+              <div className="pt-3 border-t border-border/60 grid grid-cols-2 gap-2 text-xs">
+                <div>
+                  <span className="text-[10px] text-muted-foreground block font-mono">Gross Volume</span>
+                  <span className="font-mono font-bold text-foreground">
+                    {formatEUR(book.grossVolumeEur)}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-muted-foreground block font-mono">
+                    {book.id === 'custodial_escrow' ? 'Custodial Hold' : 'Net Retained'}
+                  </span>
+                  <span
+                    className={`font-mono font-bold ${
+                      book.id === 'custodial_escrow' ? 'text-muted-foreground' : 'text-emerald-400'
+                    }`}
+                  >
+                    {formatEUR(book.netRevenueEur)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* 5. Operational Infrastructure & API Expense Tracker */}
+      <Card className="p-6 sm:p-8 bg-card border-border shadow-xl space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-border">
+          <div>
+            <div className="flex items-center gap-2 mb-0.5">
+              <Badge variant="copper">INFRASTRUCTURE EXPENSES</Badge>
+              <Badge variant="success" className="font-mono text-[10px]">
+                BURN: {formatEUR(report.expenseTracker?.totalMonthlyInfraBurnEur || 70.25)} / MO
+              </Badge>
+            </div>
+            <CardTitle className="text-xl font-black text-foreground">
+              Production API Keys & Server Bill Tracker
+            </CardTitle>
+            <CardDescription className="text-xs text-muted-foreground">
+              Real-time monitoring of cloud compute, database, Redis cache, and payment gateway costs to guarantee timely bill settlement before credit depletion.
+            </CardDescription>
+          </div>
+
+          <div className="p-3 bg-secondary rounded-xl border border-border flex items-center gap-4 text-xs font-mono">
+            <div>
+              <span className="text-muted-foreground block text-[10px]">Total Fixed Burn</span>
+              <span className="font-bold text-foreground text-sm">
+                {formatEUR(report.expenseTracker?.totalMonthlyInfraBurnEur || 70.25)}/mo
+              </span>
+            </div>
+            <div className="h-6 w-px bg-border" />
+            <div>
+              <span className="text-muted-foreground block text-[10px]">Runway Status</span>
+              <span className="font-bold text-emerald-400">
+                {report.expenseTracker?.runwayStatus || 'OPTIMAL'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs text-left">
+            <thead>
+              <tr className="border-b border-border text-muted-foreground font-mono uppercase text-[10px]">
+                <th className="py-2.5 px-3">Service / Key</th>
+                <th className="py-2.5 px-3">Provider</th>
+                <th className="py-2.5 px-3">Role</th>
+                <th className="py-2.5 px-3">Monthly Cost</th>
+                <th className="py-2.5 px-3">Billing Cycle</th>
+                <th className="py-2.5 px-3 text-right">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(report.expenseTracker?.bills || []).map((bill, i) => (
+                <tr key={i} className="border-b border-border/40 hover:bg-secondary/20 transition-colors">
+                  <td className="py-3 px-3 font-bold text-foreground flex items-center gap-2">
+                    <Server className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                    <span>{bill.service}</span>
+                  </td>
+                  <td className="py-3 px-3 text-muted-foreground">{bill.provider}</td>
+                  <td className="py-3 px-3">
+                    <Badge variant="secondary" className="font-mono text-[9px]">
+                      {bill.category}
+                    </Badge>
+                  </td>
+                  <td className="py-3 px-3 font-mono font-bold text-foreground">
+                    {formatEUR(bill.monthlyCostEur)}
+                  </td>
+                  <td className="py-3 px-3 text-muted-foreground text-[11px] font-mono">
+                    {bill.billingCycle}
+                  </td>
+                  <td className="py-3 px-3 text-right">
+                    <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[10px] font-mono">
+                      {bill.status}
+                    </Badge>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      {/* 6. Company Withdrawal Governance & Operating Floor */}
+      <Card className="p-6 sm:p-8 bg-card border-border shadow-xl space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-secondary border border-border flex items-center justify-center text-primary flex-shrink-0 shadow-inner">
+              <Scale className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-0.5">
+                <Badge variant="copper">LIQUIDITY GOVERNANCE</Badge>
+                <Badge variant="outline" className="font-mono text-[10px]">
+                  STRICT OPERATING FLOOR
+                </Badge>
+              </div>
+              <CardTitle className="text-xl font-black text-foreground">
+                Corporate Distribution Ceiling & Minimum Reserve
+              </CardTitle>
+              <CardDescription className="text-xs text-muted-foreground">
+                Enforcing legal capital adequacy to prevent company over-withdrawal and guarantee ongoing operational solvency.
+              </CardDescription>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="p-5 rounded-2xl bg-secondary/30 border border-border space-y-1">
+            <span className="text-[10px] font-mono uppercase text-muted-foreground block">
+              Minimum Operating Cost Floor (Locked)
+            </span>
+            <span className="text-2xl font-black font-mono text-foreground">
+              {formatEUR(report.companyLimits?.minimumOperationalReserveEur || 330.0)}
+            </span>
+            <p className="text-[10px] text-muted-foreground mt-1">
+              Required 90-day operating buffer to ensure server infrastructure & payment services cannot be interrupted.
+            </p>
+          </div>
+
+          <div className="p-5 rounded-2xl bg-secondary/30 border border-border space-y-1">
+            <span className="text-[10px] font-mono uppercase text-muted-foreground block">
+              100% Segregated Player Liabilities (Locked)
+            </span>
+            <span className="text-2xl font-black font-mono text-amber-400">
+              {formatEUR(report.playerLiabilitiesEur)}
+            </span>
+            <p className="text-[10px] text-muted-foreground mt-1">
+              Customer deposits and active match escrows. Cannot be touched for company dividends under any circumstances.
+            </p>
+          </div>
+
+          <div className="p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 space-y-1">
+            <span className="text-[10px] font-mono uppercase text-emerald-400 block font-bold">
+              Max Permissible Company Withdrawal
+            </span>
+            <span className="text-2xl font-black font-mono text-emerald-400">
+              {formatEUR(report.companyLimits?.maxCompanyWithdrawalEur || report.recommendations.safeWithdrawableEur)}
+            </span>
+            <p className="text-[10px] text-muted-foreground mt-1">
+              Net retained profit after 100% player liabilities and 90-day operating reserve deduction.
+            </p>
+          </div>
+        </div>
       </Card>
     </div>
   );

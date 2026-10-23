@@ -74,9 +74,9 @@ export const QUICK_MATCH_ELO_WINDOW = 150;
 
 /** Financial & Treasury Accounting Thresholds (EUR) */
 export const MIN_DEPOSIT_EUR = 5.0;
-export const MAX_DEPOSIT_EUR = 5000.0;
+export const MAX_DEPOSIT_EUR = 100_000.0;
 export const MIN_WITHDRAWAL_EUR = 10.0;
-export const MAX_WITHDRAWAL_EUR = 5000.0;
+export const MAX_WITHDRAWAL_EUR = 1_000_000.0; // Effectively no maximum ceiling: bounded strictly by player available balance
 
 /** Match stakes & fees */
 export const MIN_DUEL_STAKE_EUR = 1.0;

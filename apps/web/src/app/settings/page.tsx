@@ -19,6 +19,9 @@ interface MyProfile {
   id: string;
   username: string;
   display_name?: string;
+  full_name?: string;
+  date_of_birth?: string;
+  address?: string;
   region?: string;
   country_code?: string;
   phone?: string;
@@ -34,6 +37,9 @@ function SettingsContent() {
   });
 
   const [displayName, setDisplayName] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
+  const [address, setAddress] = useState('');
   const [region, setRegion] = useState('');
   const [phone, setPhone] = useState('');
   const [saved, setSaved] = useState(false);
@@ -42,6 +48,9 @@ function SettingsContent() {
   useEffect(() => {
     if (profile) {
       setDisplayName(profile.display_name || '');
+      setFullName(profile.full_name || '');
+      setDateOfBirth(profile.date_of_birth ? profile.date_of_birth.slice(0, 10) : '');
+      setAddress(profile.address || '');
       setRegion(profile.country_code || profile.region || '');
       setPhone(profile.phone || '');
     }
@@ -53,7 +62,7 @@ function SettingsContent() {
     try {
       await apiClient('/profile/me', {
         method: 'PATCH',
-        body: JSON.stringify({ displayName, region, country_code: region, phone }),
+        body: JSON.stringify({ displayName, fullName, dateOfBirth, address, region, country_code: region, phone }),
       });
       await queryClient.invalidateQueries({ queryKey: ['me-settings'] });
       await queryClient.invalidateQueries({ queryKey: ['header-me'] });
@@ -120,18 +129,63 @@ function SettingsContent() {
           )}
 
           <form onSubmit={handleSave} className="space-y-5">
-            {/* Display Name */}
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-foreground block">
-                Display Gamer Tag
-              </label>
-              <Input
-                type="text"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="e.g. AceGamer"
-                className="text-xs"
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Display Name */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-foreground block">
+                  Display Gamer Tag
+                </label>
+                <Input
+                  type="text"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="e.g. AceGamer"
+                  className="text-xs"
+                />
+              </div>
+
+              {/* Full Legal Name */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-foreground block">
+                  Full Legal Name <span className="text-muted-foreground font-normal">(for Crossmint Payouts)</span>
+                </label>
+                <Input
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="e.g. Alexander Vance"
+                  className="text-xs"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Date of Birth */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-foreground block">
+                  Date of Birth <span className="text-muted-foreground font-normal">(18+ for Cash)</span>
+                </label>
+                <Input
+                  type="date"
+                  value={dateOfBirth}
+                  onChange={(e) => setDateOfBirth(e.target.value)}
+                  className="text-xs"
+                />
+              </div>
+
+              {/* Phone */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-foreground block">
+                  Mobile Number (for 2FA & Security)
+                </label>
+                <Input
+                  type="tel"
+                  placeholder="+1 555 123 4567"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="text-xs font-mono"
+                />
+              </div>
             </div>
 
             {/* Country / Nationality */}
@@ -144,17 +198,17 @@ function SettingsContent() {
               />
             </div>
 
-            {/* Phone */}
+            {/* Residential Address */}
             <div className="space-y-2">
               <label className="text-xs font-bold text-foreground block">
-                Mobile Number (for KYC & 2FA Security)
+                Residential Street Address & City
               </label>
               <Input
-                type="tel"
-                placeholder="+1 555 123 4567 or +44 7911 123456"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="text-xs font-mono"
+                type="text"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="e.g. 124 Esports Way, Suite 4B, Austin, TX"
+                className="text-xs"
               />
             </div>
 

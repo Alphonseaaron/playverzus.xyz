@@ -15,6 +15,9 @@ function SignUpForm() {
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
+  const [phone, setPhone] = useState('');
   const [countryCode, setCountryCode] = useState('');
   const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,6 +67,9 @@ function SignUpForm() {
           data: {
             username: username.trim().toLowerCase(),
             display_name: username.trim(),
+            full_name: fullName.trim(),
+            date_of_birth: dateOfBirth,
+            phone: phone.trim(),
             country_code: countryCode,
             region: countryCode,
           },
@@ -151,6 +157,19 @@ function SignUpForm() {
 
             <div className="space-y-2">
               <label className="text-xs font-bold text-foreground block">
+                Full Legal Name <span className="text-muted-foreground font-normal">(for Crossmint & Cash Payouts)</span>
+              </label>
+              <Input
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="e.g. Alexander Vance"
+                className="text-xs"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-foreground block">
                 Email Address <span className="text-primary">*</span>
               </label>
               <Input
@@ -187,6 +206,34 @@ function SignUpForm() {
                 placeholder="Select your country..."
                 required
               />
+            </div>
+
+            {/* KYC Onboarding Details */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-foreground block">
+                  Date of Birth <span className="text-muted-foreground font-normal">(18+ Cash)</span>
+                </label>
+                <Input
+                  type="date"
+                  value={dateOfBirth}
+                  onChange={(e) => setDateOfBirth(e.target.value)}
+                  className="text-xs"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-foreground block">
+                  Mobile Number <span className="text-muted-foreground font-normal">(for 2FA)</span>
+                </label>
+                <Input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="+1 555 123 4567"
+                  className="text-xs font-mono"
+                />
+              </div>
             </div>
 
             {/* Age & Terms Compliance */}

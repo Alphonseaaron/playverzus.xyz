@@ -23,7 +23,7 @@ describe('API Services & Security Guards Edge Case Suite', () => {
     });
 
     it('rejects deposit above MAX_DEPOSIT_EUR', async () => {
-      await expect(service.deposit('u1', 5000.01)).rejects.toThrowError(
+      await expect(service.deposit('u1', MAX_WITHDRAWAL_EUR + 0.01)).rejects.toThrowError(
         `The maximum deposit limit per transaction is €${MAX_DEPOSIT_EUR.toLocaleString('en-US', { minimumFractionDigits: 2 })}.`,
       );
     });
@@ -53,7 +53,7 @@ describe('API Services & Security Guards Edge Case Suite', () => {
     });
 
     it('rejects payout above MAX_WITHDRAWAL_EUR', async () => {
-      await expect(service.requestPayout('u1', 5000.01, { type: 'BANK_ACCOUNT' } as any)).rejects.toThrowError(
+      await expect(service.requestPayout('u1', MAX_WITHDRAWAL_EUR + 0.01, { type: 'BANK_ACCOUNT' } as any)).rejects.toThrowError(
         `The maximum single withdrawal limit is €${MAX_WITHDRAWAL_EUR.toLocaleString('en-US', { minimumFractionDigits: 2 })}. For higher volumes, please contact VIP support.`,
       );
     });

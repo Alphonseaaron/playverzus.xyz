@@ -17,7 +17,17 @@ export class ProfileController {
   @Patch('me')
   async updateMe(
     @CurrentUser() user: AuthUser,
-    @Body() body: { displayName?: string; avatarUrl?: string; region?: string; country_code?: string; phone?: string },
+    @Body()
+    body: {
+      displayName?: string;
+      fullName?: string;
+      dateOfBirth?: string;
+      address?: string;
+      avatarUrl?: string;
+      region?: string;
+      country_code?: string;
+      phone?: string;
+    },
   ) {
     return this.profileService.updateProfile(user.id, body);
   }

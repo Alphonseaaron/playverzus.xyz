@@ -41,20 +41,32 @@ export class ProfileService {
 
   async updateProfile(
     userId: string,
-    updates: { displayName?: string; avatarUrl?: string; region?: string; country_code?: string; phone?: string },
+    updates: {
+      displayName?: string;
+      fullName?: string;
+      dateOfBirth?: string;
+      address?: string;
+      avatarUrl?: string;
+      region?: string;
+      country_code?: string;
+      phone?: string;
+    },
   ) {
     const resolvedRegion = updates.country_code || updates.region;
     const { data, error } = await this.supabase
       .from('profiles')
       .update({
         display_name: updates.displayName,
+        full_name: updates.fullName,
+        date_of_birth: updates.dateOfBirth ? (updates.dateOfBirth as any) : undefined,
+        address: updates.address,
         avatar_url: updates.avatarUrl,
         region: resolvedRegion,
         phone: updates.phone,
         updated_at: new Date().toISOString(),
       })
       .eq('id', userId)
-      .select('id, username, display_name, avatar_url, region, phone, trust_score, role')
+      .select('id, username, display_name, full_name, date_of_birth, address, avatar_url, region, phone, trust_score, role, kyc_status, kyc_provider_ref')
       .single();
 
     if (error) throw new Error(error.message);
