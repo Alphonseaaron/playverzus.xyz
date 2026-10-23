@@ -97,7 +97,7 @@ alter table public.user_suggestions enable row level security;
 create policy "support_tickets_select" on public.support_tickets
   for select using (
     auth.uid() = user_id or
-    public.current_role() in ('SUPPORT', 'REVIEWER', 'ADMIN', 'SUPER_ADMIN')
+    public.current_role()::text in ('SUPPORT', 'REVIEWER', 'ADMIN', 'SUPER_ADMIN')
   );
 
 create policy "support_tickets_insert" on public.support_tickets
@@ -105,7 +105,7 @@ create policy "support_tickets_insert" on public.support_tickets
 
 create policy "support_tickets_update" on public.support_tickets
   for update using (
-    public.current_role() in ('SUPPORT', 'REVIEWER', 'ADMIN', 'SUPER_ADMIN')
+    public.current_role()::text in ('SUPPORT', 'REVIEWER', 'ADMIN', 'SUPER_ADMIN')
   );
 
 -- Support Ticket Messages Policies
@@ -114,7 +114,7 @@ create policy "ticket_messages_select" on public.support_ticket_messages
     (not is_internal_note and exists (
       select 1 from public.support_tickets st where st.id = ticket_id and (st.user_id = auth.uid())
     )) or
-    public.current_role() in ('SUPPORT', 'REVIEWER', 'ADMIN', 'SUPER_ADMIN')
+    public.current_role()::text in ('SUPPORT', 'REVIEWER', 'ADMIN', 'SUPER_ADMIN')
   );
 
 create policy "ticket_messages_insert" on public.support_ticket_messages
@@ -122,7 +122,7 @@ create policy "ticket_messages_insert" on public.support_ticket_messages
     exists (
       select 1 from public.support_tickets st where st.id = ticket_id and (st.user_id = auth.uid())
     ) or
-    public.current_role() in ('SUPPORT', 'REVIEWER', 'ADMIN', 'SUPER_ADMIN')
+    public.current_role()::text in ('SUPPORT', 'REVIEWER', 'ADMIN', 'SUPER_ADMIN')
   );
 
 -- Community Polls Policies (Read by anyone, written by staff)
@@ -131,7 +131,7 @@ create policy "polls_select_all" on public.community_polls
 
 create policy "polls_staff_write" on public.community_polls
   for all using (
-    public.current_role() in ('SUPPORT', 'REVIEWER', 'ADMIN', 'SUPER_ADMIN')
+    public.current_role()::text in ('SUPPORT', 'REVIEWER', 'ADMIN', 'SUPER_ADMIN')
   );
 
 -- Community Poll Votes Policies (Authenticated registered users can vote once)
@@ -145,7 +145,7 @@ create policy "poll_votes_insert" on public.community_poll_votes
 create policy "suggestions_select" on public.user_suggestions
   for select using (
     auth.uid() = user_id or
-    public.current_role() in ('SUPPORT', 'REVIEWER', 'ADMIN', 'SUPER_ADMIN')
+    public.current_role()::text in ('SUPPORT', 'REVIEWER', 'ADMIN', 'SUPER_ADMIN')
   );
 
 create policy "suggestions_insert" on public.user_suggestions
@@ -153,5 +153,5 @@ create policy "suggestions_insert" on public.user_suggestions
 
 create policy "suggestions_staff_update" on public.user_suggestions
   for update using (
-    public.current_role() in ('SUPPORT', 'REVIEWER', 'ADMIN', 'SUPER_ADMIN')
+    public.current_role()::text in ('SUPPORT', 'REVIEWER', 'ADMIN', 'SUPER_ADMIN')
   );
