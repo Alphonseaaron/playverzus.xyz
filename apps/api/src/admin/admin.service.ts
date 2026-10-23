@@ -250,7 +250,7 @@ export class AdminService {
           takeRatePercent: tournamentEntryVolumeEur > 0 ? Math.round((tournamentMarginEur / tournamentEntryVolumeEur) * 1000) / 10 : 15.0,
           marginPercent: 85.0,
           status: tournamentEntryVolumeEur > 0 ? 'ACTIVE_EARNING' : 'AWAITING_TOURNAMENTS',
-          description: 'Tiered 10% (Micro $0.50), 15% (Challenger $2.50), and 20% (Champion $10.00) platform rakes retained from 5-player Sit & Go blitz pools.',
+          description: 'Tiered 10% (Starter $10.00), 15% (Challenger $50.00), and 20% (Champion $100.00) platform rakes retained from 5-player Sit & Go blitz pools.',
         },
         {
           id: 'brand_sponsorships',

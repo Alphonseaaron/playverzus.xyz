@@ -23,6 +23,8 @@ import {
   Settings,
   Globe,
   LogOut,
+  Headphones,
+  Vote,
 } from 'lucide-react';
 import { useGameStore } from '../lib/gameStore';
 import { EloBadge } from './EloBadge';
@@ -52,7 +54,7 @@ interface HeaderProfile {
   rating?: number;
   country_code?: string;
   region?: string;
-  role?: 'PLAYER' | 'REVIEWER' | 'ADMIN' | 'SUPER_ADMIN';
+  role?: 'PLAYER' | 'REVIEWER' | 'ADMIN' | 'SUPER_ADMIN' | 'SUPPORT';
 }
 
 function getPageContext(pathname: string): { title: string; subtitle?: string } {
@@ -61,6 +63,8 @@ function getPageContext(pathname: string): { title: string; subtitle?: string } 
   if (pathname.startsWith('/tournaments')) return { title: 'Tournaments', subtitle: 'Championship Brackets' };
   if (pathname.startsWith('/leaderboards')) return { title: 'Ladders & Rank', subtitle: 'Competitive Elo' };
   if (pathname.startsWith('/games')) return { title: 'Game Catalog', subtitle: 'Supported Esports' };
+  if (pathname.startsWith('/community/polls')) return { title: 'Community Roadmap', subtitle: 'Feature Voting' };
+  if (pathname.startsWith('/support')) return { title: 'Player Support', subtitle: 'Ticket Desk' };
   if (pathname.startsWith('/matches/new')) return { title: 'Create Duel', subtitle: 'Instant 1v1 Challenge' };
   if (pathname.startsWith('/matches/')) return { title: 'Match Arena', subtitle: 'Live Contest' };
   if (pathname.startsWith('/dashboard')) return { title: 'Wallet & Cashier', subtitle: 'Ledger Balances' };
@@ -124,20 +128,22 @@ export function TopHeader() {
   const eloRating = me?.rating ?? 1000;
   const avatarLetter = me?.username ? me.username.slice(0, 1).toUpperCase() : 'U';
 
-  const isStaff = me?.role === 'ADMIN' || me?.role === 'SUPER_ADMIN' || me?.role === 'REVIEWER';
+  const isStaff = me?.role === 'ADMIN' || me?.role === 'SUPER_ADMIN' || me?.role === 'REVIEWER' || me?.role === 'SUPPORT';
 
   const mobileNavLinks = [
     { href: me ? '/dashboard' : '/', label: me ? 'Dashboard' : 'Overview', icon: LayoutDashboard },
     { href: '/challenges', label: 'Play Duels', icon: Swords },
     { href: '/tournaments', label: 'Tournaments', icon: Trophy },
+    { href: '/community/polls', label: 'Feature Polls', icon: Vote },
     { href: '/leaderboards', label: 'Ladders & Rank', icon: BarChart3 },
     { href: '/games', label: 'Explore Games', icon: Gamepad2 },
     { href: '/cashier', label: 'Wallet & Cashier', icon: Wallet },
+    { href: '/support', label: 'Support Desk', icon: Headphones },
     ...(isStaff
       ? [
           {
-            href: me?.role === 'REVIEWER' ? '/admin/review' : '/admin',
-            label: me?.role === 'REVIEWER' ? 'Audit Queue' : 'Operations Admin',
+            href: me?.role === 'REVIEWER' ? '/admin/review' : me?.role === 'SUPPORT' ? '/admin/support' : '/admin',
+            label: me?.role === 'REVIEWER' ? 'Audit Queue' : me?.role === 'SUPPORT' ? 'Support Desk' : 'Operations Admin',
             icon: Shield,
           },
         ]
@@ -195,10 +201,22 @@ export function TopHeader() {
             Tournaments
           </Link>
           <Link
+            href="/community/polls"
+            className="text-muted-foreground hover:text-foreground transition-colors hover:text-primary"
+          >
+            Polls & Roadmap
+          </Link>
+          <Link
             href="/leaderboards"
             className="text-muted-foreground hover:text-foreground transition-colors hover:text-primary"
           >
             Ladders & Rank
+          </Link>
+          <Link
+            href="/support"
+            className="text-muted-foreground hover:text-foreground transition-colors hover:text-primary"
+          >
+            Support
           </Link>
           <a
             href="#fair-play"

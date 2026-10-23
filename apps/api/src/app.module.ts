@@ -23,6 +23,8 @@ import { RealtimeModule } from './realtime/realtime.module';
 import { WorkersModule } from './workers/workers.module';
 import { MailModule } from './mail/mail.module';
 import { CrossmintModule } from './crossmint/crossmint.module';
+import { SupportModule } from './support/support.module';
+import { PollsModule } from './polls/polls.module';
 
 import { RateLimitInterceptor } from './common/interceptors/rate-limit.interceptor';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor';
@@ -53,6 +55,8 @@ import { AuditInterceptor } from './common/interceptors/audit.interceptor';
     WorkersModule,
     MailModule,
     CrossmintModule,
+    SupportModule,
+    PollsModule,
   ],
   providers: [
     {

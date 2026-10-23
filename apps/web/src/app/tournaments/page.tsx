@@ -194,7 +194,7 @@ export default function TournamentsPage() {
                   : 'text-muted-foreground hover:text-emerald-400'
               }`}
             >
-              <span>Tier 1 ($0.50)</span>
+              <span>Tier 1 ($10.00)</span>
             </button>
             <button
               onClick={() => setBlitzTierFilter(2)}
@@ -204,7 +204,7 @@ export default function TournamentsPage() {
                   : 'text-muted-foreground hover:text-blue-400'
               }`}
             >
-              <span>Tier 2 ($2.50)</span>
+              <span>Tier 2 ($50.00)</span>
             </button>
             <button
               onClick={() => setBlitzTierFilter(3)}
@@ -214,7 +214,7 @@ export default function TournamentsPage() {
                   : 'text-muted-foreground hover:text-purple-400'
               }`}
             >
-              <span>Tier 3 ($10.00)</span>
+              <span>Tier 3 ($100.00)</span>
             </button>
           </div>
         </div>
@@ -259,10 +259,10 @@ export default function TournamentsPage() {
                     <div className="flex items-center justify-between gap-2">
                       <Badge className={`text-[10px] font-bold px-2 py-0.5 border ${tierBadgeColor}`}>
                         {tierNum === 1
-                          ? 'TIER 1 · MICRO'
+                          ? 'TIER 1 · STARTER ($10)'
                           : tierNum === 2
-                          ? 'TIER 2 · CHALLENGER'
-                          : 'TIER 3 · CHAMPION'}
+                          ? 'TIER 2 · CHALLENGER ($50)'
+                          : 'TIER 3 · CHAMPION ($100)'}
                       </Badge>
                       <div className="flex items-center gap-1.5 text-[11px] font-mono text-muted-foreground">
                         <Users className="w-3.5 h-3.5 text-primary" />

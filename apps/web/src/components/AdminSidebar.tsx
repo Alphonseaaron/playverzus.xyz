@@ -19,6 +19,8 @@ import {
   Activity,
   ArrowLeft,
   Landmark,
+  Headphones,
+  Vote,
 } from 'lucide-react';
 
 interface AdminNavItem {
@@ -51,6 +53,7 @@ export function AdminSidebar({ onNavClick, className = '' }: AdminSidebarProps) 
   });
 
   const isReviewer = profile?.role === 'REVIEWER';
+  const isSupport = profile?.role === 'SUPPORT';
 
   // Fetch pending review count for live HITL badge
   const { data: reviewTasks } = useQuery<Array<{ id: string }>>({
@@ -79,6 +82,27 @@ export function AdminSidebar({ onNavClick, className = '' }: AdminSidebarProps) 
           ],
         },
       ]
+    : isSupport
+    ? [
+        {
+          group: 'Staff Support & Roadmap',
+          items: [
+            {
+              href: '/admin/support',
+              label: 'Support Desk',
+              icon: Headphones,
+              badge: 'STAFF',
+              badgeVariant: 'warning',
+            },
+            {
+              href: '/admin/polls',
+              label: 'Community Polls',
+              icon: Vote,
+              badge: null,
+            },
+          ],
+        },
+      ]
     : [
         {
           group: 'Core Operations',
@@ -96,6 +120,23 @@ export function AdminSidebar({ onNavClick, className = '' }: AdminSidebarProps) 
               icon: ShieldAlert,
               badge: pendingCount > 0 ? `${pendingCount}` : null,
               badgeVariant: 'warning',
+            },
+          ],
+        },
+        {
+          group: 'Staff Support & Community',
+          items: [
+            {
+              href: '/admin/support',
+              label: 'Support Desk',
+              icon: Headphones,
+              badge: null,
+            },
+            {
+              href: '/admin/polls',
+              label: 'Community Polls',
+              icon: Vote,
+              badge: null,
             },
           ],
         },

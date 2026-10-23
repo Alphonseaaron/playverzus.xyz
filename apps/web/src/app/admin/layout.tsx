@@ -16,6 +16,8 @@ import {
   ArrowLeft,
   AlertTriangle,
   Landmark,
+  Headphones,
+  Vote,
 } from 'lucide-react';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -24,7 +26,7 @@ import { Card } from '../../components/ui/card';
 interface ProfileData {
   id: string;
   username: string;
-  role: 'PLAYER' | 'REVIEWER' | 'ADMIN' | 'SUPER_ADMIN';
+  role: 'PLAYER' | 'REVIEWER' | 'ADMIN' | 'SUPER_ADMIN' | 'SUPPORT';
 }
 
 export default function AdminLayout({
@@ -50,6 +52,8 @@ export default function AdminLayout({
   const fullAdminTabs = [
     { href: '/admin', label: 'Overview', icon: BarChart3, exact: true },
     { href: '/admin/treasury', label: 'Treasury & Audit', icon: Landmark },
+    { href: '/admin/support', label: 'Support Desk', icon: Headphones },
+    { href: '/admin/polls', label: 'Polls & Roadmap', icon: Vote },
     { href: '/admin/review', label: 'Review', icon: ShieldAlert },
     { href: '/admin/profiles', label: 'Profiles', icon: Gamepad2 },
     { href: '/admin/users', label: 'Users', icon: Users },
@@ -59,6 +63,11 @@ export default function AdminLayout({
 
   const reviewerTabs = [
     { href: '/admin/review', label: 'Review Queue', icon: ShieldAlert, exact: true },
+  ];
+
+  const supportTabs = [
+    { href: '/admin/support', label: 'Support Desk', icon: Headphones, exact: false },
+    { href: '/admin/polls', label: 'Polls & Roadmap', icon: Vote, exact: false },
   ];
 
   // 1. Loading State
@@ -119,10 +128,11 @@ export default function AdminLayout({
 
   const role = profile.role;
   const isReviewer = role === 'REVIEWER';
+  const isSupport = role === 'SUPPORT';
   const isAdmin = role === 'ADMIN' || role === 'SUPER_ADMIN';
 
   // 3. Unauthorized Player State (HTTP 403 Forbidden)
-  if (!isAdmin && !isReviewer) {
+  if (!isAdmin && !isReviewer && !isSupport) {
     return (
       <div className="max-w-md mx-auto py-16 px-4">
         <Card className="p-8 bg-card border-destructive/40 shadow-2xl text-center space-y-6">
@@ -137,7 +147,7 @@ export default function AdminLayout({
               Staff Clearance Required
             </h1>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Your account <span className="font-bold text-foreground">@{profile.username}</span> is registered with standard Player credentials. Access to operations, match audits, and liquidity controls requires Reviewer or Administrator privileges.
+              Your account <span className="font-bold text-foreground">@{profile.username}</span> is registered with standard Player credentials. Access to operations, match audits, support triage, and liquidity controls requires Staff, Reviewer, or Administrator privileges.
             </p>
           </div>
           <div className="pt-2 flex justify-center">
@@ -191,7 +201,45 @@ export default function AdminLayout({
     );
   }
 
-  const activeMobileTabs = isReviewer ? reviewerTabs : fullAdminTabs;
+  // 5. Support Scope Restriction (Support staff only access /admin/support and /admin/polls)
+  if (isSupport && !pathname.startsWith('/admin/support') && !pathname.startsWith('/admin/polls')) {
+    return (
+      <div className="max-w-md mx-auto py-16 px-4">
+        <Card className="p-8 bg-card border-amber-500/30 shadow-2xl text-center space-y-6">
+          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-500 border border-amber-500/20 mx-auto flex items-center justify-center shadow-lg">
+            <Headphones className="w-7 h-7" />
+          </div>
+          <div className="space-y-2">
+            <Badge variant="warning" className="font-mono text-[10px]">
+              SUPPORT STAFF SCOPE
+            </Badge>
+            <h1 className="text-2xl font-black tracking-tight text-foreground">
+              Support Desk & Community Polls
+            </h1>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              As an authorized Support Specialist, your operational credentials grant access to player ticket triage, staff delegation, and community roadmap polls. Treasury controls and seasons require Administrator clearance.
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+            <Link href="/admin/support">
+              <Button variant="default" size="sm" className="font-bold text-xs gap-1.5 w-full sm:w-auto">
+                <Headphones className="w-3.5 h-3.5" />
+                Go to Support Desk
+              </Button>
+            </Link>
+            <Link href="/admin/polls">
+              <Button variant="outline" size="sm" className="font-bold text-xs gap-1.5 w-full sm:w-auto">
+                <Vote className="w-3.5 h-3.5" />
+                Polls & Proposals
+              </Button>
+            </Link>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  const activeMobileTabs = isReviewer ? reviewerTabs : isSupport ? supportTabs : fullAdminTabs;
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto w-full min-w-0">
@@ -204,8 +252,8 @@ export default function AdminLayout({
               Admin Console
             </span>
           </div>
-          <Badge variant={isReviewer ? 'warning' : 'copper'} className="text-[9px] font-mono">
-            {isReviewer ? 'REVIEWER' : 'OPERATIONS'}
+          <Badge variant={isReviewer ? 'warning' : isSupport ? 'secondary' : 'copper'} className="text-[9px] font-mono">
+            {isReviewer ? 'REVIEWER' : isSupport ? 'SUPPORT' : 'OPERATIONS'}
           </Badge>
         </div>
 

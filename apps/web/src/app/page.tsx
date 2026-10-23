@@ -38,7 +38,7 @@ import { GamePoster } from '../components/GamePoster';
 import { GameDropdown } from '../components/GameDropdown';
 import { apiClient } from '../lib/api';
 import { getSupabaseClient } from '../lib/supabase';
-import { formatEUR, formatPoints } from '../lib/currency';
+import { formatUSDC, formatEUR, formatPoints } from '../lib/currency';
 import { OFFICIAL_GAMES, getGameById, type CatalogGame } from '../lib/gamesCatalog';
 import { EmptyState } from '../components/EmptyState';
 import { Skeleton } from '../components/ui/skeleton';
@@ -626,7 +626,7 @@ function HomeContent() {
                   <div>
                     <span className="text-[10px] text-muted-foreground uppercase font-bold block">Prize Pool</span>
                     <span className="font-mono font-bold text-emerald-400 text-sm">
-                      {t.prize_pool > 0 ? formatEUR(t.prize_pool) : 'Free Entry'}
+                      {t.prize_pool > 0 ? formatUSDC(t.prize_pool) : 'Free Entry'}
                     </span>
                   </div>
 
@@ -804,6 +804,7 @@ function HomeContent() {
             <ul className="space-y-1 text-[11px]">
               <li><Link href="/challenges" className="hover:text-foreground">1v1 Duels</Link></li>
               <li><Link href="/tournaments" className="hover:text-foreground">Championship Cups</Link></li>
+              <li><Link href="/community/polls" className="hover:text-foreground">Feature Polls & Roadmap</Link></li>
               <li><Link href="/leaderboards" className="hover:text-foreground">Ladders & Elo</Link></li>
               <li><Link href="/games" className="hover:text-foreground">Supported Games</Link></li>
             </ul>
@@ -813,6 +814,7 @@ function HomeContent() {
             <h4 className="font-bold text-foreground text-xs uppercase tracking-wider">Banking & FairPlay</h4>
             <ul className="space-y-1 text-[11px]">
               <li><Link href="/dashboard" className="hover:text-foreground">Cashier Ledger</Link></li>
+              <li><Link href="/support" className="hover:text-foreground">Player Support Desk</Link></li>
               <li><Link href="/terms" className="hover:text-foreground">Terms of Service</Link></li>
               <li><Link href="/privacy" className="hover:text-foreground">Player Privacy Policy</Link></li>
               <li><a href="mailto:support@playverzus.xyz" className="text-primary hover:underline font-mono">support@playverzus.xyz</a></li>

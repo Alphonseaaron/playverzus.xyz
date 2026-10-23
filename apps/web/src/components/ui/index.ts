@@ -9,3 +9,4 @@ export * from './tabs';
 export * from './avatar';
 export * from './skeleton';
 export * from './sheet';
+export * from './textarea';
