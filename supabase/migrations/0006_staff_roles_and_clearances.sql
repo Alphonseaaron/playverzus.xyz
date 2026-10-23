@@ -14,7 +14,7 @@ alter type public.role_enum add value if not exists 'COMMUNITY_MANAGER';
 create or replace function public.is_staff()
 returns boolean
 language sql
-security definer
+security invoker
 stable
 set search_path = public
 as $$
@@ -33,4 +33,5 @@ as $$
   );
 $$;
 
-grant execute on function public.is_staff() to anon, authenticated, service_role, postgres;
+revoke execute on function public.is_staff() from public, anon;
+grant execute on function public.is_staff() to authenticated, service_role, postgres;

@@ -101,7 +101,16 @@ create policy "support_tickets_select" on public.support_tickets
   );
 
 create policy "support_tickets_insert" on public.support_tickets
-  for insert with check (true);
+  for insert with check (
+    length(trim(coalesce(email, ''))) >= 3
+    and length(trim(coalesce(subject, ''))) >= 1
+    and length(trim(coalesce(message, ''))) >= 1
+    and (
+      (auth.uid() is not null and (user_id = auth.uid() or user_id is null))
+      or
+      (auth.uid() is null and user_id is null)
+    )
+  );
 
 create policy "support_tickets_update" on public.support_tickets
   for update using (
