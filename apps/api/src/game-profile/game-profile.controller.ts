@@ -39,7 +39,7 @@ export class GameProfileController {
   }
 
   @UseGuards(SupabaseAuthGuard, RolesGuard)
-  @Roles('ADMIN', 'SUPER_ADMIN')
+  @Roles('ADMIN', 'SUPER_ADMIN', 'TOURNAMENT_ADMIN')
   @Post(':id/approve')
   async approve(@Param('id') id: string, @CurrentUser() user: AuthUser) {
     return this.gameProfileService.approveProfile(id, user.id);
@@ -50,12 +50,12 @@ export class GameProfileController {
   async calibrate(
     @Param('id') id: string,
     @CurrentUser() user: AuthUser,
-    @Body() body: { roi: ROI },
+    @Body() body: { roi: ROI; constraints?: Record<string, unknown> },
   ) {
     const profile = await this.gameProfileService.getById(id);
-    if (profile.creatorId !== user.id && user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') {
-      throw new ForbiddenException('Only the game profile creator or an administrator can update calibration');
+    if (profile.creatorId !== user.id && user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN' && user.role !== 'TOURNAMENT_ADMIN') {
+      throw new ForbiddenException('Only the profile creator or tournament administrator can calibrate parameters');
     }
-    return this.gameProfileService.updateCalibration(id, body.roi);
+    return this.gameProfileService.calibrateProfile(id, body.roi, body.constraints);
   }
 }

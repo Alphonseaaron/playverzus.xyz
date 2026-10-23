@@ -97,7 +97,7 @@ export class PollsController {
   }
 
   private assertStaffClearance(user: AuthUser) {
-    if (!['SUPPORT', 'REVIEWER', 'ADMIN', 'SUPER_ADMIN'].includes(user.role)) {
+    if (!['SUPPORT', 'COMMUNITY_MANAGER', 'REVIEWER', 'ADMIN', 'SUPER_ADMIN'].includes(user.role)) {
       throw new ForbiddenException('Staff or Administrator operational clearance is required.');
     }
   }

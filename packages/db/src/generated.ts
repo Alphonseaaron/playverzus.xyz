@@ -33,7 +33,15 @@ export type MatchStatusEnum =
 
 export type TournamentFormatEnum = 'SINGLE_ELIM' | 'DOUBLE_ELIM' | 'ROUND_ROBIN' | 'SWISS';
 export type TournamentStatusEnum = 'REGISTRATION' | 'CHECKIN' | 'LIVE' | 'COMPLETED' | 'CANCELLED';
-export type RoleEnum = 'PLAYER' | 'REVIEWER' | 'ADMIN' | 'SUPER_ADMIN';
+export type RoleEnum =
+  | 'PLAYER'
+  | 'REVIEWER'
+  | 'ADMIN'
+  | 'SUPER_ADMIN'
+  | 'SUPPORT'
+  | 'TOURNAMENT_ADMIN'
+  | 'FINANCE_AUDITOR'
+  | 'COMMUNITY_MANAGER';
 export type KycStatusEnum = 'NONE' | 'PENDING' | 'VERIFIED' | 'REJECTED';
 export type FriendshipStatusEnum = 'PENDING' | 'ACCEPTED' | 'BLOCKED';
 export type DisputeStatusEnum = 'OPEN' | 'REVIEW' | 'RESOLVED';

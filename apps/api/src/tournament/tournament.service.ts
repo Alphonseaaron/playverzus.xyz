@@ -385,7 +385,7 @@ export class TournamentService {
   }
 
   /**
-   * Guarantees that all 15 automated Sit & Go Blitz pools (Top 5 Games × 3 Tiers) are active in REGISTRATION.
+   * Guarantees that all 25 automated Sit & Go Blitz pools (Top 5 Games × 5 Tiers) are active in REGISTRATION.
    */
   async ensureAutomatedTournaments() {
     const creatorId = await this.getSystemCreatorId();
@@ -394,7 +394,7 @@ export class TournamentService {
     for (const game of TOP_5_BLITZ_GAMES) {
       const resolvedProfileId = await resolveAndEnsureGameProfileId(this.supabase, game.id);
 
-      for (const tierKey of [1, 2, 3] as const) {
+      for (const tierKey of [1, 2, 3, 4, 5] as const) {
         const tierConfig = TOURNAMENT_TIERS[tierKey];
 
         // Check if an open tournament exists

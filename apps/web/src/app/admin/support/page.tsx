@@ -724,7 +724,7 @@ export default function AdminSupportPage() {
                         );
                       }
 
-                      const isStaffReply = ['SUPPORT', 'REVIEWER', 'ADMIN', 'SUPER_ADMIN'].includes(msg.sender_role);
+                      const isStaffReply = msg.sender_role !== 'PLAYER' && msg.sender_role !== 'USER';
 
                       return (
                         <div

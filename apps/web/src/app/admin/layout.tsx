@@ -18,6 +18,7 @@ import {
   Landmark,
   Headphones,
   Vote,
+  Zap,
 } from 'lucide-react';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -26,7 +27,15 @@ import { Card } from '../../components/ui/card';
 interface ProfileData {
   id: string;
   username: string;
-  role: 'PLAYER' | 'REVIEWER' | 'ADMIN' | 'SUPER_ADMIN' | 'SUPPORT';
+  role:
+    | 'PLAYER'
+    | 'REVIEWER'
+    | 'ADMIN'
+    | 'SUPER_ADMIN'
+    | 'SUPPORT'
+    | 'TOURNAMENT_ADMIN'
+    | 'FINANCE_AUDITOR'
+    | 'COMMUNITY_MANAGER';
 }
 
 export default function AdminLayout({
@@ -54,9 +63,9 @@ export default function AdminLayout({
     { href: '/admin/treasury', label: 'Treasury & Audit', icon: Landmark },
     { href: '/admin/support', label: 'Support Desk', icon: Headphones },
     { href: '/admin/polls', label: 'Polls & Roadmap', icon: Vote },
-    { href: '/admin/review', label: 'Review', icon: ShieldAlert },
+    { href: '/admin/review', label: 'Review Queue', icon: ShieldAlert },
     { href: '/admin/profiles', label: 'Profiles', icon: Gamepad2 },
-    { href: '/admin/users', label: 'Users', icon: Users },
+    { href: '/admin/users', label: 'Users & Staff', icon: Users },
     { href: '/admin/seasons', label: 'Seasons', icon: Trophy },
     { href: '/admin/sponsors', label: 'Sponsors', icon: Gem },
   ];
@@ -68,6 +77,21 @@ export default function AdminLayout({
   const supportTabs = [
     { href: '/admin/support', label: 'Support Desk', icon: Headphones, exact: false },
     { href: '/admin/polls', label: 'Polls & Roadmap', icon: Vote, exact: false },
+  ];
+
+  const tournamentAdminTabs = [
+    { href: '/admin/seasons', label: 'Seasons & Resets', icon: Trophy, exact: false },
+    { href: '/admin/profiles', label: 'Game Profiles', icon: Gamepad2, exact: false },
+    { href: '/games/new?mode=admin', label: 'Calibration', icon: Zap, exact: false },
+  ];
+
+  const financeAuditorTabs = [
+    { href: '/admin/treasury', label: 'Treasury & Audit', icon: Landmark, exact: false },
+  ];
+
+  const communityManagerTabs = [
+    { href: '/admin/polls', label: 'Polls & Proposals', icon: Vote, exact: false },
+    { href: '/admin/sponsors', label: 'Sponsors & Grants', icon: Gem, exact: false },
   ];
 
   // 1. Loading State
@@ -127,12 +151,23 @@ export default function AdminLayout({
   }
 
   const role = profile.role;
+  const isSuperAdmin = role === 'SUPER_ADMIN';
+  const isAdmin = role === 'ADMIN' || isSuperAdmin;
   const isReviewer = role === 'REVIEWER';
   const isSupport = role === 'SUPPORT';
-  const isAdmin = role === 'ADMIN' || role === 'SUPER_ADMIN';
+  const isTournamentAdmin = role === 'TOURNAMENT_ADMIN';
+  const isFinanceAuditor = role === 'FINANCE_AUDITOR';
+  const isCommunityManager = role === 'COMMUNITY_MANAGER';
+  const isStaff =
+    isAdmin ||
+    isReviewer ||
+    isSupport ||
+    isTournamentAdmin ||
+    isFinanceAuditor ||
+    isCommunityManager;
 
   // 3. Unauthorized Player State (HTTP 403 Forbidden)
-  if (!isAdmin && !isReviewer && !isSupport) {
+  if (!isStaff) {
     return (
       <div className="max-w-md mx-auto py-16 px-4">
         <Card className="p-8 bg-card border-destructive/40 shadow-2xl text-center space-y-6">
@@ -147,7 +182,7 @@ export default function AdminLayout({
               Staff Clearance Required
             </h1>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Your account <span className="font-bold text-foreground">@{profile.username}</span> is registered with standard Player credentials. Access to operations, match audits, support triage, and liquidity controls requires Staff, Reviewer, or Administrator privileges.
+              Your account <span className="font-bold text-foreground">@{profile.username}</span> is registered with standard Player credentials. Access to operations, match audits, support triage, and liquidity controls requires designated Staff or Administrator privileges.
             </p>
           </div>
           <div className="pt-2 flex justify-center">
@@ -179,7 +214,7 @@ export default function AdminLayout({
               Review Queue Access Only
             </h1>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              As an authorized Reviewer, your operational credentials grant access to the match dispute audit queue. System governance, user bans, and treasury controls require Administrator clearance.
+              As an authorized Dispute Reviewer, your operational credentials grant access to the match dispute audit queue. System governance, user bans, and treasury controls require Administrator clearance.
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
@@ -217,7 +252,7 @@ export default function AdminLayout({
               Support Desk & Community Polls
             </h1>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              As an authorized Support Specialist, your operational credentials grant access to player ticket triage, staff delegation, and community roadmap polls. Treasury controls and seasons require Administrator clearance.
+              As an authorized Support Specialist, your operational credentials grant access to player ticket triage, staff delegation, and community roadmap polls.
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
@@ -239,7 +274,131 @@ export default function AdminLayout({
     );
   }
 
-  const activeMobileTabs = isReviewer ? reviewerTabs : isSupport ? supportTabs : fullAdminTabs;
+  // 6. Tournament Director Scope Restriction
+  if (isTournamentAdmin && !pathname.startsWith('/admin/seasons') && !pathname.startsWith('/admin/profiles')) {
+    return (
+      <div className="max-w-md mx-auto py-16 px-4">
+        <Card className="p-8 bg-card border-amber-500/30 shadow-2xl text-center space-y-6">
+          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-500 border border-amber-500/20 mx-auto flex items-center justify-center shadow-lg">
+            <Trophy className="w-7 h-7" />
+          </div>
+          <div className="space-y-2">
+            <Badge variant="warning" className="font-mono text-[10px]">
+              TOURNAMENT DIRECTOR SCOPE
+            </Badge>
+            <h1 className="text-2xl font-black tracking-tight text-foreground">
+              Seasons & Game Calibration Desk
+            </h1>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              As an authorized Tournament Director, your operational credentials grant access to season resets, leaderboard cycles, and game calibration profiles. Treasury controls require Administrator clearance.
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+            <Link href="/admin/seasons">
+              <Button variant="default" size="sm" className="font-bold text-xs gap-1.5 w-full sm:w-auto">
+                <Trophy className="w-3.5 h-3.5" />
+                Manage Seasons
+              </Button>
+            </Link>
+            <Link href="/admin/profiles">
+              <Button variant="outline" size="sm" className="font-bold text-xs gap-1.5 w-full sm:w-auto">
+                <Gamepad2 className="w-3.5 h-3.5" />
+                Game Profiles
+              </Button>
+            </Link>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  // 7. Finance Auditor Scope Restriction
+  if (isFinanceAuditor && !pathname.startsWith('/admin/treasury')) {
+    return (
+      <div className="max-w-md mx-auto py-16 px-4">
+        <Card className="p-8 bg-card border-amber-500/30 shadow-2xl text-center space-y-6">
+          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-500 border border-amber-500/20 mx-auto flex items-center justify-center shadow-lg">
+            <Landmark className="w-7 h-7" />
+          </div>
+          <div className="space-y-2">
+            <Badge variant="warning" className="font-mono text-[10px]">
+              FINANCE AUDITOR SCOPE
+            </Badge>
+            <h1 className="text-2xl font-black tracking-tight text-foreground">
+              Treasury & Accountancy Desk Only
+            </h1>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              As an authorized Financial Auditor, your operational credentials grant read-and-audit access to the treasury balance sheet, segregated income books, and liquidity reserves.
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+            <Link href="/admin/treasury">
+              <Button variant="default" size="sm" className="font-bold text-xs gap-1.5 w-full sm:w-auto">
+                <Landmark className="w-3.5 h-3.5" />
+                Go to Treasury Audit
+              </Button>
+            </Link>
+            <Link href="/">
+              <Button variant="outline" size="sm" className="font-bold text-xs gap-1.5 w-full sm:w-auto">
+                <ArrowLeft className="w-3.5 h-3.5" />
+                Return to Arena
+              </Button>
+            </Link>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  // 8. Community Manager Scope Restriction
+  if (isCommunityManager && !pathname.startsWith('/admin/polls') && !pathname.startsWith('/admin/sponsors')) {
+    return (
+      <div className="max-w-md mx-auto py-16 px-4">
+        <Card className="p-8 bg-card border-amber-500/30 shadow-2xl text-center space-y-6">
+          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-500 border border-amber-500/20 mx-auto flex items-center justify-center shadow-lg">
+            <Vote className="w-7 h-7" />
+          </div>
+          <div className="space-y-2">
+            <Badge variant="warning" className="font-mono text-[10px]">
+              COMMUNITY MANAGER SCOPE
+            </Badge>
+            <h1 className="text-2xl font-black tracking-tight text-foreground">
+              Polls & Sponsor Desk Only
+            </h1>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              As an authorized Community Manager, your operational credentials grant access to official roadmap polls, user suggestions, and commercial sponsors. Treasury and anti-cheat bans require Administrator clearance.
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+            <Link href="/admin/polls">
+              <Button variant="default" size="sm" className="font-bold text-xs gap-1.5 w-full sm:w-auto">
+                <Vote className="w-3.5 h-3.5" />
+                Community Polls
+              </Button>
+            </Link>
+            <Link href="/admin/sponsors">
+              <Button variant="outline" size="sm" className="font-bold text-xs gap-1.5 w-full sm:w-auto">
+                <Gem className="w-3.5 h-3.5" />
+                Sponsor Grants
+              </Button>
+            </Link>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  const activeMobileTabs = isReviewer
+    ? reviewerTabs
+    : isSupport
+    ? supportTabs
+    : isTournamentAdmin
+    ? tournamentAdminTabs
+    : isFinanceAuditor
+    ? financeAuditorTabs
+    : isCommunityManager
+    ? communityManagerTabs
+    : fullAdminTabs;
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto w-full min-w-0">
@@ -252,8 +411,23 @@ export default function AdminLayout({
               Admin Console
             </span>
           </div>
-          <Badge variant={isReviewer ? 'warning' : isSupport ? 'secondary' : 'copper'} className="text-[9px] font-mono">
-            {isReviewer ? 'REVIEWER' : isSupport ? 'SUPPORT' : 'OPERATIONS'}
+          <Badge
+            variant={
+              isReviewer
+                ? 'warning'
+                : isSupport
+                ? 'secondary'
+                : isTournamentAdmin
+                ? 'copper'
+                : isFinanceAuditor
+                ? 'outline'
+                : isCommunityManager
+                ? 'default'
+                : 'copper'
+            }
+            className="text-[9px] font-mono uppercase"
+          >
+            {role.replace(/_/g, ' ')}
           </Badge>
         </div>
 

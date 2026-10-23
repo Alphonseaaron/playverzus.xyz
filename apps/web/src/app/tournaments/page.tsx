@@ -188,33 +188,53 @@ export default function TournamentsPage() {
             </button>
             <button
               onClick={() => setBlitzTierFilter(1)}
-              className={`px-3 py-1 rounded-lg transition flex items-center gap-1 ${
+              className={`px-2.5 py-1 rounded-lg transition flex items-center gap-1 ${
                 blitzTierFilter === 1
                   ? 'bg-emerald-500 text-white shadow-sm font-bold'
                   : 'text-muted-foreground hover:text-emerald-400'
               }`}
             >
-              <span>Tier 1 ($10.00)</span>
+              <span>Tier 1 ($10)</span>
             </button>
             <button
               onClick={() => setBlitzTierFilter(2)}
-              className={`px-3 py-1 rounded-lg transition flex items-center gap-1 ${
+              className={`px-2.5 py-1 rounded-lg transition flex items-center gap-1 ${
                 blitzTierFilter === 2
                   ? 'bg-blue-600 text-white shadow-sm font-bold'
                   : 'text-muted-foreground hover:text-blue-400'
               }`}
             >
-              <span>Tier 2 ($50.00)</span>
+              <span>Tier 2 ($50)</span>
             </button>
             <button
               onClick={() => setBlitzTierFilter(3)}
-              className={`px-3 py-1 rounded-lg transition flex items-center gap-1 ${
+              className={`px-2.5 py-1 rounded-lg transition flex items-center gap-1 ${
                 blitzTierFilter === 3
                   ? 'bg-purple-600 text-white shadow-sm font-bold'
                   : 'text-muted-foreground hover:text-purple-400'
               }`}
             >
-              <span>Tier 3 ($100.00)</span>
+              <span>Tier 3 ($100)</span>
+            </button>
+            <button
+              onClick={() => setBlitzTierFilter(4)}
+              className={`px-2.5 py-1 rounded-lg transition flex items-center gap-1 ${
+                blitzTierFilter === 4
+                  ? 'bg-amber-600 text-white shadow-sm font-bold'
+                  : 'text-muted-foreground hover:text-amber-400'
+              }`}
+            >
+              <span>Tier 4 ($200)</span>
+            </button>
+            <button
+              onClick={() => setBlitzTierFilter(5)}
+              className={`px-2.5 py-1 rounded-lg transition flex items-center gap-1 ${
+                blitzTierFilter === 5
+                  ? 'bg-rose-600 text-white shadow-sm font-bold'
+                  : 'text-muted-foreground hover:text-rose-400'
+              }`}
+            >
+              <span>Tier 5 ($500)</span>
             </button>
           </div>
         </div>
@@ -240,13 +260,21 @@ export default function TournamentsPage() {
                   ? 'border-emerald-500/40 bg-emerald-500/5'
                   : tierNum === 2
                   ? 'border-blue-500/40 bg-blue-500/5'
-                  : 'border-purple-500/40 bg-purple-500/5';
+                  : tierNum === 3
+                  ? 'border-purple-500/40 bg-purple-500/5'
+                  : tierNum === 4
+                  ? 'border-amber-500/40 bg-amber-500/5'
+                  : 'border-rose-500/40 bg-rose-500/5';
               const tierBadgeColor =
                 tierNum === 1
                   ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
                   : tierNum === 2
                   ? 'bg-blue-500/20 text-blue-300 border-blue-500/30'
-                  : 'bg-purple-500/20 text-purple-300 border-purple-500/30';
+                  : tierNum === 3
+                  ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+                  : tierNum === 4
+                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                  : 'bg-rose-500/20 text-rose-300 border-rose-500/30';
 
               const gameCatalog = getGameById(pool.game_profiles?.id || pool.profile_id);
 
@@ -262,7 +290,11 @@ export default function TournamentsPage() {
                           ? 'TIER 1 · STARTER ($10)'
                           : tierNum === 2
                           ? 'TIER 2 · CHALLENGER ($50)'
-                          : 'TIER 3 · CHAMPION ($100)'}
+                          : tierNum === 3
+                          ? 'TIER 3 · CHAMPION ($100)'
+                          : tierNum === 4
+                          ? 'TIER 4 · MASTER ($200)'
+                          : 'TIER 5 · GRANDMASTER ($500)'}
                       </Badge>
                       <div className="flex items-center gap-1.5 text-[11px] font-mono text-muted-foreground">
                         <Users className="w-3.5 h-3.5 text-primary" />

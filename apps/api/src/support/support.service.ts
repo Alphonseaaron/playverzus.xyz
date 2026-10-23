@@ -344,7 +344,15 @@ export class SupportService {
     const { data, error } = await this.supabase
       .from('profiles')
       .select('id, username, role, avatar_url')
-      .in('role', ['SUPPORT', 'REVIEWER', 'ADMIN', 'SUPER_ADMIN'])
+      .in('role', [
+        'SUPPORT',
+        'REVIEWER',
+        'TOURNAMENT_ADMIN',
+        'FINANCE_AUDITOR',
+        'COMMUNITY_MANAGER',
+        'ADMIN',
+        'SUPER_ADMIN',
+      ])
       .order('username', { ascending: true });
 
     if (error) return [];

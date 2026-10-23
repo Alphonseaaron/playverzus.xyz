@@ -6,16 +6,17 @@ import { Roles } from '../common/decorators/roles.decorator';
 
 @Controller('admin')
 @UseGuards(SupabaseAuthGuard, RolesGuard)
-@Roles('ADMIN', 'SUPER_ADMIN')
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
   @Get('stats')
+  @Roles('ADMIN', 'SUPER_ADMIN')
   async stats() {
     return this.adminService.getPlatformStats();
   }
 
   @Get('users')
+  @Roles('ADMIN', 'SUPER_ADMIN', 'FINANCE_AUDITOR')
   async listUsers(@Query('limit') limit?: string, @Query('offset') offset?: string) {
     return this.adminService.listUsers(
       limit ? parseInt(limit, 10) : 50,
@@ -24,16 +25,19 @@ export class AdminController {
   }
 
   @Post('users/:id/ban')
+  @Roles('ADMIN', 'SUPER_ADMIN')
   async ban(@Param('id') id: string, @Body() body: { reason: string }) {
     return this.adminService.banUser(id, body.reason);
   }
 
   @Post('users/:id/unban')
+  @Roles('ADMIN', 'SUPER_ADMIN')
   async unban(@Param('id') id: string) {
     return this.adminService.unbanUser(id);
   }
 
   @Post('users/:id/kyc')
+  @Roles('ADMIN', 'SUPER_ADMIN', 'SUPPORT')
   async kyc(
     @Param('id') id: string,
     @Body() body: { status: 'NONE' | 'PENDING' | 'VERIFIED' | 'REJECTED'; providerRef?: string },
@@ -42,19 +46,22 @@ export class AdminController {
   }
 
   @Post('users/:id/role')
+  @Roles('ADMIN', 'SUPER_ADMIN')
   async role(
     @Param('id') id: string,
-    @Body() body: { role: 'PLAYER' | 'REVIEWER' | 'ADMIN' | 'SUPER_ADMIN' },
+    @Body() body: { role: string },
   ) {
     return this.adminService.updateUserRole(id, body.role);
   }
 
   @Get('sponsors')
+  @Roles('ADMIN', 'SUPER_ADMIN', 'COMMUNITY_MANAGER')
   async listSponsors() {
     return this.adminService.listSponsors();
   }
 
   @Post('sponsors')
+  @Roles('ADMIN', 'SUPER_ADMIN', 'COMMUNITY_MANAGER')
   async createSponsor(
     @Body() body: { name: string; websiteUrl?: string; fundedAmount?: number },
   ) {
@@ -62,6 +69,7 @@ export class AdminController {
   }
 
   @Get('treasury')
+  @Roles('ADMIN', 'SUPER_ADMIN', 'FINANCE_AUDITOR')
   async treasury() {
     return this.adminService.getTreasuryReport();
   }

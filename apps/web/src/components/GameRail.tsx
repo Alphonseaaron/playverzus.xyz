@@ -51,7 +51,33 @@ export function GameRail() {
     enabled: !['/', '/privacy', '/terms', '/login', '/signup'].includes(pathname) && !pathname.startsWith('/admin') && !pathname.startsWith('/matches/room/') && !(pathname.startsWith('/matches/') && pathname !== '/matches/new'),
   });
 
-  const isStaff = me?.role === 'ADMIN' || me?.role === 'SUPER_ADMIN' || me?.role === 'REVIEWER';
+  const isStaff = Boolean(me?.role && me.role !== 'PLAYER');
+
+  const staffTargetHref =
+    me?.role === 'REVIEWER'
+      ? '/admin/review'
+      : me?.role === 'SUPPORT'
+      ? '/admin/support'
+      : me?.role === 'TOURNAMENT_ADMIN'
+      ? '/admin/seasons'
+      : me?.role === 'FINANCE_AUDITOR'
+      ? '/admin/treasury'
+      : me?.role === 'COMMUNITY_MANAGER'
+      ? '/admin/polls'
+      : '/admin';
+
+  const staffLabel =
+    me?.role === 'REVIEWER'
+      ? 'Audit'
+      : me?.role === 'SUPPORT'
+      ? 'Support'
+      : me?.role === 'TOURNAMENT_ADMIN'
+      ? 'Leagues'
+      : me?.role === 'FINANCE_AUDITOR'
+      ? 'Finance'
+      : me?.role === 'COMMUNITY_MANAGER'
+      ? 'Community'
+      : 'Admin';
 
   const handleSignOut = async () => {
     try {
@@ -122,7 +148,7 @@ export function GameRail() {
             />
           </Link>
 
-          {/* Active Game Selector (Navigates directly to /games catalog page - NO popups!) */}
+          {/* Active Game Selector */}
           <div className="space-y-1.5">
             <span className="text-[10px] uppercase font-bold text-muted-foreground font-mono tracking-wider px-2">
               Active Arena
@@ -233,13 +259,13 @@ export function GameRail() {
           <div className={`flex items-center ${isStaff ? 'justify-between' : 'justify-start'}`}>
             {isStaff && (
               <Link
-                href={me?.role === 'REVIEWER' ? '/admin/review' : '/admin'}
+                href={staffTargetHref}
                 className={`flex items-center gap-1.5 transition ${
                   pathname.startsWith('/admin') ? 'text-primary font-bold' : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 <Shield className="w-3.5 h-3.5" />
-                <span>{me?.role === 'REVIEWER' ? 'Audit' : 'Admin'}</span>
+                <span>{staffLabel}</span>
               </Link>
             )}
             <Link

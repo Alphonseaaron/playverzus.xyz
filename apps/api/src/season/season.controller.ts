@@ -14,7 +14,7 @@ export class SeasonController {
   }
 
   @UseGuards(SupabaseAuthGuard, RolesGuard)
-  @Roles('ADMIN', 'SUPER_ADMIN')
+  @Roles('ADMIN', 'SUPER_ADMIN', 'TOURNAMENT_ADMIN')
   @Post()
   async create(@Body() body: { name: string; startsAt: string; endsAt: string }) {
     return this.seasonService.createSeason(body.name, body.startsAt, body.endsAt);

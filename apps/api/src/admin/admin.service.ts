@@ -80,10 +80,24 @@ export class AdminService {
     return data;
   }
 
-  async updateUserRole(userId: string, role: 'PLAYER' | 'REVIEWER' | 'ADMIN' | 'SUPER_ADMIN') {
+  async updateUserRole(userId: string, role: string) {
+    const validRoles = [
+      'PLAYER',
+      'SUPPORT',
+      'REVIEWER',
+      'TOURNAMENT_ADMIN',
+      'FINANCE_AUDITOR',
+      'COMMUNITY_MANAGER',
+      'ADMIN',
+      'SUPER_ADMIN',
+    ];
+    if (!validRoles.includes(role)) {
+      throw new BadRequestException(`Invalid role: ${role}. Valid roles are: ${validRoles.join(', ')}`);
+    }
+
     const { data, error } = await this.supabase
       .from('profiles')
-      .update({ role, updated_at: new Date().toISOString() })
+      .update({ role: role as any, updated_at: new Date().toISOString() })
       .eq('id', userId)
       .select()
       .single();
@@ -250,7 +264,7 @@ export class AdminService {
           takeRatePercent: tournamentEntryVolumeEur > 0 ? Math.round((tournamentMarginEur / tournamentEntryVolumeEur) * 1000) / 10 : 15.0,
           marginPercent: 85.0,
           status: tournamentEntryVolumeEur > 0 ? 'ACTIVE_EARNING' : 'AWAITING_TOURNAMENTS',
-          description: 'Tiered 10% (Starter $10.00), 15% (Challenger $50.00), and 20% (Champion $100.00) platform rakes retained from 5-player Sit & Go blitz pools.',
+          description: 'Tiered platform rakes retained from 5-player Sit & Go blitz pools: Tier 1 ($10, 10%), Tier 2 ($50, 15%), Tier 3 ($100, 20%), Tier 4 ($200, 20%), and Tier 5 ($500, 20%).',
         },
         {
           id: 'brand_sponsorships',

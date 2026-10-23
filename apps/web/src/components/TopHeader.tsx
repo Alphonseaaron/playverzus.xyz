@@ -54,7 +54,15 @@ interface HeaderProfile {
   rating?: number;
   country_code?: string;
   region?: string;
-  role?: 'PLAYER' | 'REVIEWER' | 'ADMIN' | 'SUPER_ADMIN' | 'SUPPORT';
+  role?:
+    | 'PLAYER'
+    | 'REVIEWER'
+    | 'ADMIN'
+    | 'SUPER_ADMIN'
+    | 'SUPPORT'
+    | 'TOURNAMENT_ADMIN'
+    | 'FINANCE_AUDITOR'
+    | 'COMMUNITY_MANAGER';
 }
 
 function getPageContext(pathname: string): { title: string; subtitle?: string } {
@@ -128,7 +136,40 @@ export function TopHeader() {
   const eloRating = me?.rating ?? 1000;
   const avatarLetter = me?.username ? me.username.slice(0, 1).toUpperCase() : 'U';
 
-  const isStaff = me?.role === 'ADMIN' || me?.role === 'SUPER_ADMIN' || me?.role === 'REVIEWER' || me?.role === 'SUPPORT';
+  const isStaff =
+    me?.role === 'ADMIN' ||
+    me?.role === 'SUPER_ADMIN' ||
+    me?.role === 'REVIEWER' ||
+    me?.role === 'SUPPORT' ||
+    me?.role === 'TOURNAMENT_ADMIN' ||
+    me?.role === 'FINANCE_AUDITOR' ||
+    me?.role === 'COMMUNITY_MANAGER';
+
+  const staffTargetHref =
+    me?.role === 'REVIEWER'
+      ? '/admin/review'
+      : me?.role === 'SUPPORT'
+      ? '/admin/support'
+      : me?.role === 'TOURNAMENT_ADMIN'
+      ? '/admin/seasons'
+      : me?.role === 'FINANCE_AUDITOR'
+      ? '/admin/treasury'
+      : me?.role === 'COMMUNITY_MANAGER'
+      ? '/admin/polls'
+      : '/admin';
+
+  const staffLabel =
+    me?.role === 'REVIEWER'
+      ? 'Audit Queue'
+      : me?.role === 'SUPPORT'
+      ? 'Support Desk'
+      : me?.role === 'TOURNAMENT_ADMIN'
+      ? 'Tournaments & Seasons'
+      : me?.role === 'FINANCE_AUDITOR'
+      ? 'Treasury & Audit'
+      : me?.role === 'COMMUNITY_MANAGER'
+      ? 'Roadmap & Sponsors'
+      : 'Operations Admin';
 
   const mobileNavLinks = [
     { href: me ? '/dashboard' : '/', label: me ? 'Dashboard' : 'Overview', icon: LayoutDashboard },
@@ -142,8 +183,8 @@ export function TopHeader() {
     ...(isStaff
       ? [
           {
-            href: me?.role === 'REVIEWER' ? '/admin/review' : me?.role === 'SUPPORT' ? '/admin/support' : '/admin',
-            label: me?.role === 'REVIEWER' ? 'Audit Queue' : me?.role === 'SUPPORT' ? 'Support Desk' : 'Operations Admin',
+            href: staffTargetHref,
+            label: staffLabel,
             icon: Shield,
           },
         ]

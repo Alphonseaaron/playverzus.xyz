@@ -92,7 +92,7 @@ export const PLATFORM_RAKE_PERCENT = 5.0; // 5% platform fee on cash matches
 
 /** 5-Player Sit & Go Blitz Tournament Tier Configurations */
 export interface TournamentTierConfig {
-  tier: 1 | 2 | 3;
+  tier: 1 | 2 | 3 | 4 | 5;
   name: string;
   entryFee: number;
   totalEntrants: 5;
@@ -106,7 +106,7 @@ export interface TournamentTierConfig {
   };
 }
 
-export const TOURNAMENT_TIERS: Record<1 | 2 | 3, TournamentTierConfig> = {
+export const TOURNAMENT_TIERS: Record<1 | 2 | 3 | 4 | 5, TournamentTierConfig> = {
   1: {
     tier: 1,
     name: 'Starter / Grassroots',
@@ -147,6 +147,34 @@ export const TOURNAMENT_TIERS: Record<1 | 2 | 3, TournamentTierConfig> = {
     payouts: {
       firstPlace: { percent: 70.0, amount: 280.00 },
       secondPlace: { percent: 30.0, amount: 120.00 },
+    },
+  },
+  4: {
+    tier: 4,
+    name: 'Master / Elite',
+    entryFee: 200.00,
+    totalEntrants: 5,
+    totalPot: 1000.00,
+    rakePercent: 20.0,
+    rakeAmount: 200.00,
+    netPrizePool: 800.00,
+    payouts: {
+      firstPlace: { percent: 70.0, amount: 560.00 },
+      secondPlace: { percent: 30.0, amount: 240.00 },
+    },
+  },
+  5: {
+    tier: 5,
+    name: 'Grandmaster / High Stakes',
+    entryFee: 500.00,
+    totalEntrants: 5,
+    totalPot: 2500.00,
+    rakePercent: 20.0,
+    rakeAmount: 500.00,
+    netPrizePool: 2000.00,
+    payouts: {
+      firstPlace: { percent: 70.0, amount: 1400.00 },
+      secondPlace: { percent: 30.0, amount: 600.00 },
     },
   },
 };

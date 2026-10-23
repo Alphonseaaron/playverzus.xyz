@@ -211,7 +211,7 @@ export default function CommunityPollsPage() {
               </Link>
             )}
 
-            {userProfile && ['SUPPORT', 'REVIEWER', 'ADMIN', 'SUPER_ADMIN'].includes(userProfile.role) && (
+            {userProfile && ['SUPPORT', 'COMMUNITY_MANAGER', 'REVIEWER', 'ADMIN', 'SUPER_ADMIN'].includes(userProfile.role) && (
               <Link href="/admin/polls">
                 <Button variant="outline" size="lg" className="font-bold gap-2 text-sm">
                   <ShieldAlert className="w-4 h-4 text-primary" />
