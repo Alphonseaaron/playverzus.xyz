@@ -260,8 +260,9 @@ function CashierContent() {
         </Link>
 
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="text-xs font-mono">
-            USDC Segregated Escrow
+          <Badge variant="outline" className="text-xs font-mono bg-emerald-500/10 text-emerald-400 border-emerald-500/30 font-bold gap-1.5 py-1 px-2.5">
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>Crossmint Regulated Escrow & KYC</span>
           </Badge>
         </div>
       </div>

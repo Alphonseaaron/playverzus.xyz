@@ -547,6 +547,7 @@ export class WalletService {
    */
   async requestPayout(userId: string, amount: number, methodInput: PayoutMethod | string) {
     return this.redis.withLock(`wallet:${userId}`, 10_000, async () => {
+      // 1. Fast in-memory validation of amount boundaries
       if (typeof amount !== 'number' || isNaN(amount) || amount <= 0) {
         throw new BadRequestException('Please enter a valid withdrawal amount greater than zero.');
       }
@@ -561,6 +562,29 @@ export class WalletService {
         throw new BadRequestException(
           `The maximum single withdrawal limit is €${MAX_WITHDRAWAL_EUR.toLocaleString('en-US', { minimumFractionDigits: 2 })}. For higher volumes, please contact VIP support.`,
         );
+      }
+
+      // 2. Compliance & Security Check: Ensure user is not banned and KYC is not rejected
+      try {
+        const { data: profile } = await this.supabase
+          .from('profiles')
+          .select('is_banned, ban_reason, kyc_status')
+          .eq('id', userId)
+          .maybeSingle();
+
+        if (profile?.is_banned) {
+          throw new BadRequestException(
+            `Withdrawal disabled: Account suspended (${profile.ban_reason || 'Compliance review pending'}). Please contact support.`,
+          );
+        }
+
+        if (profile?.kyc_status === 'REJECTED') {
+          throw new BadRequestException(
+            'Withdrawal disabled: Identity verification was rejected. Please review your account details in Settings or contact compliance.',
+          );
+        }
+      } catch (err) {
+        if (err instanceof BadRequestException) throw err;
       }
 
       const cash = await this.getRealCash(userId);

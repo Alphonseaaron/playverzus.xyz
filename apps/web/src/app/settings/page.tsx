@@ -13,7 +13,7 @@ import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Separator } from '../../components/ui/separator';
-import { Settings, User, Phone, CheckCircle2, Save, Globe, LogOut } from 'lucide-react';
+import { Settings, User, Phone, CheckCircle2, Save, Globe, LogOut, ShieldCheck, ShieldAlert, Clock, Shield } from 'lucide-react';
 
 interface MyProfile {
   id: string;
@@ -22,6 +22,8 @@ interface MyProfile {
   region?: string;
   country_code?: string;
   phone?: string;
+  kyc_status?: 'NONE' | 'PENDING' | 'VERIFIED' | 'REJECTED';
+  kyc_provider_ref?: string;
 }
 
 function SettingsContent() {
@@ -167,6 +169,78 @@ function SettingsContent() {
               <span>{saving ? 'Saving Changes...' : 'Save Profile Settings'}</span>
             </Button>
           </form>
+        </CardContent>
+      </Card>
+
+      {/* Identity & Compliance Verification (KYC) Card */}
+      <Card className="bg-card border-border shadow-2xl">
+        <CardHeader className="border-b border-border pb-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-secondary border border-border flex items-center justify-center text-primary shadow-sm flex-shrink-0">
+                <Shield className="w-5 h-5" />
+              </div>
+              <div>
+                <CardTitle className="text-base font-bold text-foreground">
+                  Identity & Compliance Verification
+                </CardTitle>
+                <CardDescription className="text-xs text-muted-foreground">
+                  Regulatory compliance, age verification (18+ cash / 13+ free), and financial protection.
+                </CardDescription>
+              </div>
+            </div>
+            {profile?.kyc_status === 'VERIFIED' ? (
+              <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 font-bold gap-1 text-[11px] py-1 px-2.5">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                VERIFIED
+              </Badge>
+            ) : profile?.kyc_status === 'PENDING' ? (
+              <Badge variant="outline" className="bg-amber-500/10 text-amber-400 border-amber-500/30 font-bold gap-1 text-[11px] py-1 px-2.5">
+                <Clock className="w-3.5 h-3.5" />
+                UNDER REVIEW
+              </Badge>
+            ) : profile?.kyc_status === 'REJECTED' ? (
+              <Badge variant="destructive" className="font-bold gap-1 text-[11px] py-1 px-2.5">
+                <ShieldAlert className="w-3.5 h-3.5" />
+                REJECTED
+              </Badge>
+            ) : (
+              <Badge variant="secondary" className="font-bold gap-1 text-[11px] py-1 px-2.5">
+                <Shield className="w-3.5 h-3.5" />
+                LEVEL 1 ACTIVE
+              </Badge>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="pt-5 space-y-4">
+          <div className="p-3.5 bg-secondary/40 border border-border rounded-2xl space-y-2">
+            <div className="flex items-center justify-between text-xs font-bold text-foreground">
+              <span>Account Verification Status</span>
+              <span className="font-mono text-primary text-[11px]">
+                {profile?.kyc_status === 'VERIFIED'
+                  ? 'Full Cash & Crypto Access'
+                  : 'Automated Tier 1 (Progressive via Crossmint)'}
+              </span>
+            </div>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              All payment transactions are regulated through Crossmint and licensed banking institutions. Progressive identity checks are automatically triggered upon depositing or withdrawing cash.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div className="p-3 bg-card border border-border rounded-xl">
+              <div className="font-bold text-foreground text-[11px] mb-1">Tier 1: Casual & Free Play</div>
+              <p className="text-[10px] text-muted-foreground leading-normal">
+                Requires gamer tag, confirmed country & mobile number. Unlimited free tournaments & ranked ladder play.
+              </p>
+            </div>
+            <div className="p-3 bg-card border border-border rounded-xl">
+              <div className="font-bold text-foreground text-[11px] mb-1">Tier 2: Real-Cash & Wagers</div>
+              <p className="text-[10px] text-muted-foreground leading-normal">
+                Enforced by Crossmint (government photo ID + liveness) for transactions over $1,000 or high-frequency payouts.
+              </p>
+            </div>
+          </div>
         </CardContent>
       </Card>
 

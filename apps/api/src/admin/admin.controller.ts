@@ -33,6 +33,14 @@ export class AdminController {
     return this.adminService.unbanUser(id);
   }
 
+  @Post('users/:id/kyc')
+  async kyc(
+    @Param('id') id: string,
+    @Body() body: { status: 'NONE' | 'PENDING' | 'VERIFIED' | 'REJECTED'; providerRef?: string },
+  ) {
+    return this.adminService.updateUserKyc(id, body.status, body.providerRef);
+  }
+
   @Post('users/:id/role')
   async role(
     @Param('id') id: string,

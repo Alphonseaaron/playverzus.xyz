@@ -60,6 +60,26 @@ export class AdminService {
     return data;
   }
 
+  async updateUserKyc(
+    userId: string,
+    kyc_status: 'NONE' | 'PENDING' | 'VERIFIED' | 'REJECTED',
+    kyc_provider_ref?: string,
+  ) {
+    const { data, error } = await this.supabase
+      .from('profiles')
+      .update({
+        kyc_status,
+        kyc_provider_ref: kyc_provider_ref || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message);
+    return data;
+  }
+
   async updateUserRole(userId: string, role: 'PLAYER' | 'REVIEWER' | 'ADMIN' | 'SUPER_ADMIN') {
     const { data, error } = await this.supabase
       .from('profiles')
