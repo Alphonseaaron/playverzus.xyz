@@ -133,7 +133,7 @@ export default function TermsOfServicePage() {
             </p>
             <p>
               Games of chance, lotteries, slots, roulette, dice, and house-banked games are strictly barred from the Platform catalog.
-              Playverzus.xyz does not offer house odds, act as a bookmaker, or wager against players. Prize pools are funded by participant
+              Playverzus.xyz does not offer house odds, act as a bookmaker, or compete against players. Prize pools are funded by participant
               entry fees, and administrative contest facilitation fees are fixed and non-contingent upon match outcomes.
             </p>
           </section>
@@ -201,7 +201,7 @@ export default function TermsOfServicePage() {
           <section className="space-y-3">
             <h2 className="text-base font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
               <span className="text-primary font-mono">05.</span>
-              <span>Financial Ledgers, Escrow & AML Wagering Requirements</span>
+              <span>Financial Ledgers, Escrow & AML Play-Through Requirements</span>
             </h2>
             <p>
               The Platform maintains a segregated dual-ledger accounting architecture separating Practice Coins from real USDC balances.
@@ -217,9 +217,9 @@ export default function TermsOfServicePage() {
                 to the victor&apos;s available balance.
               </li>
               <li>
-                <strong>Anti-Money Laundering (AML) 1x Rollover Invariant:</strong> To prevent payment fraud, stolen credit card abuse,
-                and money laundering, all deposited funds must be wagered at least once (1x rollover) in competitive matches before
-                becoming eligible for withdrawal. Net winnings resulting from completed matches are immediately withdrawable.
+                <strong>Anti-Money Laundering (AML) 1x Competitive Play-Through Invariant:</strong> To prevent payment fraud, stolen credit card abuse,
+                and money laundering, all deposited funds must be entered at least once in competitive skill matches before
+                becoming eligible for withdrawal. Net prizes resulting from completed matches are immediately withdrawable.
               </li>
               <li>
                 <strong>Transaction Thresholds:</strong> The minimum deposit is 5.00 USDC; maximum single deposit is 5,000.00 USDC.

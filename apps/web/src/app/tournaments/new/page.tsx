@@ -27,7 +27,7 @@ const TOURNAMENT_FORMATS: Record<TournamentFormat, FormatDetail> = {
     label: 'Single Elimination',
     badge: 'Knockout / Sudden Death',
     description:
-      'Classic high-stakes bracket. Win and advance; lose a single match and you are eliminated. Highest adrenaline and fastest progression to the championship.',
+      'Classic competitive knockout bracket. Win and advance; lose a single match and you are eliminated. Highest adrenaline and fastest progression to the championship.',
     bestFor: 'Large fields (8 to 64 players), fast-paced cups, decisive spectator esports.',
     matchCount: 'N - 1 matches (e.g. 8 players = 7 total matches, 3 rounds)',
   },

@@ -37,7 +37,7 @@ export function GamePoster({
     mini: 'w-6 h-8 rounded',
   };
 
-  const gradientClass = game.gradient || 'from-[#AF4F1A] via-stone-900 to-black';
+  const gradientClass = game.gradient || 'from-[#7C3AED] via-stone-900 to-black';
 
   return (
     <div

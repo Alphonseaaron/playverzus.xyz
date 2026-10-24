@@ -540,7 +540,7 @@ function DashboardContent() {
             <CardHeader className="pb-4">
               <CardTitle className="text-base font-bold">Ledger Transactions & Audit Trail</CardTitle>
               <CardDescription className="text-xs">
-                Complete cryptographic settlement history of deposits, stakes, and prize payouts.
+                Complete cryptographic settlement history of deposits, match entries, and prize payouts.
               </CardDescription>
             </CardHeader>
             <CardContent>

@@ -289,7 +289,7 @@ function SettingsContent() {
               </p>
             </div>
             <div className="p-3 bg-card border border-border rounded-xl">
-              <div className="font-bold text-foreground text-[11px] mb-1">Tier 2: Real-Cash & Wagers</div>
+              <div className="font-bold text-foreground text-[11px] mb-1">Tier 2: Competitive USDC Prize Matches</div>
               <p className="text-[10px] text-muted-foreground leading-normal">
                 Enforced by Crossmint (government photo ID + liveness) for transactions over $1,000 or high-frequency payouts.
               </p>

@@ -393,7 +393,7 @@ export default function TournamentsPage() {
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                {mode === 'ALL' ? 'All Stakes' : mode === 'FREE' ? 'Free Demo (PTS)' : 'Real Cash ($ USDC)'}
+                {mode === 'ALL' ? 'All Entry Tiers' : mode === 'FREE' ? 'Free Demo (PTS)' : 'Real Cash ($ USDC)'}
               </button>
             ))}
           </div>

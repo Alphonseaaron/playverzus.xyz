@@ -17,8 +17,8 @@ export function AuthPromptModal({
   open,
   onClose,
   title = 'Join the Competitive Arena',
-  description = 'Create a free account or sign in to enter duels, wager in cash cups, and build your competitive MMR.',
-  actionReason = 'Account required to compete and stake entry fees.',
+  description = 'Create a free account or sign in to enter 1v1 duels, compete in USDC prize cups, and build your competitive MMR.',
+  actionReason = 'Account required to enter competitive matches and tournaments.',
 }: AuthPromptModalProps) {
   if (!open) return null;
 
@@ -87,7 +87,7 @@ export function AuthPromptModal({
         </div>
 
         <div className="text-center text-[10px] text-muted-foreground font-mono">
-          Free Demo Mode (PTS) & Real Stakes ($ USDC) Available
+          Free Practice Mode (PTS) & Real Prize Pools ($ USDC) Available
         </div>
       </div>
     </div>

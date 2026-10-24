@@ -159,7 +159,7 @@ export default function PrivacyPolicyPage() {
               <li>Facilitating real-time 1v1 matchmaking based on Skill Elo ratings.</li>
               <li>Validating match outcomes and releasing prize funds held in escrow.</li>
               <li>Detecting and penalizing cheating, stream hijacking, and collusion.</li>
-              <li>Complying with Anti-Money Laundering (AML) regulatory standards, including 1x wagering rollover verification.</li>
+              <li>Complying with Anti-Money Laundering (AML) regulatory standards, including 1x competitive play-through verification.</li>
               <li>Sending transactional notifications (match room ready, dispute updates, payout execution).</li>
             </ul>
           </section>

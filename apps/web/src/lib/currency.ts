@@ -1,6 +1,6 @@
 /**
  * Unified Currency & Exchange Rate Utility for Playverzus.xyz
- * All platform stakes, entry fees, prize pools, and cashier balances are standardized in USDC ($1.00 USD).
+ * All platform entry fees, prize pools, and cashier balances are standardized in USDC ($1.00 USD).
  * When depositing or withdrawing, users see real-time automated local fiat conversions (KES, EUR, GBP, NGN, BRL, etc.).
  */
 

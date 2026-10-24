@@ -141,7 +141,7 @@ export default function CommunityPollsPage() {
       case 'ACTIVE_VOTING':
         return (
           <Badge variant="copper" className="text-[10px] gap-1 font-mono">
-            <Flame className="w-3 h-3 text-orange-400" />
+            <Flame className="w-3 h-3 text-purple-400" />
             VOTING LIVE
           </Badge>
         );

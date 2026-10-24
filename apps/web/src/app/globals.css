@@ -13,7 +13,7 @@
     --popover: 226 21% 10%; /* #161922 */
     --popover-foreground: 210 20% 98%;
 
-    --primary: 22 72% 47%; /* #C86228 Faded Warm Copper Brand */
+    --primary: 263 85% 60%; /* #8B5CF6 Vibrant Electric Purple Brand */
     --primary-foreground: 0 0% 100%;
 
     --secondary: 226 21% 11%; /* #161922 Dark Interactive Surface */
@@ -22,7 +22,7 @@
     --muted: 226 15% 15%; /* #1F232D */
     --muted-foreground: 215 16% 65%; /* #9CA3AF */
 
-    --accent: 22 68% 53%; /* #D97736 Amber Copper */
+    --accent: 270 91% 65%; /* #A855F7 Neon Amethyst Accent */
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%; /* Red */
@@ -30,7 +30,7 @@
 
     --border: 224 20% 16%; /* #202430 Standard Border */
     --input: 224 20% 16%;
-    --ring: 22 72% 47%;
+    --ring: 263 85% 60%;
 
     --radius: 0.75rem; /* 12px */
   }

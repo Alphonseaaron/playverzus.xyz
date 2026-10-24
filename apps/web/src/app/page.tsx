@@ -250,8 +250,8 @@ function HomeContent() {
         {/* Main Headline */}
         <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black uppercase tracking-tight text-foreground leading-[1.05] max-w-4xl">
           Play With The Best. <br />
-          <span className="text-primary bg-gradient-to-r from-primary via-orange-400 to-amber-400 bg-clip-text text-transparent">
-            Win Real Stakes.
+          <span className="text-primary bg-gradient-to-r from-primary via-purple-400 to-fuchsia-400 bg-clip-text text-transparent">
+            Win Real USDC Prizes.
           </span>
         </h1>
 
@@ -465,10 +465,10 @@ function HomeContent() {
             </div>
             <div className="space-y-1.5">
               <h3 className="text-base font-bold text-foreground">
-                Stake & Compete
+                Enter & Compete
               </h3>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Queue instant 1v1 duels or enter scheduled tournament cups. Entry stakes are held safely in bank-grade escrow until match conclusion.
+                Queue instant 1v1 duels or enter scheduled tournament cups. Entry fees are held safely in smart-custody escrow until match conclusion.
               </p>
             </div>
           </div>
@@ -521,7 +521,7 @@ function HomeContent() {
             </div>
             <h3 className="font-bold text-sm text-foreground">Dual-Ledger Wallet</h3>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Play for free using daily Practice Points or compete for real USDC cash via Crossmint instant checkout in over 180 countries.
+              Play for free using daily Practice Points or compete for real USDC prizes via Crossmint instant checkout in over 180 countries.
             </p>
           </Card>
 
@@ -541,7 +541,7 @@ function HomeContent() {
             </div>
             <h3 className="font-bold text-sm text-foreground">Secured Escrow Vault</h3>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Match entry stakes are held safely in escrow before game start, guaranteeing that winners always receive 100% of their prize pool.
+              Match entry fees are held safely in escrow before game start, guaranteeing that winners always receive 100% of their prize pool.
             </p>
           </Card>
         </div>
@@ -751,7 +751,7 @@ function HomeContent() {
             Ready to Prove Your Skill?
           </h2>
           <p className="text-xs sm:text-base text-muted-foreground leading-relaxed">
-            Create your player profile in under 60 seconds. Claim 1,000 practice points instantly or deposit USDC via Crossmint to enter high-stakes duels.
+            Create your player profile in under 60 seconds. Claim 1,000 practice points instantly or deposit USDC via Crossmint to enter competitive prize duels.
           </p>
         </div>
 

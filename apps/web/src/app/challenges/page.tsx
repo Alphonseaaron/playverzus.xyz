@@ -187,7 +187,7 @@ function ChallengesContent() {
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                {mode === 'ALL' ? 'All Stakes' : mode === 'FREE' ? 'Free Demo (PTS)' : 'Real Cash ($ USDC)'}
+                {mode === 'ALL' ? 'All Entry Tiers' : mode === 'FREE' ? 'Free Demo (PTS)' : 'Real Cash ($ USDC)'}
               </button>
             ))}
           </div>
@@ -253,7 +253,7 @@ function ChallengesContent() {
           title="No Open Duels in this Queue"
           description={
             filterGameOnly && activeGame
-              ? `There are currently no active duels posted for ${activeGame.displayName}. Be the first to create one and set your stakes!`
+              ? `There are currently no active duels posted for ${activeGame.displayName}. Be the first to create one and set your entry fee!`
               : 'There are currently no open duels waiting in this category. Host a 1v1 match now to challenge opponents!'
           }
           actionLabel="Host 1v1 Duel"

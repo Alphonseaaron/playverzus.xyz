@@ -35,12 +35,12 @@ module.exports = {
         accent: {
           DEFAULT: 'hsl(var(--accent) / <alpha-value>)',
           foreground: 'hsl(var(--accent-foreground) / <alpha-value>)',
-          50: '#FAF2ED',
-          100: '#F2DFD4',
-          400: '#D97736',
-          500: '#C86228',
-          600: '#AF4F1A',
-          700: '#8E3C10',
+          50: '#F5F3FF',
+          100: '#EDE9FE',
+          400: '#A78BFA',
+          500: '#8B5CF6',
+          600: '#7C3AED',
+          700: '#6D28D9',
         },
         popover: {
           DEFAULT: 'hsl(var(--popover) / <alpha-value>)',

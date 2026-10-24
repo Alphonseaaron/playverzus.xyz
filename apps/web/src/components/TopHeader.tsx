@@ -67,7 +67,7 @@ interface HeaderProfile {
 
 function getPageContext(pathname: string): { title: string; subtitle?: string } {
   if (pathname === '/') return { title: 'Arena Overview', subtitle: 'Live Matchmaking' };
-  if (pathname.startsWith('/challenges')) return { title: 'Duels & Wagers', subtitle: '1v1 Matchmaking' };
+  if (pathname.startsWith('/challenges')) return { title: '1v1 Arena Duels', subtitle: '1v1 Matchmaking' };
   if (pathname.startsWith('/tournaments')) return { title: 'Tournaments', subtitle: 'Championship Brackets' };
   if (pathname.startsWith('/leaderboards')) return { title: 'Ladders & Rank', subtitle: 'Competitive Elo' };
   if (pathname.startsWith('/games')) return { title: 'Game Catalog', subtitle: 'Supported Esports' };

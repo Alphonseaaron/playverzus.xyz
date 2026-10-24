@@ -232,12 +232,12 @@ function NewMatchForm() {
           </p>
         </div>
 
-        {/* Entry Stakes & Prize Pool */}
+        {/* Entry Fee & Prize Pool */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
             <div className="flex items-center gap-2">
               <label className="block text-xs font-semibold text-foreground">
-                4. Entry Stake
+                4. Match Entry Fee
               </label>
               <Badge
                 variant={walletMode === 'REAL' ? 'success' : 'secondary'}

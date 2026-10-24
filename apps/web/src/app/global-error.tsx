@@ -16,7 +16,7 @@ export default function GlobalError({
 
   return (
     <html lang="en" className="dark">
-      <body className="min-h-screen bg-[#0B0C10] text-[#E0E2EC] flex items-center justify-center p-4 font-sans selection:bg-[#C86228] selection:text-white">
+      <body className="min-h-screen bg-[#0B0C10] text-[#E0E2EC] flex items-center justify-center p-4 font-sans selection:bg-[#8B5CF6] selection:text-white">
         <div className="max-w-md w-full bg-[#16181F] border border-[#262833] rounded-3xl p-8 text-center space-y-6 shadow-2xl">
           <div className="w-14 h-14 rounded-2xl bg-[#EF4444]/10 text-[#EF4444] border border-[#EF4444]/20 mx-auto flex items-center justify-center text-2xl font-bold">
             ⚠
@@ -38,7 +38,7 @@ export default function GlobalError({
             <button
               type="button"
               onClick={() => reset()}
-              className="px-5 py-2.5 rounded-xl bg-[#C86228] hover:bg-[#D87238] text-white text-xs font-bold uppercase tracking-wider transition shadow-lg shadow-[#C86228]/20"
+              className="px-5 py-2.5 rounded-xl bg-[#8B5CF6] hover:bg-[#7C3AED] text-white text-xs font-bold uppercase tracking-wider transition shadow-lg shadow-[#8B5CF6]/20"
             >
               Retry Connection
             </button>

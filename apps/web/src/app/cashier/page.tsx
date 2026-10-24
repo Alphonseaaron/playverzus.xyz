@@ -610,9 +610,9 @@ function CashierContent() {
               <div className="p-4 rounded-xl bg-muted/40 border border-border flex items-start gap-3 text-xs text-muted-foreground">
                 <ShieldCheck className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
                 <div className="space-y-0.5">
-                  <div className="font-bold text-foreground">Regulated Escrow Infrastructure</div>
+                  <div className="font-bold text-foreground">Crossmint Smart Custody & Regulated USDC Escrow</div>
                   <p className="text-[11px] leading-relaxed">
-                    All player stakes and cashier balances are segregated in bank-grade trust accounts and USDC reserves. Winnings from 1v1 duels and tournaments are settled automatically upon match completion.
+                    All player entry fees and cashier balances are segregated in Crossmint smart custody and 1:1 USDC reserves. Prizes from 1v1 duels and tournaments are settled automatically upon match completion.
                   </p>
                 </div>
               </div>

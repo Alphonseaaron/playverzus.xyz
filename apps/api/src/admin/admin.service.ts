@@ -406,7 +406,7 @@ export class AdminService {
         ],
         growthStrategies: [
           'Host 2-4 Weekend Community Cups: Tournament margins average 85% net take rate with zero downside risk.',
-          'Ramp up 1v1 High-Roller Challenges: 5% match rake compounds quickly with higher wager velocity.',
+          'Ramp up 1v1 High-Roller Challenges: 5% match rake compounds quickly with higher match entry velocity.',
           'Brand Sponsorship Injections: Brand sponsors inject non-repayable prize liquidity, allowing higher guaranteed pools without risking treasury cash.',
         ],
         executiveActionPlan:
@@ -657,7 +657,7 @@ export class AdminService {
           ],
           growthStrategies: [
             'Host 2-4 Weekend Community Cups: Tournament margins average 85% net take rate with zero downside risk.',
-            'Ramp up 1v1 High-Roller Challenges: 5% match rake compounds quickly with higher wager velocity.',
+            'Ramp up 1v1 High-Roller Challenges: 5% match rake compounds quickly with higher match entry velocity.',
             'Brand Sponsorship Injections: Brand sponsors inject non-repayable prize liquidity, allowing higher guaranteed pools without risking treasury cash.',
           ],
           executiveActionPlan: 'You may safely distribute up to $670.00 USDC to company accounts. Ensure $330.00 USDC remains locked in the operational vault to guarantee 100% player liabilities and 90 days of infrastructure bills.',

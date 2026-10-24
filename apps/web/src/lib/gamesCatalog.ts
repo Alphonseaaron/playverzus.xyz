@@ -19,7 +19,7 @@ export const OFFICIAL_GAMES: CatalogGame[] = [
     posterUrl: 'https://cdn.cloudflare.steamstatic.com/steam/apps/730/library_600x900_2x.jpg',
     bannerUrl: 'https://cdn.cloudflare.steamstatic.com/steam/apps/730/header.jpg',
     tagline: '1v1 Aim & Tactical Combat',
-    gradient: 'from-amber-700 via-orange-900 to-stone-950',
+    gradient: 'from-purple-700 via-indigo-900 to-stone-950',
     platform: 'PC',
     gameType: 'HEAD_TO_HEAD',
     approved: true,

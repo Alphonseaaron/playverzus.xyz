@@ -73,8 +73,8 @@ export function toUserFriendlyWalletError(error: unknown): string {
   }
 
   // 9. Gateway / Provider Unreachable
-  if (raw.includes('gateway') || raw.includes('paysafe') || raw.includes('upstream') || raw.includes('500') || raw.includes('502') || raw.includes('503')) {
-    return 'The banking gateway is currently undergoing maintenance. Your funds are secure. Please try again shortly.';
+  if (raw.includes('gateway') || raw.includes('crossmint') || raw.includes('upstream') || raw.includes('500') || raw.includes('502') || raw.includes('503')) {
+    return 'The payment gateway is currently undergoing maintenance. Your funds are secure. Please try again shortly.';
   }
 
   // 10. Default friendly fallback

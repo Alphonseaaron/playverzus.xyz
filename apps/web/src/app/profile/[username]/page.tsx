@@ -613,7 +613,7 @@ export default function PublicProfilePage() {
             <CardHeader className="p-0">
               <CardTitle className="text-base font-bold">Escrow & Settlement Audit</CardTitle>
               <CardDescription className="text-xs">
-                Zero-slippage skill gaming escrow. Every duel stake is held transparently until verified.
+                Zero-slippage skill gaming escrow. Every match entry fee is held transparently until verified.
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0 pt-4">
