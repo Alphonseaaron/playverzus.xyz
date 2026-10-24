@@ -176,4 +176,40 @@ describe('CrossmintService', () => {
     expect(res.ignored).toBe(true);
     expect(mockWalletService.creditCrossmintDeposit).not.toHaveBeenCalled();
   });
+
+  it('executes platform treasury earnings withdrawal via On-Chain USDC Transfer (WALLET_TRANSFER)', async () => {
+    const res = await crossmintService.withdrawTreasuryEarnings({
+      adminId: 'admin-1',
+      amount: 250,
+      mode: 'WALLET_TRANSFER',
+      chain: 'base',
+      destinationAddress: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F',
+      note: 'Q4 Owner Dividend',
+    });
+
+    expect(res.success).toBe(true);
+    expect(res.mode).toBe('WALLET_TRANSFER');
+    expect(res.amount).toBe(250);
+    expect(res.currency).toBe('USDC');
+    expect(res.chain).toBe('base');
+    expect(res.destination).toBe('0x71C7656EC7ab88b098defB751B7401B5f6d8976F');
+    expect(res.txHash).toBeDefined();
+  });
+
+  it('executes platform treasury earnings withdrawal via Direct Fiat Bank Off-Ramp (BANK_OFFRAMP)', async () => {
+    const res = await crossmintService.withdrawTreasuryEarnings({
+      adminId: 'admin-1',
+      amount: 500,
+      mode: 'BANK_OFFRAMP',
+      chain: 'base',
+      paymentMethodId: 'pm_bank_ach_playverzus_inc',
+      note: 'Corporate Bank Sweep',
+    });
+
+    expect(res.success).toBe(true);
+    expect(res.mode).toBe('BANK_OFFRAMP');
+    expect(res.amount).toBe(500);
+    expect(res.currency).toBe('USD');
+    expect(res.destination).toBe('pm_bank_ach_playverzus_inc');
+  });
 });

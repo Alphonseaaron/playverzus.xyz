@@ -145,6 +145,48 @@ export default function AdminTreasuryPage() {
     staleTime: 15000,
   });
 
+  const [withdrawMode, setWithdrawMode] = useState<'WALLET_TRANSFER' | 'BANK_OFFRAMP'>('WALLET_TRANSFER');
+  const [withdrawChain, setWithdrawChain] = useState('base');
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [destinationAddress, setDestinationAddress] = useState('');
+  const [paymentMethodId, setPaymentMethodId] = useState('');
+  const [withdrawNote, setWithdrawNote] = useState('');
+  const [withdrawing, setWithdrawing] = useState(false);
+  const [withdrawError, setWithdrawError] = useState<string | null>(null);
+  const [withdrawReceipt, setWithdrawReceipt] = useState<any | null>(null);
+
+  const handleTreasuryWithdraw = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setWithdrawError(null);
+    setWithdrawReceipt(null);
+    const num = parseFloat(withdrawAmount);
+    if (isNaN(num) || num < 10) {
+      setWithdrawError('Minimum treasury withdrawal amount is $10.00 USDC.');
+      return;
+    }
+    setWithdrawing(true);
+    try {
+      const res = await apiClient('/admin/treasury/withdraw', {
+        method: 'POST',
+        body: JSON.stringify({
+          amount: num,
+          mode: withdrawMode,
+          chain: withdrawChain,
+          destinationAddress: withdrawMode === 'WALLET_TRANSFER' ? destinationAddress : undefined,
+          paymentMethodId: withdrawMode === 'BANK_OFFRAMP' ? paymentMethodId : undefined,
+          note: withdrawNote || 'Owner Dividend Distribution',
+        }),
+      });
+      setWithdrawReceipt(res);
+      setWithdrawAmount('');
+      await refetch();
+    } catch (err: any) {
+      setWithdrawError(err?.message || 'Failed to execute Crossmint treasury withdrawal.');
+    } finally {
+      setWithdrawing(false);
+    }
+  };
+
   const report = treasury ?? {
     grossCashEur: 0,
     playerLiabilitiesEur: 0,
@@ -926,6 +968,162 @@ export default function AdminTreasuryPage() {
               Net retained profit after 100% player liabilities and 90-day operating reserve deduction.
             </p>
           </div>
+        </div>
+
+        {/* Interactive Crossmint Treasury Earnings Withdrawal Execution Console */}
+        <div className="pt-6 border-t border-border space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h3 className="text-base font-black text-foreground flex items-center gap-2">
+                <ArrowUpRight className="w-5 h-5 text-emerald-400" />
+                <span>Withdraw Platform Earnings via Crossmint</span>
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Execute an audited owner dividend payout directly from your Crossmint Treasury Wallet via On-Chain USDC Transfer or Direct Fiat Bank Off-Ramp.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant={withdrawMode === 'WALLET_TRANSFER' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setWithdrawMode('WALLET_TRANSFER')}
+                className="text-xs font-bold"
+              >
+                1. On-Chain USDC Transfer
+              </Button>
+              <Button
+                type="button"
+                variant={withdrawMode === 'BANK_OFFRAMP' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setWithdrawMode('BANK_OFFRAMP')}
+                className="text-xs font-bold"
+              >
+                2. Direct Fiat Bank Off-Ramp
+              </Button>
+            </div>
+          </div>
+
+          <form onSubmit={handleTreasuryWithdraw} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-mono uppercase text-muted-foreground font-bold">
+                  Amount (USDC)
+                </label>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setWithdrawAmount(
+                      String(report.companyLimits?.maxCompanyWithdrawalEur ?? report.recommendations.safeWithdrawableEur ?? 0),
+                    )
+                  }
+                  className="text-[10px] font-mono font-bold text-emerald-400 hover:underline"
+                >
+                  MAX SAFE ({formatEUR(report.companyLimits?.maxCompanyWithdrawalEur || report.recommendations.safeWithdrawableEur)})
+                </button>
+              </div>
+              <input
+                type="number"
+                step="0.01"
+                min="10"
+                placeholder="e.g. 250.00"
+                value={withdrawAmount}
+                onChange={(e) => setWithdrawAmount(e.target.value)}
+                className="w-full h-10 px-3 rounded-xl bg-secondary border border-border text-sm font-mono text-foreground focus:outline-none focus:border-primary"
+                required
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-mono uppercase text-muted-foreground font-bold block">
+                Settlement Network
+              </label>
+              <select
+                value={withdrawChain}
+                onChange={(e) => setWithdrawChain(e.target.value)}
+                className="w-full h-10 px-3 rounded-xl bg-secondary border border-border text-sm font-mono text-foreground focus:outline-none focus:border-primary"
+              >
+                <option value="base">Base (USDC - Lowest Gas)</option>
+                <option value="polygon">Polygon (USDC)</option>
+                <option value="solana">Solana (USDC)</option>
+                <option value="arbitrum">Arbitrum One (USDC)</option>
+                <option value="ethereum">Ethereum Mainnet (USDC)</option>
+              </select>
+            </div>
+
+            {withdrawMode === 'WALLET_TRANSFER' ? (
+              <div className="space-y-1.5 md:col-span-1">
+                <label className="text-[11px] font-mono uppercase text-muted-foreground font-bold block">
+                  Destination Wallet Address
+                </label>
+                <input
+                  type="text"
+                  placeholder="0x... or Solana address"
+                  value={destinationAddress}
+                  onChange={(e) => setDestinationAddress(e.target.value)}
+                  className="w-full h-10 px-3 rounded-xl bg-secondary border border-border text-sm font-mono text-foreground focus:outline-none focus:border-primary"
+                  required
+                />
+              </div>
+            ) : (
+              <div className="space-y-1.5 md:col-span-1">
+                <label className="text-[11px] font-mono uppercase text-muted-foreground font-bold block">
+                  Crossmint Bank PaymentMethodId
+                </label>
+                <input
+                  type="text"
+                  placeholder="pm_bank_ach_..."
+                  value={paymentMethodId}
+                  onChange={(e) => setPaymentMethodId(e.target.value)}
+                  className="w-full h-10 px-3 rounded-xl bg-secondary border border-border text-sm font-mono text-foreground focus:outline-none focus:border-primary"
+                  required
+                />
+              </div>
+            )}
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-mono uppercase text-muted-foreground font-bold block">
+                Audit Memo & Execute
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  placeholder="Memo (optional)"
+                  value={withdrawNote}
+                  onChange={(e) => setWithdrawNote(e.target.value)}
+                  className="w-full h-10 px-3 rounded-xl bg-secondary border border-border text-xs text-foreground focus:outline-none focus:border-primary"
+                />
+                <Button
+                  type="submit"
+                  disabled={withdrawing}
+                  className="h-10 px-5 font-bold text-xs whitespace-nowrap bg-emerald-500 hover:bg-emerald-600 text-black"
+                >
+                  {withdrawing ? 'Executing...' : 'Withdraw Earnings'}
+                </Button>
+              </div>
+            </div>
+          </form>
+
+          {withdrawError && (
+            <div className="p-3.5 rounded-xl bg-destructive/10 border border-destructive/30 text-xs text-destructive font-medium flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+              <span>{withdrawError}</span>
+            </div>
+          )}
+
+          {withdrawReceipt && (
+            <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs space-y-1.5">
+              <div className="font-bold text-emerald-400 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4" />
+                <span>{withdrawReceipt.message}</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 font-mono text-[11px] text-muted-foreground">
+                <div>Transfer ID: <span className="text-foreground">{withdrawReceipt.transferId}</span></div>
+                <div>Status: <span className="text-emerald-400">{withdrawReceipt.status}</span></div>
+                <div>Remaining Safe Dividend: <span className="text-foreground">{formatEUR(withdrawReceipt.remainingSafeWithdrawableUsdc || 0)}</span></div>
+              </div>
+            </div>
+          )}
         </div>
       </Card>
     </div>

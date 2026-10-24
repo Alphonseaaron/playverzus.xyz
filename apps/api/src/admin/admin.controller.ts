@@ -73,4 +73,20 @@ export class AdminController {
   async treasury() {
     return this.adminService.getTreasuryReport();
   }
+
+  @Post('treasury/withdraw')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  async withdrawTreasury(
+    @Body()
+    body: {
+      amount: number;
+      mode: 'WALLET_TRANSFER' | 'BANK_OFFRAMP';
+      chain?: string;
+      destinationAddress?: string;
+      paymentMethodId?: string;
+      note?: string;
+    },
+  ) {
+    return this.adminService.withdrawPlatformEarnings('admin', body);
+  }
 }
