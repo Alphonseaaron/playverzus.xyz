@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { ProfileService } from './profile.service';
 import { SupabaseAuthGuard } from '../common/guards/supabase-auth.guard';
 import { CurrentUser, type AuthUser } from '../common/decorators/current-user.decorator';
@@ -27,9 +27,19 @@ export class ProfileController {
       region?: string;
       country_code?: string;
       phone?: string;
+      gameAccounts?: Record<string, string>;
     },
   ) {
     return this.profileService.updateProfile(user.id, body);
+  }
+
+  @UseGuards(SupabaseAuthGuard)
+  @Post('me/gamertag')
+  async linkGamertag(
+    @CurrentUser() user: AuthUser,
+    @Body() body: { gameId: string; gamertag: string },
+  ) {
+    return this.profileService.linkGamertag(user.id, body.gameId, body.gamertag);
   }
 
   @Get(':username')

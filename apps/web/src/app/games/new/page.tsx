@@ -3,6 +3,7 @@
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { useQuery } from '@tanstack/react-query';
 import { CalibrationTool } from '../../../components/CalibrationTool';
 import { apiClient } from '../../../lib/api';
 import { notifyUser } from '../../../lib/notifications';
@@ -198,7 +199,48 @@ function NewGameProfileForm() {
     }
   };
 
+  const { data: me, isLoading: loadingRole } = useQuery<{ role?: string } | null>({
+    queryKey: ['header-me'],
+    queryFn: () => apiClient<{ role?: string }>('/profile/me').catch(() => null),
+    staleTime: 30000,
+  });
+
+  const isGameAdmin = Boolean(
+    me?.role && ['ADMIN', 'SUPER_ADMIN', 'TOURNAMENT_ADMIN'].includes(me.role),
+  );
+
   const activeImage = referenceImages[activeImageIndex]?.url || null;
+
+  if (!loadingRole && !isGameAdmin) {
+    return (
+      <div className="max-w-2xl mx-auto my-12 space-y-6">
+        <Card className="p-8 bg-card border-border shadow-xl text-center space-y-4">
+          <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mx-auto">
+            <AlertCircle className="w-6 h-6" />
+          </div>
+          <h2 className="text-xl font-black text-foreground">
+            Administrator Game Calibration Required
+          </h2>
+          <p className="text-xs sm:text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
+            To guarantee fair OCR score verification and zero fraud, only Platform &amp; Tournament Administrators can calibrate and add official games to the arena catalog. Want to see a new game added? Propose it in the Community Feature Polls!
+          </p>
+          <div className="flex items-center justify-center gap-3 pt-2">
+            <Link href="/games">
+              <Button variant="secondary" size="sm" className="font-bold">
+                Browse Approved Games
+              </Button>
+            </Link>
+            <Link href="/community/polls">
+              <Button variant="default" size="sm" className="font-bold gap-1.5">
+                <Sparkles className="w-3.5 h-3.5" />
+                Suggest a New Game
+              </Button>
+            </Link>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto my-6 space-y-6">

@@ -19,6 +19,7 @@ import { SocialService } from '../src/social/social.service';
 import { LeaderboardService } from '../src/leaderboard/leaderboard.service';
 import { WorkersService } from '../src/workers/workers.service';
 import { GameProfileService, OFFICIAL_SLUG_TO_UUID } from '../src/game-profile/game-profile.service';
+import { ProfileService, globalGameAccountsCache } from '../src/profile/profile.service';
 
 /**
  * In-Memory Relational Database Simulator for Full Multi-Actor E2E Verification.
@@ -929,7 +930,7 @@ describe('End-to-End Multi-Actor & Multi-Platform Userflow Verification Suite (Z
     expect(liveMatch.scoreA?.primary).toBe(9);
     expect(liveMatch.scoreB?.primary).toBe(6);
 
-    // 3. User calibrates a new custom game via GameProfileService -> AI validates ROI & Regex and auto-approves immediately
+    // 3. Admin calibrates a new custom game via GameProfileService -> AI validates ROI & Regex and auto-approves immediately
     const customProfile = await gameProfileService.submitProfile('u-usa', {
       displayName: 'Street Fighter 6',
       gameType: 'BINARY_RESULT',
@@ -939,6 +940,70 @@ describe('End-to-End Multi-Actor & Multi-Platform Userflow Verification Suite (Z
     });
     expect(customProfile.approved).toBe(true);
     expect(customProfile.display_name).toBe('Street Fighter 6');
+  });
+
+  it('Flow 9: Admin-Approved Game Enforcement, Per-Game Gamertags & Anti-Smurfing Fraud Detection', async () => {
+    globalGameAccountsCache.clear();
+    const db = createInMemoryPlatformDb();
+    const apiMatchService = new ApiMatchService();
+    (apiMatchService as any).supabase = db;
+    (apiMatchService as any).coreMatchService = new CoreMatchService({ client: db });
+
+    const profileService = new ProfileService();
+    (profileService as any).supabase = db;
+
+    // 1. Insert an unapproved game profile -> users MUST NOT be able to start matches on unapproved games
+    db._tables.game_profiles.push({
+      id: 'unapproved-game-99',
+      display_name: 'Unapproved Beta Title',
+      game_type: 'HIGH_SCORE',
+      platform: 'PC',
+      roi: { x: 0.1, y: 0.1, w: 0.2, h: 0.1 },
+      constraints: {},
+      end_keywords: ['END'],
+      regex_pattern: null,
+      approved: false,
+    });
+
+    await expect(
+      apiMatchService.createMatch('u-usa', 'unapproved-game-99', null, 'BO1', 50),
+    ).rejects.toThrow(/not been approved by an administrator/i);
+
+    // 2. Player links distinct in-game usernames across different games (different from Playverzus auth username 'ace_sniper')
+    await profileService.linkGamertag('u-usa', 'cs2', 's1mple_US_Pro');
+    await profileService.linkGamertag('u-usa', 'eafc', 'AceFC_25_Legend');
+    await profileService.linkGamertag('u-ger', 'cs2', 'BlitzKrieg_DE');
+
+    // 3. Anti-Smurfing / Collusion Guard: Another Playverzus user cannot link the same in-game handle on the same game
+    await expect(
+      profileService.linkGamertag('u-uk', 'cs2', 's1mple_US_Pro'),
+    ).rejects.toThrow(/already linked to another Playverzus account/i);
+
+    // 4. Match Room Enrichment: Both players' game-specific handles are surfaced on the match object
+    const match = await apiMatchService.createMatch('u-usa', 'cs2', 'u-ger', 'BO1', 100);
+    await apiMatchService.acceptMatch(match.id, 'u-ger');
+
+    const enrichedMatch: any = await apiMatchService.getMatch(match.id);
+    expect(enrichedMatch.playerAUsername).toBe('ace_sniper');
+    expect(enrichedMatch.playerAGamertag).toBe('s1mple_US_Pro');
+    expect(enrichedMatch.playerBUsername).toBe('blitz_krieger');
+    expect(enrichedMatch.playerBGamertag).toBe('BlitzKrieg_DE');
+
+    // 5. OCR Score Submission: Automatically resolves player's game-specific handle ('s1mple_US_Pro') and verifies scoreboard
+    const frameA = await apiMatchService.submitScore(
+      match.id,
+      'u-usa',
+      's1mple_US_Pro 13 - 9 VICTORY',
+      0.96,
+      true,
+      'hash_cs2_final',
+      'CLIENT_OCR',
+    );
+    expect(frameA.confidence).toBeGreaterThanOrEqual(0.9);
+
+    const settled = await apiMatchService.getMatch(match.id);
+    expect(settled.status).toBe('SETTLED');
+    expect(settled.winner).toBe('u-usa');
   });
 });
 

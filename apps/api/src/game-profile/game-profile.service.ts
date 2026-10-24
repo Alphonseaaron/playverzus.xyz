@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { createServiceClient, TypedSupabaseClient } from '@playverzus/db';
 import type { GameType, Platform, ROI } from '@playverzus/core';
 
@@ -161,15 +161,25 @@ export async function resolveAndEnsureGameProfileId(
   if (!idOrSlug) return idOrSlug;
 
   // 1. Check if this exact ID already exists in game_profiles (supports custom UUIDs & test IDs)
+  let unapprovedFound = false;
   try {
     const { data: existing } = await supabase
       .from('game_profiles')
-      .select('id')
+      .select('id, approved')
       .eq('id', idOrSlug)
       .maybeSingle();
-    if (existing?.id) return existing.id;
+    if (existing?.id) {
+      if (existing.approved === false) {
+        unapprovedFound = true;
+      } else {
+        return existing.id;
+      }
+    }
   } catch {
     // Ignore if non-UUID on Postgres and fall through to slug lookup
+  }
+  if (unapprovedFound) {
+    throw new BadRequestException('This game profile has not been approved by an administrator yet.');
   }
 
   // 2. Translate official catalog slug to canonical UUID and ensure it is seeded
@@ -201,6 +211,7 @@ export class GameProfileService {
     if (!p) return null;
     return {
       ...p,
+      creatorId: p.submitted_by ?? p.creatorId ?? null,
       displayName: p.display_name ?? p.displayName,
       gameType: p.game_type ?? p.gameType,
       isOfficial: p.is_official ?? p.isOfficial ?? false,
@@ -324,15 +335,23 @@ export class GameProfileService {
     return data;
   }
 
-  async updateCalibration(id: string, roi: ROI) {
+  async calibrateProfile(id: string, roi: ROI, constraints?: Record<string, unknown>) {
+    const updatePayload: Record<string, unknown> = { roi: roi as never };
+    if (constraints !== undefined) {
+      updatePayload.constraints = constraints as never;
+    }
     const { data, error } = await this.supabase
       .from('game_profiles')
-      .update({ roi: roi as never })
+      .update(updatePayload as never)
       .eq('id', id)
       .select('*')
       .single();
 
     if (error) throw new Error(error.message);
-    return data;
+    return this.mapProfile(data);
+  }
+
+  async updateCalibration(id: string, roi: ROI) {
+    return this.calibrateProfile(id, roi);
   }
 }

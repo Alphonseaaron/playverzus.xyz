@@ -19,6 +19,16 @@ export default function GamesPage() {
     queryFn: () => apiClient<GameProfile[]>('/games').catch(() => []),
   });
 
+  const { data: me } = useQuery<{ role?: string } | null>({
+    queryKey: ['header-me'],
+    queryFn: () => apiClient<{ role?: string }>('/profile/me').catch(() => null),
+    staleTime: 30000,
+  });
+
+  const isGameAdmin = Boolean(
+    me?.role && ['ADMIN', 'SUPER_ADMIN', 'TOURNAMENT_ADMIN'].includes(me.role),
+  );
+
   const officialIds = new Set(OFFICIAL_GAMES.map((g) => g.id.toLowerCase()));
   const customGames = (games || []).filter(
     (g) => !officialIds.has(g.id.toLowerCase())
@@ -44,17 +54,26 @@ export default function GamesPage() {
               Esports Arena Catalog
             </h1>
             <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-              Select any game title to browse open duels, competitive ladders, and tournaments.
+              Select any admin-verified game title to browse open duels, competitive ladders, and tournaments.
             </p>
           </div>
         </div>
 
-        <Link href="/games/new">
-          <Button variant="default" size="default" className="gap-2 font-bold shadow-sm">
-            <Plus className="w-4 h-4" />
-            <span>Calibrate Custom Game</span>
-          </Button>
-        </Link>
+        {isGameAdmin ? (
+          <Link href="/games/new?mode=admin">
+            <Button variant="default" size="default" className="gap-2 font-bold shadow-sm">
+              <Plus className="w-4 h-4" />
+              <span>Add & Calibrate Game</span>
+            </Button>
+          </Link>
+        ) : (
+          <Link href="/community/polls">
+            <Button variant="secondary" size="default" className="gap-2 font-bold shadow-sm">
+              <Sparkles className="w-4 h-4 text-primary" />
+              <span>Suggest a New Game</span>
+            </Button>
+          </Link>
+        )}
       </Card>
 
       {isLoading && allGames.length === 0 ? (

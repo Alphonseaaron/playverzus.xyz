@@ -20,8 +20,10 @@ interface MatchDetails {
   roomCode?: string | null;
   playerAUsername?: string;
   playerACountry?: string;
+  playerAGamertag?: string;
   playerBUsername?: string;
   playerBCountry?: string;
+  playerBGamertag?: string;
 }
 
 function MatchDetailContent() {
@@ -73,8 +75,10 @@ function MatchDetailContent() {
       }}
       playerAUsername={match.playerAUsername || (isMeA ? me?.username : undefined)}
       playerACountry={match.playerACountry || (isMeA ? me?.country_code || me?.region : undefined)}
+      playerAGamertag={match.playerAGamertag}
       playerBUsername={match.playerBUsername || (isMeB ? me?.username : undefined)}
       playerBCountry={match.playerBCountry || (isMeB ? me?.country_code || me?.region : undefined)}
+      playerBGamertag={match.playerBGamertag}
     />
   );
 }

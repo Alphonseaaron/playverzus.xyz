@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { createServiceClient, TypedSupabaseClient } from '@playverzus/db';
 
 @Injectable()

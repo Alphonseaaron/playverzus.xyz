@@ -9,7 +9,7 @@ export interface PushPayload {
   badge?: string;
   tag?: string;
   url?: string;
-  type?: 'match' | 'tournament' | 'wallet' | 'info' | 'error';
+  type?: 'match' | 'tournament' | 'wallet' | 'info' | 'error' | 'support';
 }
 
 /**

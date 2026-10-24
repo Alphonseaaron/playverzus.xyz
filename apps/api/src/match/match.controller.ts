@@ -71,6 +71,7 @@ export class MatchController {
       isFinal?: boolean;
       imageHash?: string;
       source?: ScoreFrame['source'];
+      gamertag?: string;
     },
   ) {
     const match = await this.matchService.getMatch(id);
@@ -85,6 +86,7 @@ export class MatchController {
       body.isFinal ?? false,
       body.imageHash,
       body.source,
+      body.gamertag,
     );
   }
 

@@ -412,7 +412,7 @@ export class TournamentService {
             const { data: newT } = await this.supabase
               .from('tournaments')
               .insert({
-                name: `[5-Player Blitz] ${game.name} - $${tierConfig.entryFee.toFixed(2)} ${tierConfig.name.split('/')[0].trim()} Pool`,
+                name: `[5-Player Blitz] ${game.name} - $${tierConfig.entryFee.toFixed(2)} ${(tierConfig.name.split('/')[0] ?? 'Blitz').trim()} Pool`,
                 description: `Continuous 5-Player Sit & Go Blitz Tournament. Guaranteed Prize Pool: $${tierConfig.netPrizePool.toFixed(2)} USDC (1st: $${tierConfig.payouts.firstPlace.amount.toFixed(2)}, 2nd: $${tierConfig.payouts.secondPlace.amount.toFixed(2)}). Instant bracket generation upon 5 entries.`,
                 profile_id: resolvedProfileId,
                 format: 'SINGLE_ELIM',

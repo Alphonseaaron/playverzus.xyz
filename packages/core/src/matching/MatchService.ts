@@ -38,6 +38,7 @@ export interface SubmitScoreInput {
   isFinal: boolean;
   imageHash?: string | null;
   source?: ScoreFrame['source'];
+  gamertag?: string;
 }
 
 /**
@@ -136,6 +137,11 @@ export class MatchService {
       profile,
       format: match.format,
       previousFrames,
+      gamertags: {
+        playerA: input.playerId === match.playerA ? input.gamertag : undefined,
+        playerB: input.playerId === match.playerB ? input.gamertag : undefined,
+      },
+      activePlayerId: input.playerId,
     };
 
     const validation = validateParsed(parsed, ctx);

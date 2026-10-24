@@ -15,7 +15,8 @@ export class GameProfileController {
     return this.gameProfileService.listApproved();
   }
 
-  @UseGuards(SupabaseAuthGuard)
+  @UseGuards(SupabaseAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'SUPER_ADMIN', 'TOURNAMENT_ADMIN')
   @Post()
   async submit(
     @CurrentUser() user: AuthUser,

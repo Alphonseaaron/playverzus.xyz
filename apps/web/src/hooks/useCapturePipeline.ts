@@ -13,7 +13,11 @@ export interface CaptureState {
   mode?: 'SCREEN' | 'CAMERA' | 'CONSOLE_STREAM' | 'AUTONOMOUS_FEED';
 }
 
-export function useCapturePipeline(matchId: string, profile: GameProfile | null) {
+export function useCapturePipeline(
+  matchId: string,
+  profile: GameProfile | null,
+  gamertag?: string | null,
+) {
   const [state, setState] = useState<CaptureState>({
     status: 'IDLE',
     lastScore: null,
@@ -304,6 +308,7 @@ export function useCapturePipeline(matchId: string, profile: GameProfile | null)
                   confidence,
                   isFinal,
                   source: 'CLIENT_OCR',
+                  gamertag: gamertag || undefined,
                 }),
               });
             }

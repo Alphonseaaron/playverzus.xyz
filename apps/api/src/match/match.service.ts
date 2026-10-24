@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { createServiceClient, TypedSupabaseClient } from '@playverzus/db';
 import { MatchService as CoreMatchService, generateRoomCode, type MatchFormat, type ScoreFrame } from '@playverzus/core';
 import { resolveAndEnsureGameProfileId } from '../game-profile/game-profile.service';
+import { globalGameAccountsCache, resolveGamertagForProfile } from '../profile/profile.service';
 
 @Injectable()
 export class MatchService {
@@ -32,20 +33,32 @@ export class MatchService {
       .in('id', userIds);
 
     const profileMap = new Map(
-      (profiles || []).map((p) => [
-        p.id,
-        {
-          username: p.username,
-          countryCode: ((p as Record<string, unknown>).country_code as string) || p.region || undefined,
-        },
-      ]),
+      (profiles || []).map((p) => {
+        const dbAccounts = ((p as Record<string, unknown>).game_accounts as Record<string, string>) || {};
+        const cachedAccounts = globalGameAccountsCache.get(p.id) || {};
+        return [
+          p.id,
+          {
+            username: p.username,
+            countryCode: ((p as Record<string, unknown>).country_code as string) || p.region || undefined,
+            gameAccounts: { ...cachedAccounts, ...dbAccounts },
+          },
+        ];
+      }),
     );
 
     return matches.map((m) => {
       const creatorId = m.player_a || m.created_by || m.playerA;
       const opponentId = m.player_b || m.playerB;
+      const gameId = m.profile_id || m.profileId;
       const creator = creatorId ? profileMap.get(creatorId) : undefined;
       const opponent = opponentId ? profileMap.get(opponentId) : undefined;
+      const creatorTag =
+        (creatorId ? resolveGamertagForProfile(creator?.gameAccounts || globalGameAccountsCache.get(creatorId), gameId) : undefined) ||
+        undefined;
+      const opponentTag =
+        (opponentId ? resolveGamertagForProfile(opponent?.gameAccounts || globalGameAccountsCache.get(opponentId), gameId) : undefined) ||
+        undefined;
       return {
         ...m,
         created_by: m.created_by || creatorId,
@@ -53,8 +66,10 @@ export class MatchService {
         creator_country_code: creator?.countryCode,
         playerAUsername: creator?.username,
         playerACountry: creator?.countryCode,
+        playerAGamertag: creatorTag,
         playerBUsername: opponent?.username,
         playerBCountry: opponent?.countryCode,
+        playerBGamertag: opponentTag,
       };
     });
   }
@@ -161,7 +176,29 @@ export class MatchService {
     isFinal: boolean,
     imageHash?: string,
     source?: ScoreFrame['source'],
+    gamertag?: string,
   ) {
+    let effectiveGamertag = gamertag?.trim() || undefined;
+    try {
+      const m = await this.coreMatchService.get(matchId);
+      if (m?.profileId) {
+        if (effectiveGamertag) {
+          const current = globalGameAccountsCache.get(playerId) || {};
+          globalGameAccountsCache.set(playerId, {
+            ...current,
+            [m.profileId.toLowerCase()]: effectiveGamertag,
+          });
+        } else {
+          effectiveGamertag = resolveGamertagForProfile(
+            globalGameAccountsCache.get(playerId),
+            m.profileId,
+          );
+        }
+      }
+    } catch {
+      // Non-fatal gamertag lookup
+    }
+
     return this.coreMatchService.submitScore({
       matchId,
       playerId,
@@ -170,6 +207,7 @@ export class MatchService {
       isFinal,
       imageHash,
       source,
+      gamertag: effectiveGamertag,
     });
   }
 

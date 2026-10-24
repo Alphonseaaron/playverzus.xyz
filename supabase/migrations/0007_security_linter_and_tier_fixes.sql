@@ -8,11 +8,13 @@
 -- ============================================================================
 
 -- ---------------------------------------------------------------------------
--- 1. EXPAND TOURNAMENT TIER CONSTRAINT (Tiers 1, 2, 3, 4, 5)
+-- 1. EXPAND TOURNAMENT TIER CONSTRAINT (Tiers 1, 2, 3, 4, 5) & GAME ACCOUNTS
 -- ---------------------------------------------------------------------------
 alter table public.tournaments drop constraint if exists tournaments_tier_check;
 alter table public.tournaments add constraint tournaments_tier_check 
   check (tier is null or tier in (1, 2, 3, 4, 5));
+
+alter table public.profiles add column if not exists game_accounts jsonb not null default '{}'::jsonb;
 
 -- ---------------------------------------------------------------------------
 -- 2. HARDEN RPC: spawn_next_sit_and_go (Resolves Lint 0028 & 0029)

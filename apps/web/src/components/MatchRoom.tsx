@@ -44,8 +44,10 @@ interface MatchRoomProps {
   onRefresh?: () => void;
   playerAUsername?: string;
   playerACountry?: string;
+  playerAGamertag?: string;
   playerBUsername?: string;
   playerBCountry?: string;
+  playerBGamertag?: string;
 }
 
 export function MatchRoom({
@@ -62,20 +64,21 @@ export function MatchRoom({
   onRefresh,
   playerAUsername,
   playerACountry,
+  playerAGamertag,
   playerBUsername,
   playerBCountry,
+  playerBGamertag,
 }: MatchRoomProps) {
   const catalogGame = getGameById(profile.id);
-  const capture = useMatchCapture(matchId, profile);
   const { getGamertag, getGamertagLabel, setGamertag } = useGameAccountsStore();
+  const gameTagLabel = getGamertagLabel(profile.id);
+  const myGamertag = getGamertag(profile.id);
+  const capture = useMatchCapture(matchId, profile, myGamertag);
 
   const isPlayerA = currentUserId === playerAId;
   const isPlayerB = currentUserId === playerBId;
   const isParticipant = isPlayerA || isPlayerB;
   const [joiningMatch, setJoiningMatch] = useState(false);
-
-  const gameTagLabel = getGamertagLabel(profile.id);
-  const myGamertag = getGamertag(profile.id);
 
   // Ready states
   const [isReadyA, setIsReadyA] = useState(false);
@@ -228,8 +231,16 @@ export function MatchRoom({
     }
   };
 
-  const playerATag = isPlayerA ? myGamertag || 'Unlinked Gamertag' : 'Host Player';
-  const playerBTag = !isPlayerA && isParticipant ? myGamertag || 'Unlinked Gamertag' : 'Challenger';
+  const playerATag =
+    (isPlayerA ? myGamertag : undefined) ||
+    playerAGamertag ||
+    playerAUsername ||
+    'Unlinked Gamertag';
+  const playerBTag =
+    (!isPlayerA && isParticipant ? myGamertag : undefined) ||
+    playerBGamertag ||
+    playerBUsername ||
+    'Unlinked Gamertag';
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto min-w-0 pb-16">

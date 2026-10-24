@@ -9,6 +9,7 @@ import { createServiceClient, TypedSupabaseClient } from '@playverzus/db';
 interface CachedSession {
   user: {
     id: string;
+    username?: string;
     email?: string;
     role: string;
     region: string | null;
@@ -66,7 +67,7 @@ export class SupabaseAuthGuard implements CanActivate {
     // Load profile role and region
     const { data: profile } = await this.supabase
       .from('profiles')
-      .select('role, region, is_banned')
+      .select('username, role, region, is_banned')
       .eq('id', data.user.id)
       .maybeSingle();
 
@@ -77,6 +78,7 @@ export class SupabaseAuthGuard implements CanActivate {
 
     const userPayload = {
       id: data.user.id,
+      username: profile?.username || data.user.user_metadata?.username || data.user.email?.split('@')[0] || 'Player',
       email: data.user.email,
       role: profile?.role ?? 'PLAYER',
       region: profile?.region ?? null,
