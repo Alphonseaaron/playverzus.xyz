@@ -24,14 +24,14 @@
   "dependencies": {
     "@playverzus/db": "workspace:*",
     "pino": "^9.0.0",
-    "sharp": "^0.33.3",
+    "sharp": "^0.35.5",
     "tesseract.js": "^5.1.0",
-    "zod": "^3.23.0"
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "@playverzus/config": "workspace:*",
     "@types/node": "^20.11.0",
     "typescript": "^5.4.5",
-    "vitest": "^1.6.0"
+    "vitest": "^5.0.5"
   }
 }
