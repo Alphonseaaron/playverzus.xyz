@@ -263,7 +263,7 @@ export function AdminSidebar({ onNavClick, className = '' }: AdminSidebarProps) 
 
   return (
     <aside
-      className={`w-64 flex-shrink-0 bg-card border-r border-border flex flex-col justify-between p-4 select-none h-screen sticky top-0 overflow-y-auto scrollbar-none z-30 pb-20 ${className}`}
+      className={`w-64 flex-shrink-0 bg-card border-r border-border flex flex-col justify-between p-4 pb-6 select-none h-screen min-h-screen sticky top-0 overflow-y-auto scrollbar-none z-30 ${className}`}
     >
       <div className="space-y-6">
         {/* Admin Brand & Shield Header */}

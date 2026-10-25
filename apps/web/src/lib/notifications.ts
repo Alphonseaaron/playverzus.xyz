@@ -147,7 +147,20 @@ export function notifyUser(
   else if (options?.sound === 'score') sounds.playScorePip();
   else if (options?.sound === 'victory') sounds.playVictoryChord();
 
-  // 2. Dispatch visual in-app popup toast (always visible to user)
+  // 2. Vibrate mobile device if supported
+  if (typeof window !== 'undefined' && 'navigator' in window && 'vibrate' in navigator) {
+    try {
+      if (options?.sound === 'victory') {
+        navigator.vibrate([100, 50, 100, 50, 200]);
+      } else {
+        navigator.vibrate([150, 75, 150]);
+      }
+    } catch {
+      // Vibration not supported/blocked
+    }
+  }
+
+  // 3. Dispatch visual in-app popup toast (always visible to user)
   if (typeof window !== 'undefined') {
     try {
       useNotificationStore.getState().addNotification({
@@ -163,15 +176,33 @@ export function notifyUser(
     }
   }
 
-  // 3. Dispatch native desktop notification if user granted permission
+  // 4. Dispatch native device/OS notification (Desktop Action Center, Android shade, macOS banner)
   if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-    try {
-      new Notification(title, {
-        body: options?.body || 'Check the Playverzus.xyz room for updates.',
-        icon: '/favicon.ico',
+    const notifBody = options?.body || 'Check the Playverzus.xyz room for updates.';
+    const notifOptions = {
+      body: notifBody,
+      icon: '/icon.png',
+      badge: '/icon.png',
+      tag: 'playverzus-match-event',
+      renotify: true,
+      data: { url: options?.actionUrl || '/' },
+    };
+
+    // Prefer ServiceWorker showNotification if available (works on mobile Android & PWA)
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.ready.then((reg) => {
+        reg.showNotification(title, notifOptions).catch(() => {
+          new Notification(title, notifOptions);
+        });
+      }).catch(() => {
+        new Notification(title, notifOptions);
       });
-    } catch {
-      // Fallback
+    } else {
+      try {
+        new Notification(title, notifOptions);
+      } catch {
+        // Fallback
+      }
     }
   }
 }

@@ -131,7 +131,7 @@ export function GameRail() {
 
   return (
     <>
-      <aside className="hidden lg:flex w-64 flex-shrink-0 bg-background border-r border-border flex-col justify-between p-4 select-none h-screen sticky top-0 overflow-y-auto scrollbar-none z-30 pb-20 space-y-6">
+      <aside className="hidden lg:flex w-64 flex-shrink-0 bg-card border-r border-border flex-col justify-between p-4 pb-6 select-none h-screen min-h-screen sticky top-0 overflow-y-auto scrollbar-none z-30 space-y-6">
         <div className="space-y-6">
           {/* Brand Logo & Name */}
           <Link

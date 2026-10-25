@@ -206,17 +206,17 @@ export function TopHeader() {
   // Dedicated Public Marketing Header for Landing Page
   if (pathname === '/') {
     return (
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border h-16 w-full">
-        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 flex items-center justify-between h-full">
+      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border h-14 sm:h-16 w-full">
+        <div className="max-w-7xl mx-auto w-full px-3 sm:px-6 lg:px-8 flex items-center justify-between h-full">
           {/* Left: Brand Logo */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link href={me ? '/dashboard' : '/'} className="flex items-center gap-2 group">
               <Image
                 src="/images/logo.png"
                 alt="playverzus.xyz"
-                width={160}
-                height={36}
-                className="h-8 sm:h-9 w-auto object-contain transition group-hover:opacity-90"
+                width={140}
+                height={32}
+                className="h-7 sm:h-8 w-auto object-contain transition group-hover:opacity-90"
                 priority
               />
             </Link>
@@ -263,7 +263,7 @@ export function TopHeader() {
           </nav>
 
           {/* Right: Auth / Arena Entry CTAs */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3">
             {!me ? (
               <>
                 <Link href="/login" className="hidden sm:inline-flex">
@@ -274,23 +274,24 @@ export function TopHeader() {
                 <Link href="/signup">
                   <Button
                     size="sm"
-                    className="font-bold text-xs uppercase tracking-wider bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm h-9 px-4"
+                    className="font-bold text-xs uppercase tracking-wider bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm h-8 sm:h-9 px-3 sm:px-4"
                   >
-                    Play For Free
+                    <span className="hidden sm:inline">Play For Free</span>
+                    <span className="sm:hidden">Play Free</span>
                   </Button>
                 </Link>
               </>
             ) : (
               <>
                 <Link href="/dashboard">
-                  <Button size="sm" className="font-bold text-xs uppercase tracking-wider gap-1.5 h-9">
+                  <Button size="sm" className="font-bold text-xs uppercase tracking-wider gap-1.5 h-8 sm:h-9 px-3">
                     <LayoutDashboard className="w-3.5 h-3.5" />
                     <span>Dashboard</span>
                   </Button>
                 </Link>
                 <Link
                   href={`/profile/${me.username || 'me'}`}
-                  className="flex items-center gap-2 pl-1 pr-2.5 py-1 bg-card hover:bg-muted border border-border hover:border-primary/50 rounded-lg transition"
+                  className="flex items-center gap-2 pl-1 pr-2 py-1 bg-card hover:bg-muted border border-border hover:border-primary/50 rounded-lg transition"
                   title="View Player Profile"
                 >
                   <Avatar size="sm" className="w-7 h-7 text-xs bg-primary text-primary-foreground">
@@ -304,7 +305,7 @@ export function TopHeader() {
                   variant="ghost"
                   size="sm"
                   onClick={handleSignOut}
-                  className="font-bold text-xs uppercase tracking-wider text-muted-foreground hover:text-destructive gap-1"
+                  className="font-bold text-xs uppercase tracking-wider text-muted-foreground hover:text-destructive gap-1 px-2"
                   title="Log Out of Arena"
                 >
                   <LogOut className="w-3.5 h-3.5" />
@@ -318,10 +319,10 @@ export function TopHeader() {
               variant="ghost"
               size="icon"
               onClick={() => setMobileMenuOpen(true)}
-              className="md:hidden text-muted-foreground hover:text-foreground"
+              className="md:hidden text-muted-foreground hover:text-foreground w-8 h-8 flex-shrink-0"
               aria-label="Toggle navigation drawer"
             >
-              <Menu className="w-5 h-5" />
+              <Menu className="w-4 h-4" />
             </Button>
           </div>
         </div>
@@ -418,9 +419,9 @@ export function TopHeader() {
   }
 
   return (
-    <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-border h-14 sm:h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8 gap-3 sm:gap-4 w-full">
+    <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-border h-14 sm:h-16 flex items-center justify-between px-2.5 sm:px-6 lg:px-8 gap-2 sm:gap-4 w-full">
       {/* 1. Left Zone: Mobile Drawer Trigger + Active Arena Pill + Context Breadcrumb */}
-      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+      <div className="flex items-center gap-1.5 sm:gap-3 min-w-0">
         {/* Mobile menu toggle */}
         <Button
           variant="ghost"

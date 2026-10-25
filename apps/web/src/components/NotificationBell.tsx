@@ -2,8 +2,9 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { Bell, CheckCheck, Trash2, BellOff, ArrowRight } from 'lucide-react';
+import { Bell, CheckCheck, Trash2, BellOff, ArrowRight, ShieldCheck, Sparkles } from 'lucide-react';
 import { useNotificationStore, type NotificationItem } from '../lib/notificationStore';
+import { requestNotificationPermission } from '../lib/notifications';
 import { Button } from './ui/button';
 import { Separator } from './ui/separator';
 import { Badge } from './ui/badge';
@@ -21,12 +22,21 @@ function formatTimeAgo(timestamp: number) {
 export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [permissionGranted, setPermissionGranted] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const { notifications, markAsRead, markAllAsRead, clearAll } = useNotificationStore();
 
   useEffect(() => {
     setMounted(true);
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      setPermissionGranted(Notification.permission === 'granted');
+    }
   }, []);
+
+  const handleEnableDeviceAlerts = async () => {
+    const granted = await requestNotificationPermission();
+    setPermissionGranted(granted);
+  };
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -95,6 +105,27 @@ export function NotificationBell() {
               )}
             </div>
           </div>
+
+          {!permissionGranted && (
+            <div className="my-2 p-2.5 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-between gap-2">
+              <div className="space-y-0.5">
+                <span className="font-bold text-[11px] text-foreground block">
+                  Device Push Alerts
+                </span>
+                <span className="text-[10px] text-muted-foreground block">
+                  Get popups when opponents join or matches end.
+                </span>
+              </div>
+              <Button
+                size="sm"
+                variant="default"
+                onClick={handleEnableDeviceAlerts}
+                className="h-7 px-2.5 text-[10px] font-bold uppercase tracking-wider flex-shrink-0"
+              >
+                Enable
+              </Button>
+            </div>
+          )}
 
           <div className="max-h-80 overflow-y-auto divide-y divide-border pr-1 py-1">
             {notifications.length === 0 ? (

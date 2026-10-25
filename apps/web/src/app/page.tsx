@@ -329,16 +329,13 @@ function HomeContent() {
             >
               <div className="p-4 sm:p-5 space-y-4">
                 <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2.5">
-                    <span className="text-2xl">{game.icon}</span>
-                    <div>
-                      <h3 className="font-bold text-base text-foreground group-hover:text-primary transition-colors">
-                        {game.displayName}
-                      </h3>
-                      <span className="font-mono text-[10px] text-muted-foreground block">
-                        {game.shortName} · {game.platform}
-                      </span>
-                    </div>
+                  <div>
+                    <h3 className="font-bold text-base text-foreground group-hover:text-primary transition-colors">
+                      {game.displayName}
+                    </h3>
+                    <span className="font-mono text-[10px] text-muted-foreground block">
+                      {game.shortName} · {game.platform}
+                    </span>
                   </div>
                   <Badge variant="secondary" className="font-mono text-[10px] border-border">
                     {game.platform}
