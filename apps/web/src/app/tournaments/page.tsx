@@ -322,7 +322,7 @@ export default function TournamentsPage() {
                       </div>
                       <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-gradient-to-r from-emerald-500 to-primary transition-all duration-300"
+                          className="h-full bg-primary transition-all duration-300"
                           style={{ width: `${(enrolled / 5) * 100}%` }}
                         />
                       </div>

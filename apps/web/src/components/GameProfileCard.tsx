@@ -69,7 +69,7 @@ export function GameProfileCard({
       </div>
 
       {/* 3. Bottom Content Details & Quick Actions */}
-      <div className="relative z-10 p-4 pt-10 flex flex-col gap-3 bg-gradient-to-t from-background via-background/90 to-transparent">
+      <div className="relative z-10 p-4 pt-4 flex flex-col gap-3 bg-zinc-950/95 border-t border-zinc-800">
         <div>
           <h3 className="text-base sm:text-lg font-bold text-foreground group-hover:text-primary transition-colors leading-tight truncate">
             {displayName}

@@ -159,7 +159,7 @@ export default function GameHubPage() {
             style={{ backgroundImage: `url(${catalogItem.bannerUrl})` }}
           />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-card via-card/75 to-card/25" />
+        <div className="absolute inset-0 bg-card/75" />
 
         <div className="relative z-10 p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-4 sm:gap-6 min-w-0">

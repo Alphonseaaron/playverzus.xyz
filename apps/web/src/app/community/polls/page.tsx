@@ -174,7 +174,7 @@ export default function CommunityPollsPage() {
   return (
     <div className="space-y-8 max-w-6xl mx-auto py-2">
       {/* Hero Header */}
-      <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-card via-card/90 to-primary/5 p-6 sm:p-10 shadow-xl">
+      <div className="relative overflow-hidden rounded-3xl border border-border bg-card p-6 sm:p-10 shadow-xl">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
           <div className="space-y-3 max-w-2xl">
             <div className="flex items-center gap-2">

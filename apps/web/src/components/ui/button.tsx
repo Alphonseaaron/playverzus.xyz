@@ -13,7 +13,7 @@ export const buttonVariants = cva(
         secondary: 'bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80 border border-border',
         ghost: 'hover:bg-secondary hover:text-foreground text-muted-foreground',
         link: 'text-primary underline-offset-4 hover:underline',
-        copper: 'bg-gradient-to-r from-accent-600 to-primary text-white shadow-md hover:from-primary hover:to-accent-400',
+        copper: 'bg-primary text-primary-foreground shadow-md hover:bg-primary/90',
       },
       size: {
         default: 'h-10 px-4 py-2 text-xs uppercase tracking-wider',

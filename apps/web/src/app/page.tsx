@@ -30,6 +30,9 @@ import {
   Clock,
   Sparkles,
   Check,
+  Vote,
+  HelpCircle,
+  Lock,
 } from 'lucide-react';
 import { useGameStore } from '../lib/gameStore';
 import { EloBadge } from '../components/EloBadge';
@@ -38,13 +41,13 @@ import { GamePoster } from '../components/GamePoster';
 import { GameDropdown } from '../components/GameDropdown';
 import { apiClient } from '../lib/api';
 import { getSupabaseClient } from '../lib/supabase';
-import { formatUSDC, formatEUR, formatPoints } from '../lib/currency';
+import { formatUSDC } from '../lib/currency';
 import { OFFICIAL_GAMES, getGameById, type CatalogGame } from '../lib/gamesCatalog';
-import { EmptyState } from '../components/EmptyState';
-import { Skeleton } from '../components/ui/skeleton';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '../components/ui/card';
+import { ParallaxStoryScenes } from '../components/ParallaxStoryScenes';
+import { SquadShowcase } from '../components/SquadShowcase';
 
 interface UserProfile {
   id: string;
@@ -67,16 +70,6 @@ interface HomeTournament {
   region?: string;
   country_code?: string;
   enrolled_count?: number;
-}
-
-interface HomeLeaderboardEntry {
-  userId: string;
-  rating: number;
-  gamesPlayed: number;
-  wins: number;
-  losses: number;
-  username?: string;
-  countryCode?: string;
 }
 
 function HomeContent() {
@@ -111,26 +104,12 @@ function HomeContent() {
     }
   }, [loadingProfile, isAuthenticated, wantsLanding, router]);
 
-  // Query real tournaments from API — fall back to seeded data if API fails or returns empty
+  // Query real tournaments from API
   const { data: tournaments = [], isLoading: loadingTournaments } = useQuery<HomeTournament[]>({
     queryKey: ['home-tournaments'],
     queryFn: async () => {
       try {
         const res = await apiClient<HomeTournament[]>('/tournaments');
-        return res || [];
-      } catch {
-        return [];
-      }
-    },
-    staleTime: 30000,
-  });
-
-  // Query real leaderboard champions from API — fall back to seeded data if API fails or returns empty
-  const { data: champions = [], isLoading: loadingChampions } = useQuery<HomeLeaderboardEntry[]>({
-    queryKey: ['home-champions'],
-    queryFn: async () => {
-      try {
-        const res = await apiClient<HomeLeaderboardEntry[]>('/leaderboard/HEAD_TO_HEAD');
         return res || [];
       } catch {
         return [];
@@ -150,10 +129,10 @@ function HomeContent() {
     }
   };
 
-  // If authenticated and redirecting to dashboard, show sleek loading indicator
+  // If authenticated and redirecting to dashboard, show clean loading state
   if (isAuthenticated && !wantsLanding) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 text-center">
+      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 text-center px-4">
         <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin" />
         <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">
           Entering Arena Dashboard...
@@ -162,8 +141,6 @@ function HomeContent() {
     );
   }
 
-  const currentCatalogGame = getGameById(activeGame?.id);
-
   const filteredGames = OFFICIAL_GAMES.filter((g) => {
     if (selectedArenaTab === 'pc') return g.platform === 'PC';
     if (selectedArenaTab === 'console') return g.platform === 'CONSOLE';
@@ -171,12 +148,12 @@ function HomeContent() {
   });
 
   return (
-    <div className="flex flex-col gap-16 sm:gap-24 max-w-7xl mx-auto min-w-0 pb-16">
+    <div className="w-full flex flex-col gap-16 sm:gap-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-w-0 pb-20 pt-4 sm:pt-8">
       {/* 1. Authenticated Welcome Bar (if logged in and explicitly browsing landing) */}
       {isAuthenticated && (
-        <div className="p-4 sm:p-5 rounded-2xl bg-card border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-lg animate-in fade-in">
+        <div className="p-4 sm:p-5 rounded-2xl bg-card border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary text-primary-foreground font-black text-sm flex items-center justify-center shadow-md">
+            <div className="w-10 h-10 rounded-xl bg-primary text-primary-foreground font-black text-sm flex items-center justify-center shadow-sm">
               {userProfile?.username?.slice(0, 1)?.toUpperCase() ?? 'P'}
             </div>
             <div>
@@ -199,14 +176,14 @@ function HomeContent() {
 
           <div className="flex items-center gap-2.5 flex-wrap">
             <Link href="/dashboard">
-              <Button variant="default" size="sm" className="font-bold text-xs gap-1.5 shadow-md">
+              <Button size="sm" className="font-bold text-xs gap-1.5 h-9">
                 <LayoutDashboard className="w-3.5 h-3.5" />
                 <span>Go to Dashboard</span>
               </Button>
             </Link>
             <Link href="/challenges">
-              <Button variant="secondary" size="sm" className="font-bold text-xs gap-1.5">
-                <Swords className="w-3.5 h-3.5" />
+              <Button variant="secondary" size="sm" className="font-bold text-xs gap-1.5 h-9">
+                <Swords className="w-3.5 h-3.5 text-primary" />
                 <span>Play Duels</span>
               </Button>
             </Link>
@@ -214,7 +191,7 @@ function HomeContent() {
               variant="outline"
               size="sm"
               onClick={handleSignOut}
-              className="font-bold text-xs gap-1.5 text-muted-foreground hover:text-destructive hover:border-destructive/40"
+              className="font-bold text-xs gap-1.5 h-9 text-muted-foreground hover:text-destructive hover:border-destructive/40"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span>Log Out</span>
@@ -223,41 +200,25 @@ function HomeContent() {
         </div>
       )}
 
-      {/* 2. HERO SECTION */}
-      <section className="relative pt-6 sm:pt-12 text-center flex flex-col items-center gap-6 sm:gap-8 overflow-hidden">
-        {/* Ambient atmospheric glows */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-primary/15 rounded-full filter blur-[120px] pointer-events-none" />
-        <div className="absolute top-1/4 right-1/4 w-[300px] h-[200px] bg-amber-500/10 rounded-full filter blur-[90px] pointer-events-none" />
-
-        {/* Brand Logo Display */}
-        <div className="flex items-center justify-center">
-          <Image
-            src="/images/logo.png"
-            alt="playverzus.xyz"
-            width={320}
-            height={64}
-            className="h-10 sm:h-14 w-auto object-contain drop-shadow-[0_4px_24px_rgba(200,98,40,0.2)]"
-            priority
-          />
-        </div>
-
+      {/* 2. HERO SECTION (Solid Modern Shadcn Styling - Zero Gradients) */}
+      <section className="text-center flex flex-col items-center gap-6 sm:gap-8 pt-4 sm:pt-8">
         {/* Eyebrow Pill */}
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/30 text-primary text-xs font-semibold tracking-wide shadow-sm">
-          <Sparkles className="w-3.5 h-3.5" />
-          <span>VERIFIED COMPETITIVE ESPORTS PLATFORM</span>
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-primary text-xs font-bold tracking-wider uppercase shadow-sm">
+          <ShieldCheck className="w-4 h-4 text-primary" />
+          <span>VERIFIED COMPETITIVE ESPORTS // CROSSMINT SMART ESCROW</span>
         </div>
 
         {/* Main Headline */}
         <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black uppercase tracking-tight text-foreground leading-[1.05] max-w-4xl">
           Play With The Best. <br />
-          <span className="text-primary bg-gradient-to-r from-primary via-purple-400 to-fuchsia-400 bg-clip-text text-transparent">
+          <span className="text-primary block mt-1 sm:mt-2">
             Win Real USDC Prizes.
           </span>
         </h1>
 
         {/* Subhead Description */}
         <p className="text-sm sm:text-lg text-muted-foreground max-w-2xl leading-relaxed">
-          The premier platform for automated 1v1 duels, community cups, and verified Elo rankings. Background score verification guarantees fair play. Zero manual screenshots. Instant cash payouts.
+          The premier platform for automated 1v1 duels, clan squad battles, and verified tournaments. Automated computer-vision score verification eliminates manual disputes. Instant USDC payouts with regulated Crossmint smart custody.
         </p>
 
         {/* Primary Action Buttons */}
@@ -265,13 +226,13 @@ function HomeContent() {
           {!isAuthenticated ? (
             <>
               <Link href="/signup?redirect=/challenges" className="w-full sm:w-auto">
-                <Button size="lg" className="w-full sm:w-auto font-black text-sm uppercase tracking-wider px-8 h-12 gap-2 shadow-xl shadow-primary/20">
+                <Button size="lg" className="w-full sm:w-auto font-black text-sm uppercase tracking-wider px-8 h-12 gap-2 bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm">
                   <Rocket className="w-4 h-4" />
                   <span>Play For Free</span>
                 </Button>
               </Link>
               <Link href="/login?redirect=/dashboard" className="w-full sm:w-auto">
-                <Button variant="secondary" size="lg" className="w-full sm:w-auto font-bold text-sm uppercase tracking-wider px-6 h-12 gap-2">
+                <Button variant="secondary" size="lg" className="w-full sm:w-auto font-bold text-sm uppercase tracking-wider px-6 h-12 gap-2 bg-card hover:bg-zinc-800 border-border">
                   <LogIn className="w-4 h-4" />
                   <span>Sign In</span>
                 </Button>
@@ -279,7 +240,7 @@ function HomeContent() {
             </>
           ) : (
             <Link href="/challenges" className="w-full sm:w-auto">
-              <Button size="lg" className="w-full sm:w-auto font-black text-sm uppercase tracking-wider px-8 h-12 gap-2 shadow-xl shadow-primary/20">
+              <Button size="lg" className="w-full sm:w-auto font-black text-sm uppercase tracking-wider px-8 h-12 gap-2 bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm">
                 <Swords className="w-4 h-4" />
                 <span>Enter Matchmaking Queue</span>
               </Button>
@@ -287,55 +248,61 @@ function HomeContent() {
           )}
 
           <Link href="/tournaments" className="w-full sm:w-auto">
-            <Button variant="outline" size="lg" className="w-full sm:w-auto font-bold text-sm uppercase tracking-wider px-6 h-12 gap-2">
+            <Button variant="outline" size="lg" className="w-full sm:w-auto font-bold text-sm uppercase tracking-wider px-6 h-12 gap-2 border-border bg-card hover:bg-zinc-800">
               <Trophy className="w-4 h-4 text-primary" />
               <span>Explore Tournaments</span>
             </Button>
           </Link>
         </div>
 
-        {/* Live Proof Metrics Strip */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 w-full pt-8 sm:pt-12 border-t border-border/60">
-          <div className="p-4 rounded-xl bg-card border border-border shadow-sm flex flex-col items-center">
+        {/* Live Proof Metrics Strip (Pure Solid Cards) */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 w-full pt-8 sm:pt-12 border-t border-border">
+          <Card className="p-4 sm:p-5 rounded-xl bg-card border-border shadow-sm flex flex-col items-center text-center">
             <span className="font-mono text-xl sm:text-2xl font-black text-emerald-400">$150,000+</span>
-            <span className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider mt-0.5">Prize Cash Won</span>
-          </div>
+            <span className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider mt-1">Prize Cash Won</span>
+          </Card>
 
-          <div className="p-4 rounded-xl bg-card border border-border shadow-sm flex flex-col items-center">
-            <span className="font-mono text-xl sm:text-2xl font-black text-primary">100%</span>
-            <span className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider mt-0.5">Automated Score Sync</span>
-          </div>
+          <Card className="p-4 sm:p-5 rounded-xl bg-card border-border shadow-sm flex flex-col items-center text-center">
+            <span className="font-mono text-xl sm:text-2xl font-black text-primary">&lt; 8 Seconds</span>
+            <span className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider mt-1">Automated OCR Sync</span>
+          </Card>
 
-          <div className="p-4 rounded-xl bg-card border border-border shadow-sm flex flex-col items-center">
-            <span className="font-mono text-xl sm:text-2xl font-black text-foreground">Level 1–10</span>
-            <span className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider mt-0.5">Competitive Elo Rating</span>
-          </div>
+          <Card className="p-4 sm:p-5 rounded-xl bg-card border-border shadow-sm flex flex-col items-center text-center">
+            <span className="font-mono text-xl sm:text-2xl font-black text-foreground">100% On-Chain</span>
+            <span className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider mt-1">Crossmint Escrow</span>
+          </Card>
 
-          <div className="p-4 rounded-xl bg-card border border-border shadow-sm flex flex-col items-center">
-            <span className="font-mono text-xl sm:text-2xl font-black text-purple-400">24/7</span>
-            <span className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider mt-0.5">Instant Duels & Payouts</span>
-          </div>
+          <Card className="p-4 sm:p-5 rounded-xl bg-card border-border shadow-sm flex flex-col items-center text-center">
+            <span className="font-mono text-xl sm:text-2xl font-black text-purple-400">Zero Referees</span>
+            <span className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider mt-1">Direct Screen Vision</span>
+          </Card>
         </div>
       </section>
 
-      {/* 3. SUPPORTED COMPETITIVE GAME ARENAS */}
-      <section id="arenas" className="space-y-6">
+      {/* 3. PARALLAX STORYLINE: 4-STAGE MATCH LIFECYCLE WITH CHARACTERS */}
+      <ParallaxStoryScenes />
+
+      {/* 4. COMPETITIVE SQUADS & CLAN ROSTERS SHOWCASE */}
+      <SquadShowcase />
+
+      {/* 5. SUPPORTED COMPETITIVE GAME ARENAS (Zero Gradients, Solid Cards) */}
+      <section id="arenas" className="space-y-6 sm:space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 text-primary font-mono text-xs font-bold uppercase tracking-wider mb-1">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-primary font-mono text-xs font-bold uppercase tracking-wider">
               <Gamepad2 className="w-4 h-4" />
-              <span>Supported Competitive Arenas</span>
+              <span>OFFICIAL COMPETITIVE ROSTER</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-foreground">
-              Select Your Game
+            <h2 className="text-3xl sm:text-4xl font-black uppercase tracking-tight text-foreground">
+              Select Your Arena
             </h2>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-              Battle in officially calibrated arenas with zero configuration and automated round tracking.
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              Battle in officially calibrated titles with automated round tracking and instant score verification.
             </p>
           </div>
 
           {/* Filter Tabs */}
-          <div className="flex items-center gap-1.5 p-1 bg-muted rounded-xl border border-border self-start sm:self-auto">
+          <div className="flex items-center gap-1.5 p-1 bg-zinc-900 rounded-xl border border-zinc-800 self-start sm:self-auto">
             {(['all', 'pc', 'console'] as const).map((tab) => (
               <button
                 key={tab}
@@ -343,509 +310,336 @@ function HomeContent() {
                 onClick={() => setSelectedArenaTab(tab)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition ${
                   selectedArenaTab === tab
-                    ? 'bg-card text-foreground shadow-sm'
+                    ? 'bg-primary text-primary-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                {tab === 'all' ? 'All Platforms' : tab}
+                {tab === 'all' ? 'All Arenas' : tab}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Game Arenas Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          {filteredGames.map((game) => {
-            const isActive = activeGame?.id === game.id;
-
-            return (
-              <Card
-                key={game.id}
-                className={`group relative overflow-hidden border transition-all duration-300 flex flex-col justify-between hover:shadow-xl ${
-                  isActive
-                    ? 'border-primary ring-1 ring-primary/40 bg-card'
-                    : 'border-border hover:border-primary/50 bg-card/80'
-                }`}
-              >
-                {/* Poster Artwork Header */}
-                <div className="relative aspect-[16/10] w-full overflow-hidden bg-muted">
-                  <div
-                    className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
-                    style={{ backgroundImage: `url(${game.posterUrl || game.bannerUrl})` }}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-card via-card/40 to-transparent" />
-
-                  {/* Top Badges */}
-                  <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
-                    <Badge variant="outline" className="bg-background/80 backdrop-blur-md font-mono text-[9px]">
-                      {game.platform}
-                    </Badge>
-                    {isActive && (
-                      <Badge variant="copper" className="text-[9px]">
-                        ACTIVE ARENA
-                      </Badge>
-                    )}
+        {/* Game Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+          {filteredGames.map((game) => (
+            <Card
+              key={game.id}
+              className="bg-card border border-border hover:border-zinc-700 transition-all rounded-2xl overflow-hidden shadow-sm flex flex-col justify-between group"
+            >
+              <div className="p-4 sm:p-5 space-y-4">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-2xl">{game.icon}</span>
+                    <div>
+                      <h3 className="font-bold text-base text-foreground group-hover:text-primary transition-colors">
+                        {game.displayName}
+                      </h3>
+                      <span className="font-mono text-[10px] text-muted-foreground block">
+                        {game.shortName} · {game.platform}
+                      </span>
+                    </div>
                   </div>
+                  <Badge variant="secondary" className="font-mono text-[10px] border-border">
+                    {game.platform}
+                  </Badge>
                 </div>
 
-                {/* Card Body */}
-                <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between gap-4">
-                  <div className="space-y-1">
-                    <h3 className="font-extrabold text-base text-foreground group-hover:text-primary transition-colors">
-                      {game.displayName}
-                    </h3>
-                    <p className="text-xs text-muted-foreground line-clamp-2">
-                      {game.tagline}
-                    </p>
+                <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
+                  {game.tagline}
+                </p>
+
+                {/* Match Features Pill Strip */}
+                <div className="grid grid-cols-2 gap-2 pt-1 font-mono text-[10px]">
+                  <div className="p-2 rounded-lg bg-zinc-950 border border-zinc-800 text-muted-foreground">
+                    <span className="block text-[9px] uppercase font-bold text-zinc-500">Mode</span>
+                    <span className="text-foreground font-semibold">1v1 & Squads</span>
                   </div>
-
-                  {/* Format & Quick Enter */}
-                  <div className="pt-2 border-t border-border flex items-center justify-between gap-2">
-                    <span className="text-[10px] font-mono text-muted-foreground">
-                      1v1 Duels & Cups
-                    </span>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActiveGame(game);
-                      }}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
-                        isActive
-                          ? 'bg-primary text-primary-foreground shadow-sm'
-                          : 'bg-muted hover:bg-muted/80 text-foreground'
-                      }`}
-                    >
-                      {isActive ? 'Selected ✓' : 'Select Arena'}
-                    </button>
+                  <div className="p-2 rounded-lg bg-zinc-950 border border-zinc-800 text-muted-foreground">
+                    <span className="block text-[9px] uppercase font-bold text-zinc-500">OCR Arbiter</span>
+                    <span className="text-emerald-400 font-semibold">Active & Live</span>
                   </div>
                 </div>
-              </Card>
-            );
-          })}
+              </div>
+
+              <div className="p-4 sm:p-5 pt-0">
+                <Link
+                  href={isAuthenticated ? `/matches/new?gameId=${game.id}` : `/signup?redirect=/matches/new?gameId=${game.id}`}
+                  className="w-full block"
+                >
+                  <Button variant="secondary" size="sm" className="w-full font-bold text-xs uppercase tracking-wider gap-1.5 h-9">
+                    <Swords className="w-3.5 h-3.5 text-primary" />
+                    <span>Enter {game.shortName} Arena</span>
+                  </Button>
+                </Link>
+              </div>
+            </Card>
+          ))}
         </div>
       </section>
 
-      {/* 4. THE 3-STEP COMPETITIVE EXPERIENCE */}
-      <section id="how-it-works" className="p-8 sm:p-12 rounded-3xl bg-card border border-border shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full filter blur-3xl pointer-events-none" />
-
-        <div className="text-center max-w-2xl mx-auto space-y-2 mb-10 sm:mb-14">
-          <Badge variant="copper" className="font-mono text-[10px]">
-            HOW IT WORKS
-          </Badge>
-          <h2 className="text-2xl sm:text-4xl font-black uppercase tracking-tight text-foreground">
-            From Match Kickoff to Payout in 3 Steps
-          </h2>
-          <p className="text-xs sm:text-sm text-muted-foreground">
-            No messy dispute tickets, no screenshots, and no waiting hours for admin intervention.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 relative z-10">
-          {/* Step 1 */}
-          <div className="p-6 rounded-2xl bg-muted/30 border border-border flex flex-col gap-4 relative">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/30 text-primary font-black font-mono text-sm flex items-center justify-center">
-              01
-            </div>
-            <div className="space-y-1.5">
-              <h3 className="text-base font-bold text-foreground">
-                Connect & Calibrate
-              </h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Choose your game arena and connect your screen feed in one click. Our calibration maps the in-game scoreboard automatically.
-              </p>
-            </div>
-          </div>
-
-          {/* Step 2 */}
-          <div className="p-6 rounded-2xl bg-muted/30 border border-border flex flex-col gap-4 relative">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/30 text-primary font-black font-mono text-sm flex items-center justify-center">
-              02
-            </div>
-            <div className="space-y-1.5">
-              <h3 className="text-base font-bold text-foreground">
-                Enter & Compete
-              </h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Queue instant 1v1 duels or enter scheduled tournament cups. Entry fees are held safely in smart-custody escrow until match conclusion.
-              </p>
-            </div>
-          </div>
-
-          {/* Step 3 */}
-          <div className="p-6 rounded-2xl bg-muted/30 border border-border flex flex-col gap-4 relative">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-black font-mono text-sm flex items-center justify-center">
-              03
-            </div>
-            <div className="space-y-1.5">
-              <h3 className="text-base font-bold text-foreground">
-                Automated Instant Settlement
-              </h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                As soon as the victory screen hits, the score is verified and winnings are credited immediately to your wallet. Zero delay.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 5. WHY PLAYERS CHOOSE VERZUS (4 PILLARS) */}
-      <section id="fair-play" className="space-y-6">
-        <div className="text-center max-w-xl mx-auto space-y-2">
-          <Badge variant="secondary" className="font-mono text-[10px]">
-            COMPETITIVE INTEGRITY
-          </Badge>
-          <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-foreground">
-            Engineered For Serious Gamers
-          </h2>
-          <p className="text-xs sm:text-sm text-muted-foreground">
-            Built from the ground up to eliminate toxicity, smurfing, and payment fraud.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          <Card className="p-5 sm:p-6 bg-card border border-border space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-              <Zap className="w-5 h-5" />
-            </div>
-            <h3 className="font-bold text-sm text-foreground">Zero Manual Proofs</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Background optical calibration detects round wins and final scores automatically. No screenshot uploads or dispute delays.
-            </p>
-          </Card>
-
-          <Card className="p-5 sm:p-6 bg-card border border-border space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-              <Coins className="w-5 h-5" />
-            </div>
-            <h3 className="font-bold text-sm text-foreground">Dual-Ledger Wallet</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Play for free using daily Practice Points or compete for real USDC prizes via Crossmint instant checkout in over 180 countries.
-            </p>
-          </Card>
-
-          <Card className="p-5 sm:p-6 bg-card border border-border space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center">
-              <Trophy className="w-5 h-5" />
-            </div>
-            <h3 className="font-bold text-sm text-foreground">Level 1–10 Elo System</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Calibrated Elo matchmaking ensures you only face opponents of equal rating. Fair, balanced, and competitive matches every time.
-            </p>
-          </Card>
-
-          <Card className="p-5 sm:p-6 bg-card border border-border space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
-            <h3 className="font-bold text-sm text-foreground">Secured Escrow Vault</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Match entry fees are held safely in escrow before game start, guaranteeing that winners always receive 100% of their prize pool.
-            </p>
-          </Card>
-        </div>
-      </section>
-
-      {/* 6. FEATURED TOURNAMENT CUPS SHOWCASE */}
-      <section id="tournaments" className="space-y-6">
+      {/* 6. TOURNAMENTS SHOWCASE SECTION */}
+      <section className="space-y-6 sm:space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 text-primary font-mono text-xs font-bold uppercase tracking-wider mb-1">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-primary font-mono text-xs font-bold uppercase tracking-wider">
               <Trophy className="w-4 h-4" />
-              <span>Championship Brackets</span>
+              <span>CHAMPIONSHIP BRACKETS</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-foreground">
-              Featured Tournament Cups
+            <h2 className="text-3xl sm:text-4xl font-black uppercase tracking-tight text-foreground">
+              Live Knockout Tournaments
             </h2>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-              Compete in single elimination brackets for cash prize pools and seasonal trophies.
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              Single elimination brackets with guaranteed prize pools and automated bracket advancement.
             </p>
           </div>
 
           <Link href="/tournaments">
-            <Button variant="secondary" size="sm" className="font-bold text-xs gap-1.5">
-              <span>View All Cups</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+            <Button variant="outline" size="sm" className="font-bold text-xs uppercase tracking-wider gap-1.5 h-9 border-border bg-card hover:bg-zinc-800">
+              <span>View All Tournaments</span>
+              <ArrowRight className="w-3.5 h-3.5 text-primary" />
             </Button>
           </Link>
         </div>
 
-        {loadingTournaments ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i) => (
-              <Card key={i} className="p-6 bg-card border border-border space-y-4">
-                <div className="flex justify-between">
-                  <Skeleton className="h-5 w-20 rounded-md" />
-                  <Skeleton className="h-4 w-24 rounded-md" />
+        {tournaments.length === 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
+            {[
+              { name: 'CS2 Weekend Cup', size: 16, entry: 10, prize: 150, game: 'Counter-Strike 2' },
+              { name: 'Apex Predator Clash', size: 32, entry: 25, prize: 750, game: 'Apex Legends' },
+              { name: 'Warzone Squad Showdown', size: 16, entry: 15, prize: 225, game: 'Call of Duty: Warzone' },
+            ].map((mock, mIdx) => (
+              <Card key={mIdx} className="bg-card border border-border rounded-2xl p-5 space-y-4 shadow-sm">
+                <div className="flex items-center justify-between gap-2">
+                  <Badge variant="secondary" className="font-mono text-[10px]">
+                    {mock.game}
+                  </Badge>
+                  <span className="font-mono text-xs font-bold text-emerald-400">
+                    ${mock.prize}.00 USDC
+                  </span>
                 </div>
-                <div className="space-y-2">
-                  <Skeleton className="h-6 w-3/4 rounded-md" />
-                  <Skeleton className="h-4 w-1/2 rounded-md" />
+                <div>
+                  <h3 className="font-bold text-base text-foreground">{mock.name}</h3>
+                  <span className="text-xs text-muted-foreground font-mono">
+                    {mock.size} Competitor Knockout Bracket
+                  </span>
                 </div>
-                <div className="pt-3 border-t border-border flex justify-between items-center">
-                  <Skeleton className="h-8 w-20 rounded-md" />
-                  <Skeleton className="h-8 w-24 rounded-md" />
-                </div>
-              </Card>
-            ))}
-          </div>
-        ) : tournaments && tournaments.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {tournaments.slice(0, 3).map((t) => (
-              <Card key={t.id} className="p-5 sm:p-6 bg-card border border-border flex flex-col justify-between gap-4 hover:border-primary/50 transition">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <Badge variant="copper" className="font-mono text-[10px]">
-                        {t.status || 'Active Cup'}
-                      </Badge>
-                      <Badge variant="secondary" className="font-mono text-[10px] flex items-center gap-1.5">
-                        <CountryFlag code={t.country_code || t.region} fallbackSeed={t.name} size="xs" />
-                        <span>{t.region || 'Global'}</span>
-                      </Badge>
-                    </div>
-                    <span className="text-[11px] font-mono text-muted-foreground flex items-center gap-1">
-                      <Users className="w-3 h-3 text-primary" /> {t.enrolled_count ?? 0}/{t.size} Players
-                    </span>
-                  </div>
-
-                  <div className="space-y-1">
-                    <h3 className="text-base font-bold text-foreground">
-                      {t.name}
-                    </h3>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
-                      <span>{t.game_profiles?.display_name || 'Esports Arena'}</span>
-                      <span>·</span>
-                      <span>{t.format}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-3 border-t border-border flex items-center justify-between">
+                <div className="grid grid-cols-2 gap-2 p-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-xs font-mono">
                   <div>
-                    <span className="text-[10px] text-muted-foreground uppercase font-bold block">Prize Pool</span>
-                    <span className="font-mono font-bold text-emerald-400 text-sm">
-                      {t.prize_pool > 0 ? formatUSDC(t.prize_pool) : 'Free Entry'}
-                    </span>
+                    <span className="text-[9px] text-muted-foreground uppercase block">Entry Fee</span>
+                    <span className="font-bold text-foreground">${mock.entry}.00 USDC</span>
                   </div>
-
-                  <Link href={`/tournaments/${t.id}`}>
-                    <Button variant="default" size="sm" className="font-bold text-xs">
-                      View Bracket
-                    </Button>
-                  </Link>
+                  <div>
+                    <span className="text-[9px] text-muted-foreground uppercase block">Format</span>
+                    <span className="font-bold text-primary">Single Elim</span>
+                  </div>
                 </div>
+                <Link href={isAuthenticated ? '/tournaments' : '/signup?redirect=/tournaments'} className="w-full block">
+                  <Button size="sm" className="w-full font-bold text-xs uppercase tracking-wider h-9">
+                    Register For Tournament
+                  </Button>
+                </Link>
               </Card>
             ))}
           </div>
         ) : (
-          <EmptyState
-            icon={Trophy}
-            title="Championship Cups Launching Soon"
-            description="New tournament brackets with cash prize pools are announced regularly. In the meantime, challenge players in instant 1v1 duels or create your own custom tournament bracket."
-            actionLabel="Play 1v1 Duels"
-            actionHref="/challenges"
-          />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
+            {tournaments.slice(0, 3).map((t) => (
+              <Card key={t.id} className="bg-card border border-border rounded-2xl p-5 space-y-4 shadow-sm">
+                <div className="flex items-center justify-between gap-2">
+                  <Badge variant="secondary" className="font-mono text-[10px]">
+                    {t.game_profiles?.display_name || 'Esports'}
+                  </Badge>
+                  <span className="font-mono text-xs font-bold text-emerald-400">
+                    ${t.prize_pool}.00 USDC
+                  </span>
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-foreground">{t.name}</h3>
+                  <span className="text-xs text-muted-foreground font-mono">
+                    {t.size} Competitor Bracket · {t.format}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 p-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-xs font-mono">
+                  <div>
+                    <span className="text-[9px] text-muted-foreground uppercase block">Entry Fee</span>
+                    <span className="font-bold text-foreground">${t.entry_fee}.00 USDC</span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] text-muted-foreground uppercase block">Enrolled</span>
+                    <span className="font-bold text-primary">{t.enrolled_count ?? 0} / {t.size}</span>
+                  </div>
+                </div>
+                <Link href={`/tournaments/${t.id}`} className="w-full block">
+                  <Button size="sm" className="w-full font-bold text-xs uppercase tracking-wider h-9">
+                    Register For Tournament
+                  </Button>
+                </Link>
+              </Card>
+            ))}
+          </div>
         )}
       </section>
 
-      {/* 7. HALL OF CHAMPIONS / LEADERBOARD SPOTLIGHT */}
-      <section id="leaderboards" className="p-6 sm:p-8 rounded-2xl bg-card border border-border shadow-lg space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 text-primary font-mono text-xs font-bold uppercase tracking-wider mb-1">
-              <Award className="w-4 h-4" />
-              <span>Verified Rankings</span>
+      {/* 7. COMMUNITY ROADMAP POLLS SECTION */}
+      <section className="space-y-6 sm:space-y-8">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-primary font-mono text-xs font-bold uppercase tracking-wider">
+              <Vote className="w-4 h-4" />
+              <span>PLAYER GOVERNANCE</span>
             </div>
-            <h3 className="text-xl sm:text-2xl font-bold text-foreground">
-              Hall of Champions
-            </h3>
-            <p className="text-xs text-muted-foreground">
-              Top competitors in this month&rsquo;s competitive prize pool.
+            <h2 className="text-3xl sm:text-4xl font-black uppercase tracking-tight text-foreground">
+              Community Feature Roadmap
+            </h2>
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              You decide the next game arenas, prize formats, and platform features. 1 Verified Player = 1 Vote.
             </p>
           </div>
 
-          <Link href="/leaderboards">
-            <Button variant="secondary" size="sm" className="font-bold text-xs gap-1.5">
-              <span>Full Leaderboards</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+          <Link href="/community/polls">
+            <Button variant="outline" size="sm" className="font-bold text-xs uppercase tracking-wider gap-1.5 h-9 border-border bg-card hover:bg-zinc-800">
+              <span>View All Active Polls</span>
+              <ArrowRight className="w-3.5 h-3.5 text-primary" />
             </Button>
           </Link>
         </div>
 
-        {loadingChampions ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="p-4 rounded-xl bg-muted/40 border border-border flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <Skeleton className="w-7 h-7 rounded-lg" />
-                  <div className="space-y-1">
-                    <Skeleton className="h-4 w-20 rounded-md" />
-                    <Skeleton className="h-3 w-16 rounded-md" />
-                  </div>
-                </div>
-                <div className="space-y-1 text-right">
-                  <Skeleton className="h-4 w-12 rounded-md ml-auto" />
-                  <Skeleton className="h-3 w-8 rounded-md ml-auto" />
-                </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {[
+            { title: 'Add Marvel Rivals 6v6 Arena', votes: 412, status: 'IN PROGRESS', tag: 'NEW ARENA' },
+            { title: 'Add 4v4 Clan Squad Brackets', votes: 328, status: 'HIGH PRIORITY', tag: 'TOURNAMENT' },
+            { title: 'Instant Telegram Match Notifications', votes: 219, status: 'UNDER REVIEW', tag: 'FEATURE' },
+          ].map((poll, pIdx) => (
+            <Card key={pIdx} className="bg-card border border-border p-5 rounded-2xl space-y-4 shadow-sm">
+              <div className="flex items-center justify-between gap-2">
+                <Badge variant="outline" className="font-mono text-[10px] border-zinc-700 text-primary">
+                  {poll.tag}
+                </Badge>
+                <span className="font-mono text-xs font-bold text-muted-foreground">
+                  {poll.votes} Votes
+                </span>
               </div>
-            ))}
-          </div>
-        ) : champions && champions.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {champions.slice(0, 4).map((champ, index) => {
-              const winRate = champ.gamesPlayed > 0
-                ? `${Math.round((champ.wins / champ.gamesPlayed) * 100)}%`
-                : '0%';
-              return (
-                <div
-                  key={champ.userId}
-                  className="p-4 rounded-xl bg-muted/40 border border-border flex items-center justify-between gap-3"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <span className="w-7 h-7 rounded-lg bg-primary/10 text-primary font-black font-mono text-xs flex items-center justify-center flex-shrink-0">
-                      #{index + 1}
-                    </span>
-                    <div className="min-w-0">
-                      <span className="font-bold text-xs text-foreground flex items-center gap-1.5 truncate">
-                        <CountryFlag
-                          code={champ.countryCode}
-                          fallbackSeed={champ.username || champ.userId}
-                          size="xs"
-                        />
-                        <span className="truncate">@{champ.username || 'Competitor'}</span>
-                      </span>
-                      <span className="text-[10px] font-mono text-muted-foreground">
-                        {champ.gamesPlayed} Matches · {winRate} Win
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="text-right flex-shrink-0">
-                    <span className="text-xs font-mono font-bold text-primary block">{champ.rating} Elo</span>
-                    <span className="text-[10px] font-mono text-emerald-400">{champ.wins}W - {champ.losses}L</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <EmptyState
-            icon={Award}
-            title="Season 1 Ladder Initializing"
-            description="Be the first competitor to log ranked head-to-head match victories and claim the #1 spot in the global Hall of Champions."
-            actionLabel="Queue Ranked Match"
-            actionHref="/challenges"
-          />
-        )}
+              <h3 className="font-bold text-base text-foreground">{poll.title}</h3>
+              <div className="flex items-center justify-between pt-1">
+                <span className="text-[10px] font-mono text-emerald-400 font-bold uppercase">
+                  {poll.status}
+                </span>
+                <Link href="/community/polls">
+                  <span className="text-xs font-bold text-primary hover:underline font-mono">
+                    Vote Now &rarr;
+                  </span>
+                </Link>
+              </div>
+            </Card>
+          ))}
+        </div>
       </section>
 
-      {/* 8. HIGH-CONVERTING BOTTOM CALL TO ACTION */}
-      <section className="p-8 sm:p-14 rounded-3xl bg-gradient-to-br from-card via-card to-primary/10 border border-border text-center flex flex-col items-center gap-6 shadow-2xl relative overflow-hidden">
-        <div className="space-y-3 max-w-2xl">
-          <Badge variant="copper" className="font-mono text-[10px]">
-            JOIN THOUSANDS OF COMPETITORS
-          </Badge>
-          <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tight text-foreground leading-tight">
-            Ready to Prove Your Skill?
+      {/* 8. SECURITY & FAIR PLAY ARCHITECTURE (Pure Solid Cards) */}
+      <section className="space-y-6 sm:space-y-8">
+        <div className="text-center max-w-2xl mx-auto space-y-2">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-primary text-xs font-bold tracking-wider uppercase">
+            <Lock className="w-3.5 h-3.5" />
+            <span>ENTERPRISE-GRADE FAIR PLAY</span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-black uppercase tracking-tight text-foreground">
+            Built For Integrity
           </h2>
-          <p className="text-xs sm:text-base text-muted-foreground leading-relaxed">
-            Create your player profile in under 60 seconds. Claim 1,000 practice points instantly or deposit USDC via Crossmint to enter competitive prize duels.
+          <p className="text-xs sm:text-sm text-muted-foreground">
+            Zero reliance on manual human referees or unverified third-party claims.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card className="bg-card border border-border p-6 rounded-2xl space-y-3 shadow-sm">
+            <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 text-primary flex items-center justify-center">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <h3 className="font-bold text-base text-foreground">Crossmint Smart Custody</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Match entries and tournament prize pools are secured in regulated smart custody vaults. Neither player can tamper with funds once locked.
+            </p>
+          </Card>
+
+          <Card className="bg-card border border-border p-6 rounded-2xl space-y-3 shadow-sm">
+            <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 text-emerald-400 flex items-center justify-center">
+              <Zap className="w-5 h-5" />
+            </div>
+            <h3 className="font-bold text-base text-foreground">Sub-Second OCR Verification</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Victory and defeat frames are parsed with OCR neural networks. Cryptographic frame hashing blocks duplicate submissions.
+            </p>
+          </Card>
+
+          <Card className="bg-card border border-border p-6 rounded-2xl space-y-3 shadow-sm">
+            <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 text-purple-400 flex items-center justify-center">
+              <Shield className="w-5 h-5" />
+            </div>
+            <h3 className="font-bold text-base text-foreground">Gamertag Fraud Prevention</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Scores are only accepted if the in-game scoreboard gamertag matches your verified PlayVerzus identity. Impersonation is strictly blocked.
+            </p>
+          </Card>
+        </div>
+      </section>
+
+      {/* 9. BOTTOM CONVERSION CTA */}
+      <section className="p-8 sm:p-14 rounded-3xl bg-zinc-950 border border-zinc-800 text-center flex flex-col items-center gap-6 shadow-xl relative overflow-hidden">
+        <div className="space-y-3 max-w-xl">
+          <span className="font-mono text-xs uppercase font-bold text-primary tracking-widest block">
+            READY TO COMPETE?
+          </span>
+          <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tight text-foreground">
+            Claim Your First Win Today
+          </h2>
+          <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+            Create your account in 30 seconds. Connect your favorite game gamertag and enter free 1v1 duels or real USDC championship brackets.
           </p>
         </div>
 
         <div className="flex flex-col sm:flex-row items-center gap-3">
-          {!isAuthenticated ? (
-            <Link href="/signup?redirect=/challenges">
-              <Button size="lg" className="font-black text-sm uppercase tracking-wider px-8 h-12 shadow-xl shadow-primary/20 gap-2">
-                <Rocket className="w-4 h-4" />
-                <span>Create Free Player Account</span>
-              </Button>
-            </Link>
-          ) : (
-            <Link href="/matches/new">
-              <Button size="lg" className="font-black text-sm uppercase tracking-wider px-8 h-12 shadow-xl shadow-primary/20 gap-2">
-                <Swords className="w-4 h-4" />
-                <span>Host Open 1v1 Duel</span>
-              </Button>
-            </Link>
-          )}
-
-          <Link href="/games">
-            <Button variant="secondary" size="lg" className="font-bold text-sm uppercase tracking-wider px-6 h-12 gap-2">
-              <Gamepad2 className="w-4 h-4" />
-              <span>Browse All Games</span>
+          <Link href="/signup">
+            <Button size="lg" className="font-black text-xs uppercase tracking-wider px-8 h-12 bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm">
+              <Rocket className="w-4 h-4 mr-2" />
+              <span>Create Free Account</span>
+            </Button>
+          </Link>
+          <Link href="/challenges">
+            <Button variant="outline" size="lg" className="font-bold text-xs uppercase tracking-wider px-6 h-12 border-zinc-700 bg-zinc-900 text-foreground hover:bg-zinc-800">
+              <Swords className="w-4 h-4 mr-2 text-primary" />
+              <span>Browse 1v1 Duels</span>
             </Button>
           </Link>
         </div>
       </section>
 
-      {/* 9. GLOBAL FOOTER */}
-      <footer className="border-t border-border pt-10 text-xs text-muted-foreground space-y-6">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
-          <div className="space-y-3">
-            <Link href="/" className="inline-block">
-              <Image
-                src="/images/logo.png"
-                alt="playverzus.xyz"
-                width={160}
-                height={32}
-                className="h-7 w-auto object-contain"
-              />
-            </Link>
-            <p className="text-[11px] leading-relaxed">
-              The next-generation competitive gaming platform with automated score verification and instant payouts.
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <h4 className="font-bold text-foreground text-xs uppercase tracking-wider">Competition</h4>
-            <ul className="space-y-1 text-[11px]">
-              <li><Link href="/challenges" className="hover:text-foreground">1v1 Duels</Link></li>
-              <li><Link href="/tournaments" className="hover:text-foreground">Championship Cups</Link></li>
-              <li><Link href="/community/polls" className="hover:text-foreground">Feature Polls & Roadmap</Link></li>
-              <li><Link href="/leaderboards" className="hover:text-foreground">Ladders & Elo</Link></li>
-              <li><Link href="/games" className="hover:text-foreground">Supported Games</Link></li>
-            </ul>
-          </div>
-
-          <div className="space-y-2">
-            <h4 className="font-bold text-foreground text-xs uppercase tracking-wider">Banking & FairPlay</h4>
-            <ul className="space-y-1 text-[11px]">
-              <li><Link href="/dashboard" className="hover:text-foreground">Cashier Ledger</Link></li>
-              <li><Link href="/support" className="hover:text-foreground">Player Support Desk</Link></li>
-              <li><Link href="/terms" className="hover:text-foreground">Terms of Service</Link></li>
-              <li><Link href="/privacy" className="hover:text-foreground">Player Privacy Policy</Link></li>
-              <li><a href="mailto:support@playverzus.xyz" className="text-primary hover:underline font-mono">support@playverzus.xyz</a></li>
-              <li><span className="text-muted-foreground/80">Crossmint Smart Custody Hub</span></li>
-            </ul>
-          </div>
-
-          <div className="space-y-2">
-            <h4 className="font-bold text-foreground text-xs uppercase tracking-wider">Platform Security</h4>
-            <div className="flex items-center gap-1.5 text-emerald-400 font-mono text-[10px]">
-              <ShieldCheck className="w-4 h-4" />
-              <span>Regulated USDC Escrow</span>
-            </div>
-            <p className="text-[10px] text-muted-foreground">
-              All financial transactions are encrypted with 256-bit SSL and processed via licensed payment institutions.
-            </p>
-          </div>
+      {/* 10. SITE FOOTER */}
+      <footer className="pt-8 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground font-mono">
+        <div className="flex items-center gap-3">
+          <Image
+            src="/images/logo-mark.png"
+            alt="playverzus.xyz"
+            width={24}
+            height={24}
+            className="w-5 h-5 object-contain"
+          />
+          <span>&copy; {new Date().getFullYear()} Playverzus.xyz. All rights reserved.</span>
         </div>
 
-        <div className="pt-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px]">
-          <div className="flex items-center gap-2">
-            <Image
-              src="/images/logo-mark.png"
-              alt="playverzus.xyz"
-              width={18}
-              height={18}
-              className="h-4 w-auto object-contain"
-            />
-            <span>© 2026 Playverzus.xyz. All rights reserved.</span>
-          </div>
-          <span className="font-mono text-[10px]">Premier competitive esports infrastructure</span>
+        <div className="flex items-center gap-5 flex-wrap">
+          <Link href="/terms" className="hover:text-foreground transition-colors">
+            Terms of Service
+          </Link>
+          <Link href="/privacy" className="hover:text-foreground transition-colors">
+            Privacy Policy
+          </Link>
+          <Link href="/support" className="hover:text-foreground transition-colors">
+            Support Desk
+          </Link>
+          <Link href="/community/polls" className="hover:text-foreground transition-colors">
+            Roadmap
+          </Link>
         </div>
       </footer>
     </div>
@@ -856,10 +650,10 @@ export default function HomePage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 text-center">
+        <div className="min-h-[70vh] flex flex-col items-center justify-center gap-4 text-center px-4">
           <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">
-            Loading Arena...
+            Loading Playverzus Arena...
           </p>
         </div>
       }

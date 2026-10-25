@@ -45,7 +45,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // Render Case 2: Landing Page
   if (isLanding) {
     return (
-      <div className="min-h-screen w-full flex flex-col bg-background text-foreground overflow-x-hidden">
+      <div className="min-h-screen w-full flex flex-col bg-background text-foreground overflow-x-hidden pb-safe">
         <TopHeader />
         <main className="flex-1 w-full min-w-0">
           {children}
@@ -58,9 +58,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // Render Case 3: Live Match Arena (/matches/[id], /matches/room/[code])
   if (isLiveMatch) {
     return (
-      <div className="min-h-screen w-full flex flex-col bg-background text-foreground overflow-x-hidden">
+      <div className="min-h-screen w-full flex flex-col bg-background text-foreground overflow-x-hidden pb-safe">
         <TopHeader />
-        <main className="flex-1 w-full max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 py-4 min-w-0">
+        <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 min-w-0">
           {children}
         </main>
         <NotificationToastContainer />
@@ -75,7 +75,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <GameRail />
         <div className="flex-1 flex flex-col min-w-0 bg-background overflow-x-hidden">
           <TopHeader />
-          <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 min-w-0">
+          <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 min-w-0 pb-safe">
             {children}
           </main>
         </div>
@@ -91,7 +91,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <GameRail />
       <div className="flex-1 flex flex-col min-w-0 bg-background overflow-x-hidden">
         <TopHeader />
-        <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pb-32 min-w-0">
+        <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pb-32 pb-safe min-w-0">
           {children}
         </main>
       </div>

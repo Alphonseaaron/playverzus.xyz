@@ -206,131 +206,124 @@ export function TopHeader() {
   // Dedicated Public Marketing Header for Landing Page
   if (pathname === '/') {
     return (
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border h-14 sm:h-16 flex items-center justify-between px-3 sm:px-6 lg:px-8 max-w-full">
-        {/* Left: Brand Logo */}
-        <div className="flex items-center gap-3">
-          <Link href={me ? '/dashboard' : '/'} className="flex items-center gap-2 group">
-            <Image
-              src="/images/logo.png"
-              alt="playverzus.xyz"
-              width={160}
-              height={36}
-              className="h-7 sm:h-9 w-auto object-contain transition group-hover:opacity-90"
-              priority
-            />
-          </Link>
-        </div>
+      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border h-16 w-full">
+        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 flex items-center justify-between h-full">
+          {/* Left: Brand Logo */}
+          <div className="flex items-center gap-3">
+            <Link href={me ? '/dashboard' : '/'} className="flex items-center gap-2 group">
+              <Image
+                src="/images/logo.png"
+                alt="playverzus.xyz"
+                width={160}
+                height={36}
+                className="h-8 sm:h-9 w-auto object-contain transition group-hover:opacity-90"
+                priority
+              />
+            </Link>
+          </div>
 
-        {/* Center: Desktop Public Marketing Navigation Links */}
-        <nav className="hidden md:flex items-center gap-6 text-xs font-bold tracking-wider uppercase">
-          <a
-            href="#arenas"
-            className="text-muted-foreground hover:text-foreground transition-colors hover:text-primary"
-          >
-            Supported Arenas
-          </a>
-          <a
-            href="#how-it-works"
-            className="text-muted-foreground hover:text-foreground transition-colors hover:text-primary"
-          >
-            How It Works
-          </a>
-          <Link
-            href="/tournaments"
-            className="text-muted-foreground hover:text-foreground transition-colors hover:text-primary"
-          >
-            Tournaments
-          </Link>
-          <Link
-            href="/community/polls"
-            className="text-muted-foreground hover:text-foreground transition-colors hover:text-primary"
-          >
-            Polls & Roadmap
-          </Link>
-          <Link
-            href="/leaderboards"
-            className="text-muted-foreground hover:text-foreground transition-colors hover:text-primary"
-          >
-            Ladders & Rank
-          </Link>
-          <Link
-            href="/support"
-            className="text-muted-foreground hover:text-foreground transition-colors hover:text-primary"
-          >
-            Support
-          </Link>
-          <a
-            href="#fair-play"
-            className="text-muted-foreground hover:text-foreground transition-colors hover:text-primary"
-          >
-            Fair Play
-          </a>
-        </nav>
+          {/* Center: Desktop Public Marketing Navigation Links */}
+          <nav className="hidden md:flex items-center gap-6 text-xs font-bold tracking-wider uppercase">
+            <a
+              href="#how-it-works"
+              className="text-muted-foreground hover:text-foreground transition-colors hover:text-primary"
+            >
+              How It Works
+            </a>
+            <a
+              href="#squads"
+              className="text-muted-foreground hover:text-foreground transition-colors hover:text-primary"
+            >
+              Squads & Teams
+            </a>
+            <a
+              href="#arenas"
+              className="text-muted-foreground hover:text-foreground transition-colors hover:text-primary"
+            >
+              Supported Arenas
+            </a>
+            <Link
+              href="/tournaments"
+              className="text-muted-foreground hover:text-foreground transition-colors hover:text-primary"
+            >
+              Tournaments
+            </Link>
+            <Link
+              href="/community/polls"
+              className="text-muted-foreground hover:text-foreground transition-colors hover:text-primary"
+            >
+              Polls
+            </Link>
+            <Link
+              href="/support"
+              className="text-muted-foreground hover:text-foreground transition-colors hover:text-primary"
+            >
+              Support
+            </Link>
+          </nav>
 
-        {/* Right: Auth / Arena Entry CTAs */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          {!me ? (
-            <>
-              <Link href="/login" className="hidden sm:inline-flex">
-                <Button variant="ghost" size="sm" className="font-bold text-xs uppercase tracking-wider">
-                  Sign In
-                </Button>
-              </Link>
-              <Link href="/signup">
-                <Button
-                  size="sm"
-                  className="font-bold text-[11px] sm:text-xs uppercase tracking-wider bg-primary hover:bg-primary/90 text-primary-foreground shadow-md shadow-primary/20 h-8 sm:h-9 px-3 sm:px-4"
+          {/* Right: Auth / Arena Entry CTAs */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            {!me ? (
+              <>
+                <Link href="/login" className="hidden sm:inline-flex">
+                  <Button variant="ghost" size="sm" className="font-bold text-xs uppercase tracking-wider">
+                    Sign In
+                  </Button>
+                </Link>
+                <Link href="/signup">
+                  <Button
+                    size="sm"
+                    className="font-bold text-xs uppercase tracking-wider bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm h-9 px-4"
+                  >
+                    Play For Free
+                  </Button>
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link href="/dashboard">
+                  <Button size="sm" className="font-bold text-xs uppercase tracking-wider gap-1.5 h-9">
+                    <LayoutDashboard className="w-3.5 h-3.5" />
+                    <span>Dashboard</span>
+                  </Button>
+                </Link>
+                <Link
+                  href={`/profile/${me.username || 'me'}`}
+                  className="flex items-center gap-2 pl-1 pr-2.5 py-1 bg-card hover:bg-muted border border-border hover:border-primary/50 rounded-lg transition"
+                  title="View Player Profile"
                 >
-                  Play For Free
-                </Button>
-              </Link>
-            </>
-          ) : (
-            <>
-              <Link href="/dashboard">
+                  <Avatar size="sm" className="w-7 h-7 text-xs bg-primary text-primary-foreground">
+                    <AvatarFallback>{avatarLetter}</AvatarFallback>
+                  </Avatar>
+                  <span className="hidden sm:inline text-xs font-bold text-foreground">
+                    @{me.username}
+                  </span>
+                </Link>
                 <Button
+                  variant="ghost"
                   size="sm"
-                  className="font-bold text-xs uppercase tracking-wider bg-primary hover:bg-primary/90 text-primary-foreground shadow-md shadow-primary/20 gap-1.5"
+                  onClick={handleSignOut}
+                  className="font-bold text-xs uppercase tracking-wider text-muted-foreground hover:text-destructive gap-1"
+                  title="Log Out of Arena"
                 >
-                  <LayoutDashboard className="w-3.5 h-3.5" />
-                  <span>Dashboard</span>
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Sign Out</span>
                 </Button>
-              </Link>
-              <Link
-                href={`/profile/${me.username || 'me'}`}
-                className="flex items-center gap-2 pl-1 pr-2.5 py-1 bg-card hover:bg-muted border border-border hover:border-primary/50 rounded-lg transition"
-                title="View Player Profile"
-              >
-                <Avatar size="sm" className="w-7 h-7 text-xs bg-primary text-primary-foreground">
-                  <AvatarFallback>{avatarLetter}</AvatarFallback>
-                </Avatar>
-                <span className="hidden sm:inline text-xs font-bold text-foreground">
-                  @{me.username}
-                </span>
-              </Link>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleSignOut}
-                className="font-bold text-xs uppercase tracking-wider text-muted-foreground hover:text-destructive gap-1"
-                title="Log Out of Arena"
-              >
-                <LogOut className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Sign Out</span>
-              </Button>
-            </>
-          )}
+              </>
+            )}
 
-          {/* Mobile Navigation Drawer Trigger */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setMobileMenuOpen(true)}
-            className="md:hidden text-muted-foreground hover:text-foreground"
-            aria-label="Toggle navigation drawer"
-          >
-            <Menu className="w-5 h-5" />
-          </Button>
+            {/* Mobile Navigation Drawer Trigger */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setMobileMenuOpen(true)}
+              className="md:hidden text-muted-foreground hover:text-foreground"
+              aria-label="Toggle navigation drawer"
+            >
+              <Menu className="w-5 h-5" />
+            </Button>
+          </div>
         </div>
 
         {/* Mobile Landing Sheet Drawer */}
@@ -425,7 +418,7 @@ export function TopHeader() {
   }
 
   return (
-    <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-border h-14 sm:h-16 flex items-center justify-between px-3 sm:px-6 gap-2 sm:gap-4 max-w-full">
+    <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-border h-14 sm:h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8 gap-3 sm:gap-4 w-full">
       {/* 1. Left Zone: Mobile Drawer Trigger + Active Arena Pill + Context Breadcrumb */}
       <div className="flex items-center gap-2 sm:gap-3 min-w-0">
         {/* Mobile menu toggle */}

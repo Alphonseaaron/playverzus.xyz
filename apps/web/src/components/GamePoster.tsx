@@ -37,8 +37,6 @@ export function GamePoster({
     mini: 'w-6 h-8 rounded',
   };
 
-  const gradientClass = game.gradient || 'from-[#7C3AED] via-stone-900 to-black';
-
   return (
     <div
       className={`relative overflow-hidden bg-secondary select-none flex-shrink-0 ${aspectClasses[aspect]} ${className}`}
@@ -52,18 +50,18 @@ export function GamePoster({
           className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
         />
       ) : (
-        /* Dynamic High-End SVG Fallback Poster */
+        /* Dynamic High-End Solid Fallback Poster */
         <div
-          className={`w-full h-full bg-gradient-to-br ${gradientClass} flex flex-col items-center justify-center p-2 text-center relative`}
+          className="w-full h-full bg-zinc-900 border border-zinc-800 flex flex-col items-center justify-center p-2 text-center relative"
         >
           {aspect === 'mini' || aspect === 'thumb' ? (
-            <span className="text-sm font-black font-mono text-white/90 uppercase tracking-tighter">
+            <span className="text-sm font-black font-mono text-foreground uppercase tracking-tighter">
               {game.shortName || game.displayName.slice(0, 3)}
             </span>
           ) : (
             <div className="flex flex-col items-center justify-center gap-1 z-10">
               <span className="text-2xl sm:text-3xl opacity-80">{game.icon || '🎮'}</span>
-              <span className="font-black text-xs sm:text-sm text-white uppercase tracking-wider drop-shadow-md">
+              <span className="font-black text-xs sm:text-sm text-foreground uppercase tracking-wider">
                 {game.shortName || game.displayName}
               </span>
               <span className="text-[9px] font-mono text-primary uppercase tracking-wider font-bold">
@@ -71,13 +69,13 @@ export function GamePoster({
               </span>
             </div>
           )}
-          <div className="absolute inset-0 bg-black/20" />
+          <div className="absolute inset-0 bg-black/30" />
         </div>
       )}
 
-      {/* Subtle Vignette Gradient Overlay */}
+      {/* Solid subtle shade overlay */}
       {showOverlay && (
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-background/40 pointer-events-none" />
       )}
     </div>
   );

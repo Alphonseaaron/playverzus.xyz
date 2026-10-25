@@ -173,14 +173,13 @@ function DashboardContent() {
     <div className="space-y-8 max-w-7xl mx-auto w-full min-w-0 pb-16">
       {/* 1. MASTER INTRO CARD: Identity + Integrated Competitive Ledger */}
       <Card className="relative overflow-hidden border border-border bg-card shadow-xl">
-        <div className="h-44 sm:h-52 bg-gradient-to-r from-stone-950 via-stone-900 to-primary/20 w-full relative overflow-hidden">
+        <div className="h-44 sm:h-52 bg-zinc-950 border-b border-border w-full relative overflow-hidden">
           {catalogGame.bannerUrl && (
             <div
-              className="absolute inset-0 bg-cover bg-center opacity-20 filter blur-xs"
+              className="absolute inset-0 bg-cover bg-center opacity-25"
               style={{ backgroundImage: `url(${catalogGame.bannerUrl})` }}
             />
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-card via-card/60 to-transparent" />
           <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
             <Badge variant="copper" className="font-mono text-[10px]">
               OFFICIAL ARENA: {catalogGame.shortName}
@@ -195,7 +194,7 @@ function DashboardContent() {
             <div className="flex flex-col sm:flex-row sm:items-end gap-5 min-w-0">
               <div className="relative flex-shrink-0">
                 <Avatar className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl border-4 border-card bg-primary text-primary-foreground text-3xl font-extrabold shadow-2xl">
-                  <AvatarFallback className="rounded-2xl bg-gradient-to-tr from-stone-900 to-primary">
+                  <AvatarFallback className="rounded-2xl bg-zinc-900 text-primary border border-zinc-800">
                     {username.slice(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
