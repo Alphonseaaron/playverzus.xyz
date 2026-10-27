@@ -10,15 +10,34 @@ services:
         value: production
       - key: PORT
         value: 3001
+      - key: WEB_URL
+        value: https://playverzus.xyz
+      - key: ALLOWED_ORIGINS
+        value: https://playverzus.xyz,https://www.playverzus.xyz
+      - key: WALLET_MODE
+        value: demo
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_ANON_KEY
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
-      - key: DATABASE_URL
+      - key: REDIS_URL
         sync: false
-      - key: WALLET_MODE
-        value: demo
-      - key: CORS_ORIGIN
-        value: https://playverzus.xyz
+      - key: UPSTASH_REDIS_REST_URL
+        sync: false
+      - key: UPSTASH_REDIS_REST_TOKEN
+        sync: false
+      - key: CROSSMINT_SERVER_API_KEY
+        sync: false
+      - key: NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY
+        sync: false
+      - key: CROSSMINT_WEBHOOK_SECRET
+        sync: false
+      - key: VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false
+      - key: VAPID_SUBJECT
+        value: mailto:support@playverzus.xyz
+
