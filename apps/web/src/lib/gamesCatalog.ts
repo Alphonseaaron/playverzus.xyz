@@ -12,6 +12,26 @@ export interface CatalogGame extends GameProfile {
 
 export const OFFICIAL_GAMES: CatalogGame[] = [
   {
+    id: 'chess',
+    displayName: 'Chess',
+    shortName: 'CHESS',
+    icon: '♟️',
+    posterUrl: 'https://images.unsplash.com/photo-1529699211952-734e80c4d42b?auto=format&fit=crop&w=600&q=80',
+    bannerUrl: 'https://images.unsplash.com/photo-1529699211952-734e80c4d42b?auto=format&fit=crop&w=1200&q=80',
+    tagline: '1v1 Classical & Blitz Strategy Duels',
+    gradient: 'from-amber-800 via-stone-900 to-black',
+    platform: 'PC',
+    gameType: 'BINARY_RESULT',
+    approved: true,
+    isOfficial: true,
+    endKeywords: ['CHECKMATE', 'RESIGNATION', 'VICTORY', 'DEFEAT', 'DRAW', 'STALEMATE'],
+    regexPattern: null,
+    defaultRoi: { x: 0.3, y: 0.3, w: 0.4, h: 0.2 },
+    roi: { x: 0.3, y: 0.3, w: 0.4, h: 0.2 },
+    constraints: {},
+  },
+
+  {
     id: 'cs2',
     displayName: 'Counter-Strike 2',
     shortName: 'CS2',

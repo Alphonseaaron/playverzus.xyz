@@ -22,6 +22,7 @@ export const OFFICIAL_SLUG_TO_UUID: Record<string, string> = {
   tekken8: '00000000-0000-0000-0000-000000000008',
   'tekken-8': '00000000-0000-0000-0000-000000000008',
   tekken: '00000000-0000-0000-0000-000000000008',
+  chess: '00000000-0000-0000-0000-000000000009',
   subway: '11111111-1111-1111-1111-111111111111',
   'subway-surfers': '11111111-1111-1111-1111-111111111111',
   'high-score': '11111111-1111-1111-1111-111111111111',
@@ -140,6 +141,18 @@ export const OFFICIAL_SEED_BY_UUID: Record<
     approved: true,
     is_official: true,
   },
+  '00000000-0000-0000-0000-000000000009': {
+    id: '00000000-0000-0000-0000-000000000009',
+    display_name: 'Chess',
+    game_type: 'BINARY_RESULT',
+    platform: 'PC',
+    roi: { x: 0.3, y: 0.3, w: 0.4, h: 0.2 },
+    constraints: {},
+    end_keywords: ['CHECKMATE', 'RESIGNATION', 'VICTORY', 'DEFEAT', 'DRAW', 'STALEMATE'],
+    regex_pattern: null,
+    approved: true,
+    is_official: true,
+  },
   '11111111-1111-1111-1111-111111111111': {
     id: '11111111-1111-1111-1111-111111111111',
     display_name: 'Subway Surfers',
@@ -192,6 +205,13 @@ export async function resolveAndEnsureGameProfileId(
       // Non-fatal if already present
     }
     return targetUuid;
+  }
+
+  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!UUID_REGEX.test(targetUuid)) {
+    throw new BadRequestException(
+      `Unsupported game identifier "${idOrSlug}". Must be a valid official game slug (e.g., cs2, rl, val, eafc, cod, chess, etc.) or a registered game UUID.`,
+    );
   }
 
   return targetUuid;
