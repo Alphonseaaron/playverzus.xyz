@@ -52,8 +52,8 @@ const STORY_SCENES: StoryScene[] = [
   {
     id: 'stage-1',
     step: 'STAGE 01',
-    title: 'The Challenge & Smart Escrow',
-    tagline: '1v1 Duel or Squad Matchmaking with Crossmint Smart Custody',
+    title: 'The Challenge & Protected Escrow',
+    tagline: '1v1 Duels & Squad Showdowns with Instant Prize Escrow',
     character: {
       name: 'Kaelen "Striker" Voss',
       codename: 'STRIKER-01',
@@ -64,21 +64,21 @@ const STORY_SCENES: StoryScene[] = [
       accentColor: 'text-primary',
     },
     summary:
-      'Players select their official game arena, choose an entry tier ($5, $10, $25, or $50 USDC), and lock in. Crossmint smart custody locks the entry fees into a tamper-proof escrow vault before the match begins.',
+      'Players select their official game arena, choose an entry tier ($5, $10, $25, or $50), and lock in. Prize pools are protected in secure escrow before kickoff so winners get paid instantly without hassle.',
     details: [
-      'Zero dispute escrow: Entry fees are cryptographically secured on-chain.',
+      'Protected Pools: Prize funds are guaranteed before the match begins.',
       'Instant Match Code: Private game lobby code generated automatically.',
       'Anti-Fraud Verification: Both players must have registered game gamertags.',
     ],
     hud: {
       type: 'escrow',
-      title: 'Smart Custody Escrow Vault',
+      title: 'Protected Prize Escrow',
       badge: 'LOCKED // SECURE',
       stats: [
         { label: 'Entry Fee', value: '$25.00 USDC', color: 'text-foreground' },
         { label: 'Total Prize Pool', value: '$50.00 USDC', color: 'text-emerald-400' },
         { label: 'Escrow Status', value: '100% FUNDED', color: 'text-primary' },
-        { label: 'Network', value: 'Base Smart Contract', color: 'text-muted-foreground' },
+        { label: 'Settlement', value: 'Instant Escrow', color: 'text-muted-foreground' },
       ],
     },
   },
@@ -86,7 +86,7 @@ const STORY_SCENES: StoryScene[] = [
     id: 'stage-2',
     step: 'STAGE 02',
     title: 'Play Natively in Your Game',
-    tagline: 'No Intrusive Kernel Spyware. Pure Native Gaming.',
+    tagline: 'No Invasive Kernel Spyware. Pure Native Gaming.',
     character: {
       name: 'Major Jax Bennett',
       codename: 'VANGUARD-09',
@@ -97,7 +97,7 @@ const STORY_SCENES: StoryScene[] = [
       accentColor: 'text-indigo-400',
     },
     summary:
-      'Compete on your normal PC or Console inside Counter-Strike 2, Warzone, FC 25, Fortnite, or Apex Legends. There are no kernel-level monitoring drivers or invasive bloatware required.',
+      'Compete on your normal PC or Console inside Counter-Strike 2, Warzone, FC 25, Fortnite, or Rocket League. There are no kernel-level monitoring drivers or invasive bloatware required.',
     details: [
       'Native Game Client: Launch your normal game on Steam, Xbox, PlayStation, or Battle.net.',
       'Private Server / Room Code: Connect directly using the platform-issued lobby code.',
@@ -118,41 +118,41 @@ const STORY_SCENES: StoryScene[] = [
   {
     id: 'stage-3',
     step: 'STAGE 03',
-    title: 'Automated AI Score Verification',
-    tagline: 'Instant Computer-Vision OCR Result Processing in < 8 Seconds',
+    title: 'Instant Match Results',
+    tagline: 'Automated Winner Detection & Anti-Cheat in Seconds',
     character: {
-      name: 'A.R.I.A. Protocol',
-      codename: 'CYBER-ARBITER',
-      role: 'Autonomous Vision Verification Engine',
-      specialty: 'Sub-Second Score Parsing & Gamertag Auditing',
+      name: 'A.R.I.A. Arbiter',
+      codename: 'ARBITER-01',
+      role: 'Automated Match Referee & Anti-Cheat',
+      specialty: 'Real-Time Result Resolution & Fair Play',
       avatarBg: 'bg-emerald-600',
       avatarLetter: 'A',
       accentColor: 'text-emerald-400',
     },
     summary:
-      'As soon as the match concludes, our computer-vision engine scans the official victory/defeat scoreboard screen. It parses player gamertags, round scores, kills, and match timestamps with sub-pixel precision.',
+      'As soon as the match concludes, our automated system verifies the final score and victory screen in seconds. Zero admin wait times, zero disputed reports—just fair, fast results.',
     details: [
-      'Zero Referee Delays: Results are verified and submitted in under 8 seconds.',
-      'Cryptographic Frame Hash: Prevents recycled or duplicate screenshot uploads.',
-      'Gamertag Match: Validates that the winning player is the authentic account holder.',
+      'Zero Wait Times: Results are verified and confirmed in seconds.',
+      'Anti-Cheat Protection: Automated checks prevent duplicate or fake reports.',
+      'Gamertag Matching: Guarantees that the rightful player receives the victory.',
     ],
     hud: {
       type: 'ocr',
-      title: 'Computer Vision OCR Scanner',
-      badge: 'VERIFIED // 99.98% CONFIDENCE',
+      title: 'Automated Match Arbiter',
+      badge: 'VERIFIED // INSTANT RESULT',
       stats: [
         { label: 'Final Score', value: '16 - 11 // VICTORY', color: 'text-emerald-400' },
-        { label: 'Verified Gamertag', value: 'Striker_X (MATCHED)', color: 'text-primary' },
-        { label: 'OCR Extraction Time', value: '6.4 Seconds', color: 'text-muted-foreground' },
-        { label: 'Frame Signature', value: 'sha256:7f4a...9c2d', color: 'text-muted-foreground' },
+        { label: 'Verified Player', value: 'Striker_X (CONFIRMED)', color: 'text-primary' },
+        { label: 'Result Resolution', value: 'Instant (< 2s)', color: 'text-muted-foreground' },
+        { label: 'Match Integrity', value: 'Passed // Fair Play', color: 'text-muted-foreground' },
       ],
     },
   },
   {
     id: 'stage-4',
     step: 'STAGE 04',
-    title: 'Instant USDC Prize Payout',
-    tagline: 'Direct Wallet Settlement with 1-Click Crypto or Bank Withdrawals',
+    title: 'Instant Prize Payout',
+    tagline: 'Direct Wallet Settlement with 1-Click Cashouts',
     character: {
       name: 'Elena "Valkyrie" Rostova',
       codename: 'CHAMPION-07',
@@ -163,21 +163,21 @@ const STORY_SCENES: StoryScene[] = [
       accentColor: 'text-purple-400',
     },
     summary:
-      'Upon score verification, the Crossmint smart custody vault immediately unlocks and distributes 100% of the prize pool to the victor. Earnings are credited directly to your player wallet in liquid USDC.',
+      'The moment the final round ends, the full prize pool is credited directly into your player wallet. No waiting periods, no manual referee reviews—withdraw straight to your wallet or bank whenever you want.',
     details: [
       'Instant Crediting: Funds appear in your account balance the exact moment the match ends.',
-      'Zero Hold Periods: No 7-day waiting periods or manual admin approval queues.',
-      'Flexible Off-Ramp: Withdraw on-chain to any personal crypto wallet or wire to your bank.',
+      'Zero Hold Periods: No multi-day delays or manual approval bottlenecks.',
+      'Flexible Cashout: Withdraw directly to your personal crypto wallet or bank account.',
     ],
     hud: {
       type: 'payout',
-      title: 'Crossmint Smart Vault Settlement',
+      title: 'Instant Prize Payout',
       badge: 'PAYOUT COMPLETED',
       stats: [
         { label: 'Prize Disbursed', value: '+$50.00 USDC', color: 'text-emerald-400 font-black' },
         { label: 'Settlement Speed', value: 'Instant (< 2s)', color: 'text-primary' },
-        { label: 'Crossmint Wallet', value: 'player_0x71...88b2', color: 'text-foreground' },
-        { label: 'Block Explorer', value: 'BaseScan Confirmed', color: 'text-muted-foreground' },
+        { label: 'Player Account', value: 'Active & Funded', color: 'text-foreground' },
+        { label: 'Cashout Status', value: 'Available Immediately', color: 'text-muted-foreground' },
       ],
     },
   },
@@ -227,7 +227,7 @@ export function ParallaxStoryScenes() {
           How It Works
         </h2>
         <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-          From duel challenge to instant prize settlement. Explore the 4 automated stages powered by Crossmint Smart Custody and Computer Vision OCR.
+          From duel challenge to instant prize settlement. Level up your game across 4 seamless stages with automated matchmaking, live duels, and instant rewards.
         </p>
       </div>
 
@@ -420,14 +420,14 @@ export function ParallaxStoryScenes() {
               {currentScene.hud.type === 'ocr' && (
                 <div className="space-y-2">
                   <div className="flex justify-between text-xs font-mono">
-                    <span className="text-muted-foreground">OCR Scanning Confidence:</span>
-                    <span className="text-emerald-400 font-bold">99.98% MATCH</span>
+                    <span className="text-muted-foreground">Result Verification:</span>
+                    <span className="text-emerald-400 font-bold">100% CONFIRMED</span>
                   </div>
                   <div className="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
-                    <div className="w-[99%] h-full bg-emerald-500" />
+                    <div className="w-full h-full bg-emerald-500" />
                   </div>
                   <span className="text-[10px] font-mono text-muted-foreground block text-center">
-                    Victory Frame Verified · Anti-Fraud Hash Passed
+                    Victory Confirmed · Fair Play Guarantee
                   </span>
                 </div>
               )}

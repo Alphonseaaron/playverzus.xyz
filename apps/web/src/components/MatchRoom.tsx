@@ -642,11 +642,11 @@ export function MatchRoom({
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
                 <h3 className="text-lg font-bold text-foreground tracking-tight">
-                  Pre-Match Permissions & Optical Game Feed
+                  Pre-Match Permissions & Screen Verification
                 </h3>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Required for background victory detection and instant winner verification in {profile.displayName}.
+                Required for automated victory detection and instant winner verification in {profile.displayName}.
               </p>
             </div>
             <Button
@@ -664,7 +664,7 @@ export function MatchRoom({
             <div className="p-4 rounded-xl bg-secondary border border-border space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-foreground">
-                  1. {profile.platform === 'CONSOLE' ? 'Console Stream / Optical Feed' : 'Optical Screen Feed'}
+                  1. {profile.platform === 'CONSOLE' ? 'Console Stream Feed' : 'Live Game Screen'}
                 </span>
                 <Badge variant={capture.status === 'CAPTURING' ? 'success' : 'outline'}>
                   {capture.status === 'CAPTURING' ? 'Active ✓' : 'Required'}
@@ -672,8 +672,8 @@ export function MatchRoom({
               </div>
               <p className="text-[11px] text-muted-foreground">
                 {profile.platform === 'CONSOLE'
-                  ? 'Link your PS5/Xbox broadcast stream (Twitch/YouTube) or optical camera feed for zero-manual AI scoring.'
-                  : 'Stream gameplay window to enable optical round detection and zero-screenshot scoring.'}
+                  ? 'Link your PS5/Xbox broadcast stream (Twitch/YouTube) or companion camera for instant auto-scoring.'
+                  : 'Select your game window for instant automatic round detection and scoring.'}
               </p>
               <Button
                 variant={capture.status === 'CAPTURING' ? 'secondary' : 'default'}
@@ -685,7 +685,7 @@ export function MatchRoom({
                 {capture.status === 'CAPTURING'
                   ? 'Live Verification Active ✓'
                   : profile.platform === 'CONSOLE'
-                  ? 'Start Optical / Companion Feed'
+                  ? 'Start Stream Feed'
                   : 'Select Game Window'}
               </Button>
 

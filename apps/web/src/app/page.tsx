@@ -205,7 +205,7 @@ function HomeContent() {
         {/* Eyebrow Pill */}
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-primary text-xs font-bold tracking-wider uppercase shadow-sm">
           <ShieldCheck className="w-4 h-4 text-primary" />
-          <span>VERIFIED COMPETITIVE ESPORTS // CROSSMINT SMART ESCROW</span>
+          <span>COMPETITIVE ESPORTS MATCHMAKING // INSTANT PRIZE PAYOUTS</span>
         </div>
 
         {/* Main Headline */}
@@ -218,7 +218,7 @@ function HomeContent() {
 
         {/* Subhead Description */}
         <p className="text-sm sm:text-lg text-muted-foreground max-w-2xl leading-relaxed">
-          The premier platform for automated 1v1 duels, clan squad battles, and verified tournaments. Automated computer-vision score verification eliminates manual disputes. Instant USDC payouts with regulated Crossmint smart custody.
+          The premier competitive platform for 1v1 duels, squad showdowns, and high-stakes tournaments. Play matches, climb the global leaderboards, and take home real cash prizes with automated match results.
         </p>
 
         {/* Primary Action Buttons */}
@@ -264,17 +264,17 @@ function HomeContent() {
 
           <Card className="p-4 sm:p-5 rounded-xl bg-card border-border shadow-sm flex flex-col items-center text-center">
             <span className="font-mono text-xl sm:text-2xl font-black text-primary">&lt; 8 Seconds</span>
-            <span className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider mt-1">Automated OCR Sync</span>
+            <span className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider mt-1">Instant Results</span>
           </Card>
 
           <Card className="p-4 sm:p-5 rounded-xl bg-card border-border shadow-sm flex flex-col items-center text-center">
-            <span className="font-mono text-xl sm:text-2xl font-black text-foreground">100% On-Chain</span>
-            <span className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider mt-1">Crossmint Escrow</span>
+            <span className="font-mono text-xl sm:text-2xl font-black text-foreground">Guaranteed</span>
+            <span className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider mt-1">Instant Payouts</span>
           </Card>
 
           <Card className="p-4 sm:p-5 rounded-xl bg-card border-border shadow-sm flex flex-col items-center text-center">
-            <span className="font-mono text-xl sm:text-2xl font-black text-purple-400">Zero Referees</span>
-            <span className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider mt-1">Direct Screen Vision</span>
+            <span className="font-mono text-xl sm:text-2xl font-black text-purple-400">Fair Play</span>
+            <span className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider mt-1">Automated Anti-Cheat</span>
           </Card>
         </div>
       </section>
@@ -353,8 +353,8 @@ function HomeContent() {
                     <span className="text-foreground font-semibold">1v1 & Squads</span>
                   </div>
                   <div className="p-2 rounded-lg bg-zinc-950 border border-zinc-800 text-muted-foreground">
-                    <span className="block text-[9px] uppercase font-bold text-zinc-500">OCR Arbiter</span>
-                    <span className="text-emerald-400 font-semibold">Active & Live</span>
+                    <span className="block text-[9px] uppercase font-bold text-zinc-500">Verification</span>
+                    <span className="text-emerald-400 font-semibold">Instant & Live</span>
                   </div>
                 </div>
               </div>
@@ -553,9 +553,9 @@ function HomeContent() {
             <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 text-primary flex items-center justify-center">
               <ShieldCheck className="w-5 h-5" />
             </div>
-            <h3 className="font-bold text-base text-foreground">Crossmint Smart Custody</h3>
+            <h3 className="font-bold text-base text-foreground">Guaranteed Prize Escrow</h3>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Match entries and tournament prize pools are secured in regulated smart custody vaults. Neither player can tamper with funds once locked.
+              Match prize pools are locked automatically before kickoff. Payouts release instantly to the winner as soon as the final round wraps.
             </p>
           </Card>
 
@@ -563,9 +563,9 @@ function HomeContent() {
             <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 text-emerald-400 flex items-center justify-center">
               <Zap className="w-5 h-5" />
             </div>
-            <h3 className="font-bold text-base text-foreground">Sub-Second OCR Verification</h3>
+            <h3 className="font-bold text-base text-foreground">Instant Match Verification</h3>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Victory and defeat frames are parsed with OCR neural networks. Cryptographic frame hashing blocks duplicate submissions.
+              Final match results are confirmed automatically in seconds with zero referee delays. No waiting around for your winnings.
             </p>
           </Card>
 
@@ -573,9 +573,9 @@ function HomeContent() {
             <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 text-purple-400 flex items-center justify-center">
               <Shield className="w-5 h-5" />
             </div>
-            <h3 className="font-bold text-base text-foreground">Gamertag Fraud Prevention</h3>
+            <h3 className="font-bold text-base text-foreground">Competitive Anti-Cheat & Fair Play</h3>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Scores are only accepted if the in-game scoreboard gamertag matches your verified PlayVerzus identity. Impersonation is strictly blocked.
+              Scores are tied directly to verified player gamertags and live match telemetry. Zero smurfing, zero impostors, 100% fair competition.
             </p>
           </Card>
         </div>

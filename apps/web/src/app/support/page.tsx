@@ -527,13 +527,13 @@ export default function SupportPage() {
                 <div className="space-y-1">
                   <h4 className="font-bold text-foreground">How fast are USDC withdrawals?</h4>
                   <p className="text-muted-foreground leading-relaxed">
-                    Withdrawals process directly on-chain through Crossmint. Once cleared, funds settle in seconds.
+                    Withdrawals process automatically to your preferred crypto wallet or bank account. Once confirmed, funds settle in seconds.
                   </p>
                 </div>
                 <div className="space-y-1">
                   <h4 className="font-bold text-foreground">How does score verification work?</h4>
                   <p className="text-muted-foreground leading-relaxed">
-                    Our AI autonomous OCR scans final victory frames directly. If both players agree, match prizes disburse instantly.
+                    Our automated match system confirms final match results in real time. Once verified, prizes disburse instantly to the winner.
                   </p>
                 </div>
                 <div className="space-y-1">
