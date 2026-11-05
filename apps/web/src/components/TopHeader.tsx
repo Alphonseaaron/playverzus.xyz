@@ -220,6 +220,11 @@ export function TopHeader() {
                 priority
               />
             </Link>
+
+            <div className="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-[10px] font-mono font-bold text-emerald-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Powered by Crossmint</span>
+            </div>
           </div>
 
           {/* Center: Desktop Public Marketing Navigation Links */}

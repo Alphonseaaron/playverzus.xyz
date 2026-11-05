@@ -580,7 +580,7 @@ export default function PublicProfilePage() {
               </div>
               <h4 className="text-sm font-bold text-foreground">Anti-Cheat Certified</h4>
               <p className="text-xs text-muted-foreground">
-                Matches are continuously monitored with zero flagged telemetry or dispute penalties.
+                Matches are certified by the Visual Verification Engine™ with zero integrity flags or dispute penalties.
               </p>
             </Card>
 
