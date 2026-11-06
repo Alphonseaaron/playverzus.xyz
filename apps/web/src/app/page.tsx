@@ -67,7 +67,7 @@ function HomeContent() {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const { activeGame, setActiveGame } = useGameStore();
-  const [selectedArenaTab, setSelectedArenaTab] = useState<'all' | 'pc' | 'console'>('all');
+  const [selectedArenaTab, setSelectedArenaTab] = useState<'all' | 'pc' | 'console' | 'mobile'>('all');
 
   const viewParam = searchParams.get('view');
   const wantsLanding = viewParam === 'landing' || viewParam === 'public';
@@ -134,6 +134,7 @@ function HomeContent() {
   const filteredGames = OFFICIAL_GAMES.filter((g) => {
     if (selectedArenaTab === 'pc') return g.platform === 'PC';
     if (selectedArenaTab === 'console') return g.platform === 'CONSOLE';
+    if (selectedArenaTab === 'mobile') return g.platform === 'MOBILE';
     return true;
   });
 
@@ -305,13 +306,13 @@ function HomeContent() {
           </div>
 
           {/* Filter Tabs */}
-          <div className="flex items-center gap-1.5 p-1 bg-zinc-900 rounded-xl border border-zinc-800 self-start sm:self-auto">
-            {(['all', 'pc', 'console'] as const).map((tab) => (
+          <div className="flex items-center gap-1.5 p-1 bg-zinc-900 rounded-xl border border-zinc-800 self-start sm:self-auto overflow-x-auto">
+            {(['all', 'pc', 'console', 'mobile'] as const).map((tab) => (
               <button
                 key={tab}
                 type="button"
                 onClick={() => setSelectedArenaTab(tab)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition whitespace-nowrap ${
                   selectedArenaTab === tab
                     ? 'bg-primary text-primary-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground'
@@ -617,9 +618,9 @@ function HomeContent() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {[
-            { title: 'Add Marvel Rivals 6v6 Arena', votes: 412, status: 'IN PROGRESS', tag: 'NEW ARENA' },
-            { title: 'Add 4v4 Clan Squad Brackets', votes: 328, status: 'HIGH PRIORITY', tag: 'TOURNAMENT' },
-            { title: 'Instant Telegram Match Notifications', votes: 219, status: 'UNDER REVIEW', tag: 'FEATURE' },
+            { title: 'Marvel Rivals 6v6 Arena', votes: 412, status: 'SHIPPED // LIVE', tag: 'OFFICIAL ARENA' },
+            { title: 'Add 4v4 Clan Squad Brackets', votes: 328, status: 'IN PROGRESS', tag: 'TOURNAMENT' },
+            { title: 'Instant Telegram & Discord Match Alerts', votes: 219, status: 'HIGH PRIORITY', tag: 'FEATURE' },
           ].map((poll, pIdx) => (
             <Card key={pIdx} className="bg-card border border-border p-5 rounded-2xl space-y-4 shadow-sm hover:border-zinc-700 transition">
               <div className="flex items-center justify-between gap-2">

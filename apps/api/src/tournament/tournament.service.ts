@@ -5,7 +5,7 @@ import { resolveAndEnsureGameProfileId } from '../game-profile/game-profile.serv
 
 export const TOP_5_BLITZ_GAMES = [
   { id: '00000000-0000-0000-0000-000000000001', slug: 'cs2', name: 'Counter-Strike 2' },
-  { id: '00000000-0000-0000-0000-000000000002', slug: 'eafc', name: 'EA Sports FC 25' },
+  { id: '00000000-0000-0000-0000-000000000002', slug: 'eafc', name: 'EA Sports FC 27' },
   { id: '00000000-0000-0000-0000-000000000003', slug: 'rl', name: 'Rocket League' },
   { id: '00000000-0000-0000-0000-000000000004', slug: 'val', name: 'Valorant' },
   { id: '00000000-0000-0000-0000-000000000007', slug: 'fortnite', name: 'Fortnite' },
