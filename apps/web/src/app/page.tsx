@@ -7,10 +7,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Rocket,
-  LogIn,
   LogOut,
   LayoutDashboard,
-  Globe,
   Gamepad2,
   Zap,
   Coins,
@@ -19,35 +17,24 @@ import {
   ShieldCheck,
   CheckCircle2,
   ArrowRight,
-  Flame,
-  TrendingUp,
-  ChevronRight,
-  Plus,
-  Play,
-  Award,
-  Users,
   Shield,
-  Clock,
-  Sparkles,
-  Check,
-  Vote,
-  HelpCircle,
-  Lock,
   Scan,
+  Vote,
+  Lock,
   ExternalLink,
+  ChevronRight,
+  Users,
 } from 'lucide-react';
 import { useGameStore } from '../lib/gameStore';
 import { EloBadge } from '../components/EloBadge';
 import { CountryFlag } from '../components/CountryFlag';
 import { GamePoster } from '../components/GamePoster';
-import { GameDropdown } from '../components/GameDropdown';
 import { apiClient } from '../lib/api';
 import { getSupabaseClient } from '../lib/supabase';
-import { formatUSDC } from '../lib/currency';
-import { OFFICIAL_GAMES, getGameById, type CatalogGame } from '../lib/gamesCatalog';
+import { OFFICIAL_GAMES, type CatalogGame } from '../lib/gamesCatalog';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
-import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '../components/ui/card';
+import { Card } from '../components/ui/card';
 import { ParallaxStoryScenes } from '../components/ParallaxStoryScenes';
 import { SquadShowcase } from '../components/SquadShowcase';
 import { CrossmintLogo } from '../components/CrossmintLogo';
@@ -203,12 +190,12 @@ function HomeContent() {
         </div>
       )}
 
-      {/* 2. HERO SECTION (INSTITUTIONAL GRADE, SERIOUS TECH PLATFORM) */}
+      {/* 2. HERO SECTION (FACEIT AESTHETIC, HIGH ENERGY ESPORTS) */}
       <section className="text-center flex flex-col items-center gap-6 sm:gap-8 pt-4 sm:pt-8">
-        {/* Eyebrow Pill */}
+        {/* Eyebrow Badge */}
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-primary text-xs font-bold tracking-wider uppercase shadow-sm">
           <ShieldCheck className="w-4 h-4 text-primary" />
-          <span>INSTITUTIONAL INFRASTRUCTURE // SKILL-BASED GAMING</span>
+          <span>COMPETITIVE ESPORTS INFRASTRUCTURE</span>
         </div>
 
         {/* Main Headline */}
@@ -219,9 +206,9 @@ function HomeContent() {
           </span>
         </h1>
 
-        {/* Sub-headline: Automation Front & Center */}
+        {/* Sub-headline: Clear & Gamer-Focused */}
         <p className="text-base sm:text-xl text-muted-foreground max-w-2xl leading-relaxed font-medium">
-          <strong className="text-foreground font-black">Play. Verify. Get Paid.</strong> It’s that simple. Our Visual Verification Engine™ automates the entire lifecycle from entry to instant USDC settlement.
+          <strong className="text-foreground font-black">Play. Verify. Get Paid.</strong> It’s that simple. Compete across PC, Console, and Mobile with automated match verification and instant USDC settlements.
         </p>
 
         {/* Trust Bar with Visual Crossmint Logo */}
@@ -252,10 +239,10 @@ function HomeContent() {
                   <span>Start Competing Free</span>
                 </Button>
               </Link>
-              <Link href="/tournaments" className="w-full sm:w-auto">
+              <Link href="#arenas" className="w-full sm:w-auto">
                 <Button variant="secondary" size="lg" className="w-full sm:w-auto font-bold text-sm uppercase tracking-wider px-6 h-12 gap-2 bg-card hover:bg-zinc-800 border-border">
-                  <Trophy className="w-4 h-4 text-primary" />
-                  <span>View Live Tournaments</span>
+                  <Gamepad2 className="w-4 h-4 text-primary" />
+                  <span>Explore Arenas</span>
                 </Button>
               </Link>
             </>
@@ -277,7 +264,7 @@ function HomeContent() {
           )}
         </div>
 
-        {/* Live Proof Metrics Strip */}
+        {/* Live Proof Metrics Strip (FACEIT Live Stats Vibe) */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 w-full pt-8 sm:pt-12 border-t border-border">
           <Card className="p-4 sm:p-5 rounded-xl bg-card border-border shadow-sm flex flex-col items-center text-center">
             <span className="font-mono text-xl sm:text-2xl font-black text-emerald-400">Crossmint</span>
@@ -301,80 +288,8 @@ function HomeContent() {
         </div>
       </section>
 
-      {/* 3. "HOW IT WORKS" (4-STEP AUTOMATED COMPETITIVE LIFECYCLE) */}
-      <ParallaxStoryScenes />
-
-      {/* 4. "WHY PLAYVERZUS?" SECTION (THE TECH MOAT) */}
-      <section className="space-y-6 sm:space-y-8">
-        <div className="text-center max-w-3xl mx-auto space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-primary text-xs font-bold tracking-wider uppercase">
-            <Zap className="w-3.5 h-3.5" />
-            <span>THE COMPETITIVE MOAT</span>
-          </div>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black uppercase tracking-tight text-foreground">
-            Built for the Future of Esports
-          </h2>
-          <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-            Most platforms are limited by publisher APIs. We are not.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
-          <Card className="bg-card border border-border p-6 rounded-2xl space-y-3 shadow-sm hover:border-zinc-700 transition">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 text-primary flex items-center justify-center font-bold text-lg">
-                🚀
-              </div>
-              <h3 className="font-bold text-lg text-foreground">Platform Agnostic</h3>
-            </div>
-            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-              We don’t depend on restrictive developer APIs. Our engine works across PC, Console, and Mobile, unlocking markets that traditional platforms ignore.
-            </p>
-          </Card>
-
-          <Card className="bg-card border border-border p-6 rounded-2xl space-y-3 shadow-sm hover:border-zinc-700 transition">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 text-emerald-400 flex items-center justify-center font-bold text-lg">
-                👁️
-              </div>
-              <h3 className="font-bold text-lg text-foreground">Proprietary Visual Intelligence</h3>
-            </div>
-            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-              While others wait for manual referee approval, our AI-driven verification layer parses game UIs in real-time. Zero human error. Zero tampering.
-            </p>
-          </Card>
-
-          <Card className="bg-card border border-border p-6 rounded-2xl space-y-3 shadow-sm hover:border-zinc-700 transition">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 text-purple-400 flex items-center justify-center font-bold text-lg">
-                🔒
-              </div>
-              <h3 className="font-bold text-lg text-foreground">Institutional-Grade Security</h3>
-            </div>
-            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-              Built on <strong className="text-foreground">Crossmint’s</strong> enterprise infrastructure. Your funds are secured by audited smart contracts, not third-party promises.
-            </p>
-          </Card>
-
-          <Card className="bg-card border border-border p-6 rounded-2xl space-y-3 shadow-sm hover:border-zinc-700 transition">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 text-yellow-400 flex items-center justify-center font-bold text-lg">
-                ⚡
-              </div>
-              <h3 className="font-bold text-lg text-foreground">Instant Liquidity</h3>
-            </div>
-            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-              We support the global standard of stablecoin settlements. Win in USDC, spend or hold, with zero banking delays or cross-border fees.
-            </p>
-          </Card>
-        </div>
-      </section>
-
-      {/* 5. COMPETITIVE SQUADS & CLAN ROSTERS SHOWCASE */}
-      <SquadShowcase />
-
-      {/* 6. SUPPORTED CURATED GAME ARENAS */}
-      <section id="arenas" className="space-y-6 sm:space-y-8">
+      {/* 3. CURATED ARENAS / GAME MATRIX (DIRECTLY BELOW HERO - FACEIT CORE LAYOUT) */}
+      <section id="arenas" className="space-y-6 sm:space-y-8 scroll-mt-20">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2 text-primary font-mono text-xs font-bold uppercase tracking-wider">
@@ -385,7 +300,7 @@ function HomeContent() {
               Select Your Arena
             </h2>
             <p className="text-xs sm:text-sm text-muted-foreground">
-              Battle in our curated competitive arenas with automated round tracking and instant score verification.
+              Battle in curated competitive arenas with automated round tracking and instant score verification.
             </p>
           </div>
 
@@ -408,52 +323,78 @@ function HomeContent() {
           </div>
         </div>
 
-        {/* Game Grid */}
+        {/* Visual Game Poster Grid (Rich FACEIT Game Cards) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
           {filteredGames.map((game) => (
             <Card
               key={game.id}
               className="bg-card border border-border hover:border-zinc-700 transition-all rounded-2xl overflow-hidden shadow-sm flex flex-col justify-between group"
             >
-              <div className="p-4 sm:p-5 space-y-4">
-                <div className="flex items-center justify-between gap-2">
-                  <div>
-                    <h3 className="font-bold text-base text-foreground group-hover:text-primary transition-colors">
-                      {game.displayName}
-                    </h3>
-                    <span className="font-mono text-[10px] text-muted-foreground block">
-                      {game.shortName} · {game.platform}
-                    </span>
+              <div>
+                {/* Poster Artwork Header */}
+                <div className="relative aspect-[16/9] w-full overflow-hidden bg-zinc-950">
+                  <GamePoster
+                    game={{
+                      displayName: game.displayName,
+                      shortName: game.shortName,
+                      posterUrl: game.posterUrl,
+                      bannerUrl: game.bannerUrl,
+                      icon: game.icon,
+                      platform: game.platform,
+                    }}
+                    aspect="banner"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent pointer-events-none" />
+
+                  {/* Top-Right Platform Badge */}
+                  <div className="absolute top-3 right-3">
+                    <Badge variant="secondary" className="font-mono text-[10px] bg-zinc-900/90 border-zinc-700 backdrop-blur-md">
+                      {game.platform}
+                    </Badge>
                   </div>
-                  <Badge variant="secondary" className="font-mono text-[10px] border-border">
-                    {game.platform}
-                  </Badge>
+
+                  {/* Bottom-Left Title Overlay */}
+                  <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
+                    <div>
+                      <h3 className="font-black text-lg text-foreground group-hover:text-primary transition-colors drop-shadow-md">
+                        {game.displayName}
+                      </h3>
+                      <span className="font-mono text-[10px] text-zinc-400 block font-semibold">
+                        {game.shortName} · Universal Match Ingest
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
-                <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
-                  {game.tagline}
-                </p>
+                {/* Card Body */}
+                <div className="p-4 sm:p-5 space-y-3">
+                  <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
+                    {game.tagline}
+                  </p>
 
-                {/* Match Features Pill Strip */}
-                <div className="grid grid-cols-2 gap-2 pt-1 font-mono text-[10px]">
-                  <div className="p-2 rounded-lg bg-zinc-950 border border-zinc-800 text-muted-foreground">
-                    <span className="block text-[9px] uppercase font-bold text-zinc-500">Mode</span>
-                    <span className="text-foreground font-semibold">1v1 & Squads</span>
-                  </div>
-                  <div className="p-2 rounded-lg bg-zinc-950 border border-zinc-800 text-muted-foreground">
-                    <span className="block text-[9px] uppercase font-bold text-zinc-500">Verification</span>
-                    <span className="text-emerald-400 font-semibold">Visual Engine™</span>
+                  {/* Match Features Pill Strip */}
+                  <div className="grid grid-cols-2 gap-2 pt-1 font-mono text-[10px]">
+                    <div className="p-2 rounded-lg bg-zinc-950 border border-zinc-800 text-muted-foreground">
+                      <span className="block text-[9px] uppercase font-bold text-zinc-500">Mode</span>
+                      <span className="text-foreground font-semibold">1v1 & Squads</span>
+                    </div>
+                    <div className="p-2 rounded-lg bg-zinc-950 border border-zinc-800 text-muted-foreground">
+                      <span className="block text-[9px] uppercase font-bold text-zinc-500">Verification</span>
+                      <span className="text-emerald-400 font-semibold">Visual Engine™</span>
+                    </div>
                   </div>
                 </div>
               </div>
 
+              {/* Action Button */}
               <div className="p-4 sm:p-5 pt-0">
                 <Link
                   href={isAuthenticated ? `/matches/new?gameId=${game.id}` : `/signup?redirect=/matches/new?gameId=${game.id}`}
                   className="w-full block"
                 >
-                  <Button variant="secondary" size="sm" className="w-full font-bold text-xs uppercase tracking-wider gap-1.5 h-9">
-                    <Swords className="w-3.5 h-3.5 text-primary" />
+                  <Button variant="secondary" size="sm" className="w-full font-bold text-xs uppercase tracking-wider gap-1.5 h-9 group-hover:bg-primary group-hover:text-primary-foreground transition-all">
+                    <Swords className="w-3.5 h-3.5 text-primary group-hover:text-primary-foreground" />
                     <span>Enter {game.shortName} Arena</span>
                   </Button>
                 </Link>
@@ -463,7 +404,88 @@ function HomeContent() {
         </div>
       </section>
 
-      {/* 7. TOURNAMENTS SHOWCASE SECTION */}
+      {/* 4. "HOW IT WORKS" (4-STEP AUTOMATED LIFECYCLE - ALL 4 STEPS VISIBLE AT A GLANCE) */}
+      <ParallaxStoryScenes />
+
+      {/* 5. COMPETITIVE INTEGRITY & ESCROW (THE TECH MOAT - FACEIT ANTI-CHEAT EQUIVALENT) */}
+      <section className="space-y-6 sm:space-y-8">
+        <div className="text-center max-w-3xl mx-auto space-y-2">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-primary text-xs font-bold tracking-wider uppercase">
+            <Lock className="w-3.5 h-3.5" />
+            <span>TRUST BY DESIGN // ZERO REFEREES</span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black uppercase tracking-tight text-foreground">
+            Built for the Future of Esports
+          </h2>
+          <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+            Most platforms are limited by publisher APIs and manual referee disputes. We are not.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
+          <Card className="bg-card border border-border p-6 rounded-2xl space-y-3 shadow-sm hover:border-zinc-700 transition flex flex-col justify-between">
+            <div className="space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 text-emerald-400 flex items-center justify-center font-bold">
+                <ShieldCheck className="w-5 h-5 text-emerald-400" />
+              </div>
+              <h3 className="font-bold text-base text-foreground">Escrow Protection</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Funds are secured in <strong className="text-foreground">Crossmint-managed vaults</strong> until the match is verified. Zero default risk.
+              </p>
+            </div>
+            <span className="font-mono text-[10px] text-emerald-400 uppercase font-bold tracking-wider pt-2 block border-t border-border/60">
+              ● Guaranteed Prize Pools
+            </span>
+          </Card>
+
+          <Card className="bg-card border border-border p-6 rounded-2xl space-y-3 shadow-sm hover:border-zinc-700 transition flex flex-col justify-between">
+            <div className="space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 text-purple-400 flex items-center justify-center font-bold">
+                <Scan className="w-5 h-5 text-purple-400" />
+              </div>
+              <h3 className="font-bold text-base text-foreground">Visual Intelligence™</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Our proprietary AI-driven verification layer analyzes official game UIs in real-time. Zero human error. Zero score tampering.
+              </p>
+            </div>
+            <span className="font-mono text-[10px] text-purple-400 uppercase font-bold tracking-wider pt-2 block border-t border-border/60">
+              ● Instant Ingest (&lt; 2s)
+            </span>
+          </Card>
+
+          <Card className="bg-card border border-border p-6 rounded-2xl space-y-3 shadow-sm hover:border-zinc-700 transition flex flex-col justify-between">
+            <div className="space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 text-primary flex items-center justify-center font-bold">
+                <Coins className="w-5 h-5 text-primary" />
+              </div>
+              <h3 className="font-bold text-base text-foreground">Instant USDC Liquidity</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Global stablecoin standard settlements on Polygon, Solana, and Base. Win in USDC with zero banking delays or cross-border fees.
+              </p>
+            </div>
+            <span className="font-mono text-[10px] text-primary uppercase font-bold tracking-wider pt-2 block border-t border-border/60">
+              ● Multi-Chain Payouts
+            </span>
+          </Card>
+
+          <Card className="bg-card border border-border p-6 rounded-2xl space-y-3 shadow-sm hover:border-zinc-700 transition flex flex-col justify-between">
+            <div className="space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 text-yellow-400 flex items-center justify-center font-bold">
+                <Zap className="w-5 h-5 text-yellow-400" />
+              </div>
+              <h3 className="font-bold text-base text-foreground">Platform Agnostic</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Independent from restrictive developer APIs. Operates universally across PC, Console, and Mobile with native game launches.
+              </p>
+            </div>
+            <span className="font-mono text-[10px] text-yellow-400 uppercase font-bold tracking-wider pt-2 block border-t border-border/60">
+              ● Universal Crossplay
+            </span>
+          </Card>
+        </div>
+      </section>
+
+      {/* 6. TOURNAMENTS SHOWCASE SECTION (CHAMPIONSHIP KNOCKOUT BRACKETS) */}
       <section className="space-y-6 sm:space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div className="space-y-1">
@@ -494,7 +516,7 @@ function HomeContent() {
               { name: 'Apex Predator Clash', size: 32, entry: 25, prize: 750, game: 'Apex Legends' },
               { name: 'Warzone Squad Showdown', size: 16, entry: 15, prize: 225, game: 'Call of Duty: Warzone' },
             ].map((mock, mIdx) => (
-              <Card key={mIdx} className="bg-card border border-border rounded-2xl p-5 space-y-4 shadow-sm">
+              <Card key={mIdx} className="bg-card border border-border rounded-2xl p-5 space-y-4 shadow-sm hover:border-zinc-700 transition">
                 <div className="flex items-center justify-between gap-2">
                   <Badge variant="secondary" className="font-mono text-[10px]">
                     {mock.game}
@@ -530,7 +552,7 @@ function HomeContent() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
             {tournaments.slice(0, 3).map((t) => (
-              <Card key={t.id} className="bg-card border border-border rounded-2xl p-5 space-y-4 shadow-sm">
+              <Card key={t.id} className="bg-card border border-border rounded-2xl p-5 space-y-4 shadow-sm hover:border-zinc-700 transition">
                 <div className="flex items-center justify-between gap-2">
                   <Badge variant="secondary" className="font-mono text-[10px]">
                     {t.game_profiles?.display_name || 'Esports'}
@@ -566,7 +588,10 @@ function HomeContent() {
         )}
       </section>
 
-      {/* 8. COMMUNITY ROADMAP POLLS SECTION */}
+      {/* 7. COMPETITIVE SQUADS & CLAN ROSTERS SHOWCASE (FACEIT CLANS VIBE) */}
+      <SquadShowcase />
+
+      {/* 8. COMMUNITY ROADMAP POLLS SECTION (PLAYER GOVERNANCE) */}
       <section className="space-y-6 sm:space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div className="space-y-1">
@@ -596,7 +621,7 @@ function HomeContent() {
             { title: 'Add 4v4 Clan Squad Brackets', votes: 328, status: 'HIGH PRIORITY', tag: 'TOURNAMENT' },
             { title: 'Instant Telegram Match Notifications', votes: 219, status: 'UNDER REVIEW', tag: 'FEATURE' },
           ].map((poll, pIdx) => (
-            <Card key={pIdx} className="bg-card border border-border p-5 rounded-2xl space-y-4 shadow-sm">
+            <Card key={pIdx} className="bg-card border border-border p-5 rounded-2xl space-y-4 shadow-sm hover:border-zinc-700 transition">
               <div className="flex items-center justify-between gap-2">
                 <Badge variant="outline" className="font-mono text-[10px] border-zinc-700 text-primary">
                   {poll.tag}
@@ -621,77 +646,11 @@ function HomeContent() {
         </div>
       </section>
 
-      {/* 9. SECURITY & INTEGRITY SECTION (TRUST BY DESIGN) */}
-      <section className="space-y-6 sm:space-y-8">
-        <div className="text-center max-w-2xl mx-auto space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-primary text-xs font-bold tracking-wider uppercase">
-            <Lock className="w-3.5 h-3.5" />
-            <span>INSTITUTIONAL INTEGRITY</span>
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-black uppercase tracking-tight text-foreground">
-            Trust by Design
-          </h2>
-          <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-            Integrity is not a feature; it is our foundation.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          <Card className="bg-card border border-border p-6 rounded-2xl space-y-3 shadow-sm flex flex-col justify-between">
-            <div className="space-y-2.5">
-              <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 text-primary flex items-center justify-center">
-                <ShieldCheck className="w-5 h-5" />
-              </div>
-              <h3 className="font-bold text-base text-foreground">Escrow Protection</h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Funds are locked in Crossmint-managed vaults until the match is verified.
-              </p>
-            </div>
-          </Card>
-
-          <Card className="bg-card border border-border p-6 rounded-2xl space-y-3 shadow-sm flex flex-col justify-between">
-            <div className="space-y-2.5">
-              <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 text-emerald-400 flex items-center justify-center">
-                <Scan className="w-5 h-5" />
-              </div>
-              <h3 className="font-bold text-base text-foreground">Tamper-Proof Results</h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Our Visual Verification Engine™ detects score changes and anomalies automatically.
-              </p>
-            </div>
-          </Card>
-
-          <Card className="bg-card border border-border p-6 rounded-2xl space-y-3 shadow-sm flex flex-col justify-between">
-            <div className="space-y-2.5">
-              <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 text-purple-400 flex items-center justify-center">
-                <Coins className="w-5 h-5" />
-              </div>
-              <h3 className="font-bold text-base text-foreground">Transparent On-Chain Data</h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                All settlements are recorded on-chain for full auditability and transparency.
-              </p>
-            </div>
-          </Card>
-
-          <Card className="bg-card border border-border p-6 rounded-2xl space-y-3 shadow-sm flex flex-col justify-between">
-            <div className="space-y-2.5">
-              <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 text-yellow-400 flex items-center justify-center">
-                <Shield className="w-5 h-5" />
-              </div>
-              <h3 className="font-bold text-base text-foreground">Compliant Framework</h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Operating as a skill-based competition platform, designed for global regulatory compliance with zero human referees.
-              </p>
-            </div>
-          </Card>
-        </div>
-      </section>
-
-      {/* 10. BOTTOM CONVERSION CTA */}
+      {/* 9. BOTTOM CONVERSION CTA BANNER */}
       <section className="p-8 sm:p-14 rounded-3xl bg-zinc-950 border border-zinc-800 text-center flex flex-col items-center gap-6 shadow-xl relative overflow-hidden">
         <div className="space-y-3 max-w-xl">
           <span className="font-mono text-xs uppercase font-bold text-primary tracking-widest block">
-            READY TO COMPETE?
+            READY TO ENTER THE ARENA?
           </span>
           <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tight text-foreground">
             Start Competing Free
@@ -717,7 +676,7 @@ function HomeContent() {
         </div>
       </section>
 
-      {/* 11. INSTITUTIONAL FOOTER */}
+      {/* 10. INSTITUTIONAL & LEGAL FOOTER */}
       <footer className="pt-12 border-t border-border space-y-8 text-xs text-muted-foreground font-mono">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="space-y-2 md:col-span-1">
