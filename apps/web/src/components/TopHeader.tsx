@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -27,6 +28,7 @@ import {
   Vote,
   Users,
   Sparkles,
+  ChevronRight,
 } from 'lucide-react';
 import { useGameStore } from '../lib/gameStore';
 import { EloBadge } from './EloBadge';
@@ -39,9 +41,7 @@ import { useWalletModeStore } from '../lib/walletModeStore';
 import { OFFICIAL_GAMES, getGameById } from '../lib/gamesCatalog';
 import { GamePoster } from './GamePoster';
 import { GameDropdown } from './GameDropdown';
-import { Badge } from './ui/badge';
 import { Button } from './ui/button';
-import { Sheet, SheetHeader, SheetTitle } from './ui/sheet';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { CrossmintLogo } from './CrossmintLogo';
 
@@ -68,21 +68,21 @@ interface HeaderProfile {
     | 'COMMUNITY_MANAGER';
 }
 
-function getPageContext(pathname: string): { title: string; subtitle?: string } {
-  if (pathname === '/') return { title: 'Arena Overview', subtitle: 'Live Matchmaking' };
-  if (pathname.startsWith('/challenges')) return { title: '1v1 Arena Duels', subtitle: '1v1 Matchmaking' };
-  if (pathname.startsWith('/tournaments')) return { title: 'Tournaments', subtitle: 'Championship Brackets' };
-  if (pathname.startsWith('/leaderboards')) return { title: 'Ladders & Rank', subtitle: 'Competitive Elo' };
-  if (pathname.startsWith('/games')) return { title: 'Game Catalog', subtitle: 'Supported Esports' };
-  if (pathname.startsWith('/community/polls')) return { title: 'Community Roadmap', subtitle: 'Feature Voting' };
-  if (pathname.startsWith('/support')) return { title: 'Player Support', subtitle: 'Ticket Desk' };
-  if (pathname.startsWith('/matches/new')) return { title: 'Create Duel', subtitle: 'Instant 1v1 Challenge' };
-  if (pathname.startsWith('/matches/')) return { title: 'Match Arena', subtitle: 'Live Contest' };
-  if (pathname.startsWith('/dashboard')) return { title: 'Wallet & Cashier', subtitle: 'Ledger Balances' };
-  if (pathname.startsWith('/settings')) return { title: 'Settings', subtitle: 'Preferences' };
-  if (pathname.startsWith('/admin')) return { title: 'Operations Console', subtitle: 'Administration' };
-  if (pathname.startsWith('/profile')) return { title: 'Player Profile', subtitle: 'Career Dossier' };
-  return { title: 'Playverzus.xyz', subtitle: 'Esports Platform' };
+function getPageContext(pathname: string): { title: string } {
+  if (pathname === '/') return { title: 'Arena Overview' };
+  if (pathname.startsWith('/challenges')) return { title: '1v1 Arena Duels' };
+  if (pathname.startsWith('/tournaments')) return { title: 'Tournaments' };
+  if (pathname.startsWith('/leaderboards')) return { title: 'Ladders & Rank' };
+  if (pathname.startsWith('/games')) return { title: 'Game Catalog' };
+  if (pathname.startsWith('/community/polls')) return { title: 'Community Roadmap' };
+  if (pathname.startsWith('/support')) return { title: 'Player Support' };
+  if (pathname.startsWith('/matches/new')) return { title: 'Create Duel' };
+  if (pathname.startsWith('/matches/')) return { title: 'Match Arena' };
+  if (pathname.startsWith('/dashboard')) return { title: 'Wallet & Cashier' };
+  if (pathname.startsWith('/settings')) return { title: 'Settings' };
+  if (pathname.startsWith('/admin')) return { title: 'Operations Console' };
+  if (pathname.startsWith('/profile')) return { title: 'Player Profile' };
+  return { title: 'Playverzus.xyz' };
 }
 
 export function TopHeader() {
@@ -93,6 +93,28 @@ export function TopHeader() {
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [gameDropdownOpen, setGameDropdownOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Lock background scroll when mobile top dropdown is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileMenuOpen]);
+
+  // Close menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
 
   const activeCatalogGame = getGameById(activeGame?.id);
   const pageContext = getPageContext(pathname);
@@ -178,9 +200,9 @@ export function TopHeader() {
     { href: me ? '/dashboard' : '/', label: me ? 'Dashboard' : 'Overview', icon: LayoutDashboard },
     { href: '/challenges', label: 'Play Duels', icon: Swords },
     { href: '/tournaments', label: 'Tournaments', icon: Trophy },
-    { href: '/community/polls', label: 'Feature Polls', icon: Vote },
     { href: '/leaderboards', label: 'Ladders & Rank', icon: BarChart3 },
     { href: '/games', label: 'Explore Games', icon: Gamepad2 },
+    { href: '/community/polls', label: 'Feature Polls', icon: Vote },
     { href: '/cashier', label: 'Wallet & Cashier', icon: Wallet },
     { href: '/support', label: 'Support Desk', icon: Headphones },
     ...(isStaff
@@ -206,55 +228,39 @@ export function TopHeader() {
     return null;
   }
 
-  // Dedicated Public Marketing Header for Landing Page
+  // =========================================================================
+  // 1. DEDICATED PUBLIC MARKETING HEADER FOR LANDING PAGE (Clean & Decongested)
+  // =========================================================================
   if (pathname === '/') {
     return (
       <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border h-14 sm:h-16 w-full">
         <div className="max-w-7xl mx-auto w-full px-3 sm:px-6 lg:px-8 flex items-center justify-between h-full">
-          {/* Left: Brand Logo + Crossmint Pill */}
+          {/* Left: Brand Logo + Subtle Crossmint Badge on Desktop */}
           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
             <Link href={me ? '/dashboard' : '/'} className="flex items-center gap-2 group flex-shrink-0">
               <Image
                 src="/images/logo.png"
                 alt="playverzus.xyz"
-                width={140}
-                height={32}
+                width={130}
+                height={30}
                 className="h-7 sm:h-8 w-auto object-contain transition group-hover:opacity-90"
                 priority
               />
             </Link>
 
-            <div className="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-[10px] font-mono font-bold text-emerald-400">
+            <div className="hidden xl:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-[10px] font-mono font-bold text-emerald-400">
               <CrossmintLogo className="w-3.5 h-3.5" />
               <span>Powered by Crossmint</span>
             </div>
           </div>
 
-          {/* Center: Desktop Public Marketing Navigation Links (shown on desktop >= lg) */}
+          {/* Center: Streamlined Desktop Navigation (Only 3 high-impact links, zero congestion) */}
           <nav className="hidden lg:flex items-center gap-6 text-xs font-bold tracking-wider uppercase">
-            <a
-              href="#how-it-works"
-              className="text-muted-foreground hover:text-foreground transition-colors hover:text-primary"
-            >
-              How It Works
-            </a>
-            <a
-              href="#why-playverzus"
-              className="text-muted-foreground hover:text-foreground transition-colors hover:text-primary"
-            >
-              Why Playverzus
-            </a>
-            <a
-              href="#squads"
-              className="text-muted-foreground hover:text-foreground transition-colors hover:text-primary"
-            >
-              Squads & Teams
-            </a>
             <a
               href="#arenas"
               className="text-muted-foreground hover:text-foreground transition-colors hover:text-primary"
             >
-              Supported Arenas
+              Arenas
             </a>
             <Link
               href="/tournaments"
@@ -262,36 +268,35 @@ export function TopHeader() {
             >
               Tournaments
             </Link>
-            <Link
-              href="/community/polls"
+            <a
+              href="#how-it-works"
               className="text-muted-foreground hover:text-foreground transition-colors hover:text-primary"
             >
-              Polls
-            </Link>
+              How It Works
+            </a>
             <Link
-              href="/support"
-              className="text-muted-foreground hover:text-foreground transition-colors hover:text-primary"
+              href="/leaderboards"
+              className="hidden xl:inline-block text-muted-foreground hover:text-foreground transition-colors hover:text-primary"
             >
-              Support
+              Rankings
             </Link>
           </nav>
 
-          {/* Right: Auth / Arena Entry CTAs */}
+          {/* Right: Clean Action Buttons + Mobile Hamburger */}
           <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
             {!me ? (
               <>
                 <Link href="/login" className="hidden sm:inline-flex">
-                  <Button variant="ghost" size="sm" className="font-bold text-xs uppercase tracking-wider">
+                  <Button variant="ghost" size="sm" className="font-bold text-xs uppercase tracking-wider h-8 sm:h-9 px-3">
                     Sign In
                   </Button>
                 </Link>
                 <Link href="/signup">
                   <Button
                     size="sm"
-                    className="font-bold text-xs uppercase tracking-wider bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm h-8 sm:h-9 px-2.5 sm:px-4"
+                    className="font-bold text-xs uppercase tracking-wider bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm h-8 sm:h-9 px-3 sm:px-4"
                   >
-                    <span className="hidden sm:inline">Play For Free</span>
-                    <span className="sm:hidden">Play Free</span>
+                    Play Free
                   </Button>
                 </Link>
               </>
@@ -300,7 +305,7 @@ export function TopHeader() {
                 <Link href="/dashboard">
                   <Button size="sm" className="font-bold text-xs uppercase tracking-wider gap-1.5 h-8 sm:h-9 px-2.5 sm:px-3">
                     <LayoutDashboard className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Dashboard</span>
+                    <span>Dashboard</span>
                   </Button>
                 </Link>
                 <Link
@@ -311,200 +316,207 @@ export function TopHeader() {
                   <Avatar size="sm" className="w-6 h-6 sm:w-7 sm:h-7 text-xs bg-primary text-primary-foreground">
                     <AvatarFallback>{avatarLetter}</AvatarFallback>
                   </Avatar>
-                  <span className="hidden md:inline text-xs font-bold text-foreground truncate max-w-[80px]">
+                  <span className="hidden xl:inline text-xs font-bold text-foreground truncate max-w-[80px]">
                     @{me.username}
                   </span>
                 </Link>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleSignOut}
-                  className="font-bold text-xs uppercase tracking-wider text-muted-foreground hover:text-destructive gap-1 px-2 hidden sm:inline-flex"
-                  title="Log Out of Arena"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                  <span className="hidden md:inline">Sign Out</span>
-                </Button>
               </>
             )}
 
-            {/* Mobile Navigation Drawer Trigger */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setMobileMenuOpen(true)}
-              className="lg:hidden text-muted-foreground hover:text-foreground w-8 h-8 sm:w-9 sm:h-9 flex-shrink-0"
-              aria-label="Toggle navigation drawer"
+            {/* Mobile Menu Button (Hamburger / X Toggle) */}
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen((prev) => !prev)}
+              className="lg:hidden h-8 w-8 sm:h-9 sm:w-9 rounded-lg bg-card hover:bg-muted border border-border text-foreground flex items-center justify-center transition-colors flex-shrink-0"
+              aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+              aria-expanded={mobileMenuOpen}
             >
-              <Menu className="w-5 h-5" />
-            </Button>
+              {mobileMenuOpen ? (
+                <X className="w-5 h-5 text-primary" />
+              ) : (
+                <Menu className="w-5 h-5" />
+              )}
+            </button>
           </div>
         </div>
 
-        {/* Mobile Landing Sheet Drawer (Portaled to document.body) */}
-        <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen} side="left">
-          <SheetHeader>
-            <div className="flex items-center justify-between">
-              <Link href="/" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2">
-                <Image
-                  src="/images/logo.png"
-                  alt="playverzus.xyz"
-                  width={130}
-                  height={30}
-                  className="h-7 w-auto object-contain"
-                />
-              </Link>
-            </div>
-            <div className="inline-flex items-center gap-1.5 px-2 py-0.5 mt-2 rounded-full bg-zinc-900 border border-zinc-800 text-[10px] font-mono font-bold text-emerald-400 w-fit">
-              <CrossmintLogo className="w-3 h-3" />
-              <span>Powered by Crossmint</span>
-            </div>
-          </SheetHeader>
+        {/* =================================================================== */}
+        {/* TOP-OPENING MOBILE DROPDOWN (LaserScan Style: Opens Directly on Top) */}
+        {/* =================================================================== */}
+        {mounted &&
+          mobileMenuOpen &&
+          createPortal(
+            <div className="fixed inset-0 top-14 sm:top-16 z-[9999] lg:hidden flex flex-col">
+              {/* Tap-outside Backdrop */}
+              <div
+                className="fixed inset-0 top-14 sm:top-16 bg-black/75 backdrop-blur-sm transition-opacity"
+                onClick={() => setMobileMenuOpen(false)}
+                aria-hidden="true"
+              />
 
-          {/* Navigation Links */}
-          <div className="flex flex-col space-y-1 mt-2 pb-16">
-            <span className="text-[10px] uppercase font-bold text-muted-foreground font-mono tracking-wider px-2 py-1">
-              Platform Navigation
-            </span>
+              {/* Menu Container: Slides down from the top header */}
+              <div className="relative z-10 w-full bg-zinc-950/98 border-b border-border shadow-2xl p-4 sm:p-6 max-h-[calc(100vh-3.5rem)] sm:max-h-[calc(100vh-4rem)] overflow-y-auto animate-in slide-in-from-top-2 duration-200">
+                {/* Crossmint Trust Pill */}
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 mb-4 rounded-full bg-zinc-900 border border-zinc-800 text-[10px] font-mono font-bold text-emerald-400">
+                  <CrossmintLogo className="w-3.5 h-3.5" />
+                  <span>Powered by Crossmint Escrow</span>
+                </div>
 
-            <a
-              href="#how-it-works"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition"
-            >
-              <Sparkles className="w-4 h-4 text-primary flex-shrink-0" />
-              <span>How It Works</span>
-            </a>
-
-            <a
-              href="#why-playverzus"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition"
-            >
-              <Shield className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-              <span>Why Playverzus</span>
-            </a>
-
-            <a
-              href="#squads"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition"
-            >
-              <Users className="w-4 h-4 text-blue-400 flex-shrink-0" />
-              <span>Squads & Clans</span>
-            </a>
-
-            <a
-              href="#arenas"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition"
-            >
-              <Gamepad2 className="w-4 h-4 text-purple-400 flex-shrink-0" />
-              <span>Supported Arenas</span>
-            </a>
-
-            <Link
-              href="/tournaments"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition"
-            >
-              <Trophy className="w-4 h-4 text-amber-400 flex-shrink-0" />
-              <span>Tournaments</span>
-            </Link>
-
-            <Link
-              href="/leaderboards"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition"
-            >
-              <BarChart3 className="w-4 h-4 text-indigo-400 flex-shrink-0" />
-              <span>Ladders & Rank</span>
-            </Link>
-
-            <Link
-              href="/community/polls"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition"
-            >
-              <Vote className="w-4 h-4 text-pink-400 flex-shrink-0" />
-              <span>Feature Polls</span>
-            </Link>
-
-            <Link
-              href="/support"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition"
-            >
-              <Headphones className="w-4 h-4 text-teal-400 flex-shrink-0" />
-              <span>Support Desk</span>
-            </Link>
-
-            {/* Primary Action Buttons in Drawer */}
-            <div className="pt-4 border-t border-border mt-3 flex flex-col gap-2">
-              {!me ? (
-                <>
-                  <Link href="/signup" onClick={() => setMobileMenuOpen(false)}>
-                    <Button className="w-full font-bold text-xs uppercase tracking-wider bg-primary text-primary-foreground shadow-sm h-10">
-                      Start Competing Free
-                    </Button>
-                  </Link>
-                  <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="outline" className="w-full font-bold text-xs uppercase tracking-wider h-10">
-                      Sign In to Account
-                    </Button>
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)}>
-                    <Button className="w-full font-bold text-xs uppercase tracking-wider gap-2 h-10">
-                      <LayoutDashboard className="w-4 h-4" />
-                      <span>Enter Arena Dashboard</span>
-                    </Button>
-                  </Link>
-                  <Link href={`/profile/${me.username || 'me'}`} onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="outline" className="w-full font-bold text-xs uppercase tracking-wider gap-2 h-10">
-                      <Avatar size="sm" className="w-5 h-5 text-[10px] bg-primary text-primary-foreground">
-                        <AvatarFallback>{avatarLetter}</AvatarFallback>
-                      </Avatar>
-                      <span>View Profile (@{me.username})</span>
-                    </Button>
-                  </Link>
-                  <Button
-                    variant="ghost"
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      handleSignOut();
-                    }}
-                    className="w-full font-bold text-xs uppercase tracking-wider text-destructive hover:bg-destructive/10 gap-2 h-10"
+                {/* Navigation Links Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-5">
+                  <a
+                    href="#arenas"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-muted/40 hover:bg-muted text-sm font-semibold text-foreground transition"
                   >
-                    <LogOut className="w-4 h-4" />
-                    <span>Sign Out</span>
-                  </Button>
-                </>
-              )}
-            </div>
-          </div>
-        </Sheet>
+                    <Gamepad2 className="w-4 h-4 text-purple-400 flex-shrink-0" />
+                    <span>Supported Arenas</span>
+                  </a>
+
+                  <Link
+                    href="/tournaments"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-muted/40 hover:bg-muted text-sm font-semibold text-foreground transition"
+                  >
+                    <Trophy className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                    <span>Tournaments</span>
+                  </Link>
+
+                  <a
+                    href="#how-it-works"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-muted/40 hover:bg-muted text-sm font-semibold text-foreground transition"
+                  >
+                    <Sparkles className="w-4 h-4 text-primary flex-shrink-0" />
+                    <span>How It Works</span>
+                  </a>
+
+                  <Link
+                    href="/leaderboards"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-muted/40 hover:bg-muted text-sm font-semibold text-foreground transition"
+                  >
+                    <BarChart3 className="w-4 h-4 text-indigo-400 flex-shrink-0" />
+                    <span>Ladders & Rank</span>
+                  </Link>
+
+                  <a
+                    href="#why-playverzus"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-muted/40 hover:bg-muted text-sm font-semibold text-foreground transition"
+                  >
+                    <Shield className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                    <span>Why Playverzus</span>
+                  </a>
+
+                  <a
+                    href="#squads"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-muted/40 hover:bg-muted text-sm font-semibold text-foreground transition"
+                  >
+                    <Users className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                    <span>Squads & Clans</span>
+                  </a>
+
+                  <Link
+                    href="/community/polls"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-muted/40 hover:bg-muted text-sm font-semibold text-foreground transition"
+                  >
+                    <Vote className="w-4 h-4 text-pink-400 flex-shrink-0" />
+                    <span>Feature Polls</span>
+                  </Link>
+
+                  <Link
+                    href="/support"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-muted/40 hover:bg-muted text-sm font-semibold text-foreground transition"
+                  >
+                    <Headphones className="w-4 h-4 text-teal-400 flex-shrink-0" />
+                    <span>Support Desk</span>
+                  </Link>
+                </div>
+
+                {/* Action Controls */}
+                <div className="pt-4 border-t border-border flex flex-col gap-2.5">
+                  {!me ? (
+                    <>
+                      <Link href="/signup" onClick={() => setMobileMenuOpen(false)}>
+                        <Button className="w-full font-bold text-xs uppercase tracking-wider bg-primary text-primary-foreground shadow-sm h-10">
+                          Start Competing Free
+                        </Button>
+                      </Link>
+                      <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
+                        <Button variant="outline" className="w-full font-bold text-xs uppercase tracking-wider h-10">
+                          Sign In to Account
+                        </Button>
+                      </Link>
+                    </>
+                  ) : (
+                    <>
+                      <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)}>
+                        <Button className="w-full font-bold text-xs uppercase tracking-wider gap-2 h-10">
+                          <LayoutDashboard className="w-4 h-4" />
+                          <span>Enter Arena Dashboard</span>
+                        </Button>
+                      </Link>
+                      <div className="flex gap-2">
+                        <Link
+                          href={`/profile/${me.username || 'me'}`}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="flex-1"
+                        >
+                          <Button variant="outline" className="w-full font-bold text-xs uppercase tracking-wider gap-2 h-10">
+                            <Avatar size="sm" className="w-5 h-5 text-[10px] bg-primary text-primary-foreground">
+                              <AvatarFallback>{avatarLetter}</AvatarFallback>
+                            </Avatar>
+                            <span>Profile (@{me.username})</span>
+                          </Button>
+                        </Link>
+                        <Button
+                          variant="ghost"
+                          onClick={() => {
+                            setMobileMenuOpen(false);
+                            handleSignOut();
+                          }}
+                          className="font-bold text-xs uppercase tracking-wider text-destructive hover:bg-destructive/10 gap-2 h-10 px-4"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          <span>Sign Out</span>
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>,
+            document.body
+          )}
       </header>
     );
   }
 
-  // Authenticated & Internal Pages Top Header
+  // =========================================================================
+  // 2. AUTHENTICATED & IN-APP TOP HEADER (Clean, Decongested, LaserScan Style)
+  // =========================================================================
   return (
     <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-border h-14 sm:h-16 flex items-center justify-between px-2.5 sm:px-6 lg:px-8 gap-2 sm:gap-4 w-full">
-      {/* 1. Left Zone: Mobile Drawer Trigger + Active Arena Pill + Context Breadcrumb */}
-      <div className="flex items-center gap-1.5 sm:gap-3 min-w-0 flex-shrink-0">
-        {/* Mobile menu toggle */}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setMobileMenuOpen(true)}
-          className="lg:hidden text-muted-foreground hover:text-foreground w-8 h-8 sm:w-9 sm:h-9 flex-shrink-0"
-          aria-label="Toggle navigation drawer"
+      {/* Left: Mobile Menu Toggle + Mark + Active Arena Dropdown */}
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink-0">
+        {/* Mobile menu toggle (Menu / X) */}
+        <button
+          type="button"
+          onClick={() => setMobileMenuOpen((prev) => !prev)}
+          className="lg:hidden h-8 w-8 sm:h-9 sm:w-9 rounded-lg bg-card hover:bg-muted border border-border text-foreground flex items-center justify-center transition-colors flex-shrink-0"
+          aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+          aria-expanded={mobileMenuOpen}
         >
-          <Menu className="w-5 h-5" />
-        </Button>
+          {mobileMenuOpen ? (
+            <X className="w-5 h-5 text-primary" />
+          ) : (
+            <Menu className="w-5 h-5" />
+          )}
+        </button>
 
         {/* Mobile Brand Mark */}
         <Link
@@ -544,76 +556,47 @@ export function TopHeader() {
             </div>
           </button>
 
-          {/* Anchored Dropdown Menu */}
           <GameDropdown
             open={gameDropdownOpen}
             onClose={() => setGameDropdownOpen(false)}
           />
         </div>
 
-        <span className="hidden lg:inline text-muted-foreground/40 text-xs">/</span>
-
-        {/* Current Page Context (visible on lg+) */}
-        <div className="hidden lg:flex flex-col text-left min-w-0">
+        {/* Current Page Context Title (Only on wide screens xl+ to keep topbar uncluttered) */}
+        <div className="hidden xl:flex items-center gap-2 text-left min-w-0">
+          <span className="text-muted-foreground/30 text-xs">/</span>
           <span className="text-xs font-bold text-foreground tracking-tight leading-tight truncate">
             {pageContext.title}
           </span>
-          {pageContext.subtitle && (
-            <span className="text-[10px] text-muted-foreground font-mono leading-none">
-              {pageContext.subtitle}
-            </span>
-          )}
         </div>
       </div>
 
-      {/* 2. Center Zone: Clean Omnisearch */}
-      <div className="hidden xl:flex items-center flex-1 max-w-sm mx-4 relative min-w-0">
+      {/* Center: Omnisearch (Only on wide desktop xl+) */}
+      <div className="hidden xl:flex items-center flex-1 max-w-xs mx-4 relative min-w-0">
         <Search className="absolute left-3 w-4 h-4 text-muted-foreground pointer-events-none" />
         <input
           type="text"
-          placeholder="Search duels, tournaments, players..."
+          placeholder="Search duels, tournaments..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-9 pr-12 py-1.5 bg-muted/50 hover:bg-muted focus:bg-muted border border-border focus:border-primary rounded-lg text-xs text-foreground placeholder:text-muted-foreground focus:outline-none transition"
+          className="w-full pl-9 pr-10 py-1.5 bg-muted/50 hover:bg-muted focus:bg-muted border border-border focus:border-primary rounded-lg text-xs text-foreground placeholder:text-muted-foreground focus:outline-none transition"
         />
-        <span className="absolute right-2.5 px-1.5 py-0.5 rounded bg-background border border-border text-[9px] font-mono text-muted-foreground pointer-events-none">
+        <span className="absolute right-2 px-1.5 py-0.5 rounded bg-background border border-border text-[9px] font-mono text-muted-foreground pointer-events-none">
           ⌘K
         </span>
       </div>
 
-      {/* 3. Right Zone: Wallet Capsule + Notification Bell + Gamer Profile Chip */}
+      {/* Right: Decongested Wallet Balance + Notification Bell + Profile Avatar */}
       <div className="flex items-center gap-1.5 sm:gap-2.5 flex-shrink-0">
-        {/* Wallet Balance Capsule */}
+        {/* Compact Wallet Balance Display */}
         <div className="flex items-center bg-card border border-border rounded-lg p-0.5 sm:p-1 gap-1 shadow-sm">
-          {/* Real vs Demo Toggle (md+) */}
-          <button
-            type="button"
-            onClick={toggleWalletMode}
-            className={`hidden md:flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-mono font-bold tracking-wider transition ${
-              walletMode === 'REAL'
-                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25'
-                : 'bg-purple-500/15 text-purple-300 border border-purple-500/30 hover:bg-purple-500/25'
-            }`}
-            title="Click to toggle between Real Cash ($ USDC) and Free Demo Play (PTS)"
-          >
-            <span
-              className={`w-1.5 h-1.5 rounded-full ${
-                walletMode === 'REAL' ? 'bg-emerald-400' : 'bg-purple-400'
-              }`}
-            />
-            <span>{walletMode === 'REAL' ? 'REAL' : 'DEMO'}</span>
-            <ArrowLeftRight className="w-2.5 h-2.5 opacity-60 ml-0.5" />
-          </button>
-
-          {/* Active Balance Display */}
           <Link
             href="/cashier"
             className="px-2 py-1 font-mono font-bold text-xs hover:text-primary transition flex items-center gap-1.5"
             title="Open Cashier & Balance Management"
           >
-            {/* Mobile indicator dot */}
             <span
-              className={`md:hidden w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+              className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
                 walletMode === 'REAL' ? 'bg-emerald-400' : 'bg-purple-400'
               }`}
             />
@@ -626,13 +609,13 @@ export function TopHeader() {
             )}
           </Link>
 
-          {/* Top-up Button */}
+          {/* Quick Top-up Button */}
           <Link href="/cashier?tab=deposit" className="hidden sm:inline-flex">
             <Button
               size="icon"
               variant="default"
               className="w-6 h-6 rounded-md"
-              title="Quick Deposit / Claim Demo Points"
+              title="Quick Deposit / Top Up"
             >
               <Plus className="w-3.5 h-3.5" />
             </Button>
@@ -642,7 +625,7 @@ export function TopHeader() {
         {/* Notification Bell with Popover Dropdown */}
         <NotificationBell />
 
-        {/* Gamer Profile Chip */}
+        {/* Clean Gamer Profile Chip */}
         <Link
           href={`/profile/${me?.username || 'me'}`}
           className="flex items-center gap-1.5 sm:gap-2 p-1 sm:pl-1 sm:pr-2.5 bg-card hover:bg-muted border border-border hover:border-primary/50 rounded-lg transition group flex-shrink-0"
@@ -656,7 +639,7 @@ export function TopHeader() {
               <EloBadge elo={eloRating} size="sm" />
             </div>
           </div>
-          <div className="hidden md:flex flex-col text-left leading-none">
+          <div className="hidden xl:flex flex-col text-left leading-none">
             <span className="text-xs font-bold text-foreground group-hover:text-primary transition-colors flex items-center gap-1.5">
               <CountryFlag
                 code={me?.country_code || me?.region}
@@ -672,140 +655,131 @@ export function TopHeader() {
             </span>
           </div>
         </Link>
-
-        {/* Quick Desktop Sign Out Action (lg+) */}
-        {me && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleSignOut}
-            className="w-8 h-8 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition hidden lg:flex flex-shrink-0"
-            title="Sign Out of Arena"
-          >
-            <LogOut className="w-4 h-4" />
-          </Button>
-        )}
       </div>
 
-      {/* Mobile Drawer (Sheet) - Portaled to document.body */}
-      <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen} side="left">
-        <SheetHeader>
-          <div className="flex items-center justify-between">
-            <Link href={me ? '/dashboard' : '/'} onClick={() => setMobileMenuOpen(false)} className="flex items-center">
-              <Image
-                src="/images/logo.png"
-                alt="playverzus.xyz"
-                width={130}
-                height={30}
-                className="h-7 w-auto object-contain"
-              />
-            </Link>
-          </div>
-        </SheetHeader>
-
-        <div className="flex flex-col space-y-4 pb-20">
-          {/* Mobile Wallet Mode & Deposit Controls */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between p-2.5 rounded-xl bg-card border border-border">
-              <div className="flex items-center gap-2">
-                <Wallet className="w-4 h-4 text-primary" />
-                <span className="text-xs font-bold text-foreground">Play Mode</span>
-              </div>
-              <button
-                type="button"
-                onClick={toggleWalletMode}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-bold tracking-wider transition ${
-                  walletMode === 'REAL'
-                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
-                    : 'bg-purple-500/20 text-purple-300 border border-purple-500/40'
-                }`}
-              >
-                <span className={`w-2 h-2 rounded-full ${walletMode === 'REAL' ? 'bg-emerald-400' : 'bg-purple-400'}`} />
-                <span>{walletMode === 'REAL' ? 'REAL CASH' : 'DEMO PTS'}</span>
-                <ArrowLeftRight className="w-3 h-3 opacity-70 ml-0.5" />
-              </button>
-            </div>
-
-            <Link href="/cashier?tab=deposit" onClick={() => setMobileMenuOpen(false)}>
-              <Button variant="default" size="sm" className="w-full text-xs font-bold gap-1.5 shadow-sm h-9">
-                <Plus className="w-3.5 h-3.5" />
-                <span>Deposit / Top Up Balance</span>
-              </Button>
-            </Link>
-          </div>
-
-          {/* Current Arena Quick Switcher in Drawer */}
-          <div>
-            <Link
-              href="/games"
+      {/* =================================================================== */}
+      {/* TOP-OPENING IN-APP DROPDOWN (LaserScan Style: Opens Directly on Top) */}
+      {/* =================================================================== */}
+      {mounted &&
+        mobileMenuOpen &&
+        createPortal(
+          <div className="fixed inset-0 top-14 sm:top-16 z-[9999] lg:hidden flex flex-col">
+            {/* Tap-outside Backdrop */}
+            <div
+              className="fixed inset-0 top-14 sm:top-16 bg-black/75 backdrop-blur-sm transition-opacity"
               onClick={() => setMobileMenuOpen(false)}
-              className="w-full p-2.5 rounded-xl bg-muted/60 border border-border hover:border-primary/50 flex items-center justify-between text-left transition"
-            >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <GamePoster
-                  game={activeCatalogGame}
-                  aspect="mini"
-                  className="w-6 h-8 rounded flex-shrink-0"
-                />
-                <div className="flex flex-col min-w-0">
-                  <span className="text-[10px] text-muted-foreground font-mono uppercase">
-                    Active Arena
+              aria-hidden="true"
+            />
+
+            {/* Menu Dropdown Container */}
+            <div className="relative z-10 w-full bg-zinc-950/98 border-b border-border shadow-2xl p-4 sm:p-6 max-h-[calc(100vh-3.5rem)] sm:max-h-[calc(100vh-4rem)] overflow-y-auto animate-in slide-in-from-top-2 duration-200">
+              {/* Play Mode & Deposit Controls */}
+              <div className="space-y-2 mb-4">
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-card border border-border">
+                  <div className="flex items-center gap-2">
+                    <Wallet className="w-4 h-4 text-primary" />
+                    <span className="text-xs font-bold text-foreground">Play Mode</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={toggleWalletMode}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-bold tracking-wider transition ${
+                      walletMode === 'REAL'
+                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                        : 'bg-purple-500/20 text-purple-300 border border-purple-500/40'
+                    }`}
+                  >
+                    <span className={`w-2 h-2 rounded-full ${walletMode === 'REAL' ? 'bg-emerald-400' : 'bg-purple-400'}`} />
+                    <span>{walletMode === 'REAL' ? 'REAL CASH' : 'DEMO PTS'}</span>
+                    <ArrowLeftRight className="w-3 h-3 opacity-70 ml-0.5" />
+                  </button>
+                </div>
+
+                <Link href="/cashier?tab=deposit" onClick={() => setMobileMenuOpen(false)}>
+                  <Button variant="default" size="sm" className="w-full text-xs font-bold gap-1.5 shadow-sm h-9">
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Deposit / Top Up Balance</span>
+                  </Button>
+                </Link>
+              </div>
+
+              {/* Active Arena Switcher Link */}
+              <div className="mb-4">
+                <Link
+                  href="/games"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full p-2.5 rounded-xl bg-muted/60 border border-border hover:border-primary/50 flex items-center justify-between text-left transition"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <GamePoster
+                      game={activeCatalogGame}
+                      aspect="mini"
+                      className="w-6 h-8 rounded flex-shrink-0"
+                    />
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-[10px] text-muted-foreground font-mono uppercase">
+                        Active Arena
+                      </span>
+                      <span className="text-xs font-bold text-foreground truncate">
+                        {activeCatalogGame.displayName}
+                      </span>
+                    </div>
+                  </div>
+                  <span className="text-xs font-bold text-primary flex items-center gap-1 flex-shrink-0">
+                    Browse ▾
                   </span>
-                  <span className="text-xs font-bold text-foreground truncate">
-                    {activeCatalogGame.displayName}
-                  </span>
+                </Link>
+              </div>
+
+              {/* Navigation Links Grid (2 columns on tablet, 1 column on mobile) */}
+              <div className="space-y-1 mb-4">
+                <span className="text-[10px] uppercase font-bold text-muted-foreground font-mono tracking-wider px-2 py-1 block">
+                  Arena Navigation
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                  {mobileNavLinks.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
+
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition ${
+                          isActive
+                            ? 'bg-primary text-primary-foreground font-semibold shadow-sm'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                        }`}
+                      >
+                        <Icon className="w-4 h-4 flex-shrink-0" />
+                        <span>{item.label}</span>
+                      </Link>
+                    );
+                  })}
                 </div>
               </div>
-              <span className="text-xs font-bold text-primary flex items-center gap-1 flex-shrink-0">
-                Browse ▾
-              </span>
-            </Link>
-          </div>
 
-          {/* Navigation Links */}
-          <div className="flex flex-col space-y-1">
-            <span className="text-[10px] uppercase font-bold text-muted-foreground font-mono tracking-wider px-2 py-1">
-              Arena Menu
-            </span>
-            {mobileNavLinks.map((item) => {
-              const Icon = item.icon;
-              const isActive = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
-
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${
-                    isActive
-                      ? 'bg-primary text-primary-foreground font-semibold shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                  }`}
-                >
-                  <Icon className="w-4 h-4 flex-shrink-0" />
-                  <span>{item.label}</span>
-                </Link>
-              );
-            })}
-
-            {me && (
-              <div className="pt-4 border-t border-border mt-3">
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    handleSignOut();
-                  }}
-                  className="w-full justify-start text-xs font-bold text-destructive hover:text-destructive hover:bg-destructive/10 gap-2 h-10"
-                >
-                  <LogOut className="w-4 h-4" />
-                  <span>Sign Out</span>
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
-      </Sheet>
+              {/* Sign Out Button */}
+              {me && (
+                <div className="pt-3 border-t border-border">
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      handleSignOut();
+                    }}
+                    className="w-full justify-start text-xs font-bold text-destructive hover:text-destructive hover:bg-destructive/10 gap-2 h-10"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>Sign Out of Arena</span>
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>,
+          document.body
+        )}
     </header>
   );
 }
