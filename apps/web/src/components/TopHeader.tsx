@@ -11,9 +11,7 @@ import {
   X,
   Search,
   Plus,
-  Coins,
   ArrowLeftRight,
-  ChevronDown,
   LayoutDashboard,
   Swords,
   Trophy,
@@ -28,11 +26,8 @@ import {
   Vote,
   Users,
   Sparkles,
-  ChevronRight,
 } from 'lucide-react';
 import { useGameStore } from '../lib/gameStore';
-import { EloBadge } from './EloBadge';
-import { CountryFlag } from './CountryFlag';
 import { NotificationBell } from './NotificationBell';
 import { apiClient } from '../lib/api';
 import { getSupabaseClient } from '../lib/supabase';
@@ -40,7 +35,6 @@ import { formatUSDC, formatPoints } from '../lib/currency';
 import { useWalletModeStore } from '../lib/walletModeStore';
 import { OFFICIAL_GAMES, getGameById } from '../lib/gamesCatalog';
 import { GamePoster } from './GamePoster';
-import { GameDropdown } from './GameDropdown';
 import { Button } from './ui/button';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { CrossmintLogo } from './CrossmintLogo';
@@ -71,15 +65,16 @@ interface HeaderProfile {
 function getPageContext(pathname: string): { title: string } {
   if (pathname === '/') return { title: 'Arena Overview' };
   if (pathname.startsWith('/challenges')) return { title: '1v1 Arena Duels' };
-  if (pathname.startsWith('/tournaments')) return { title: 'Tournaments' };
+  if (pathname.startsWith('/tournaments')) return { title: 'Championship Tournaments' };
   if (pathname.startsWith('/leaderboards')) return { title: 'Ladders & Rank' };
-  if (pathname.startsWith('/games')) return { title: 'Game Catalog' };
+  if (pathname.startsWith('/games')) return { title: 'Curated Arenas' };
   if (pathname.startsWith('/community/polls')) return { title: 'Community Roadmap' };
   if (pathname.startsWith('/support')) return { title: 'Player Support' };
-  if (pathname.startsWith('/matches/new')) return { title: 'Create Duel' };
-  if (pathname.startsWith('/matches/')) return { title: 'Match Arena' };
-  if (pathname.startsWith('/dashboard')) return { title: 'Wallet & Cashier' };
-  if (pathname.startsWith('/settings')) return { title: 'Settings' };
+  if (pathname.startsWith('/matches/new')) return { title: 'Create Arena Duel' };
+  if (pathname.startsWith('/matches/')) return { title: 'Live Match Arena' };
+  if (pathname.startsWith('/dashboard')) return { title: 'Arena Dashboard' };
+  if (pathname.startsWith('/cashier')) return { title: 'Wallet & Cashier' };
+  if (pathname.startsWith('/settings')) return { title: 'Account Settings' };
   if (pathname.startsWith('/admin')) return { title: 'Operations Console' };
   if (pathname.startsWith('/profile')) return { title: 'Player Profile' };
   return { title: 'Playverzus.xyz' };
@@ -92,7 +87,6 @@ export function TopHeader() {
   const { mode: walletMode, toggleMode: toggleWalletMode } = useWalletModeStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [gameDropdownOpen, setGameDropdownOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -158,7 +152,6 @@ export function TopHeader() {
 
   const cashAmount = wallet?.cashEur ?? 0.0;
   const pointsAmount = wallet?.balance ?? 0;
-  const eloRating = me?.rating ?? 1000;
   const avatarLetter = me?.username ? me.username.slice(0, 1).toUpperCase() : 'U';
 
   const isStaff =
@@ -229,72 +222,59 @@ export function TopHeader() {
   }
 
   // =========================================================================
-  // 1. DEDICATED PUBLIC MARKETING HEADER FOR LANDING PAGE (Clean & Decongested)
+  // 1. DEDICATED PUBLIC MARKETING HEADER FOR LANDING PAGE (Clean, Uncongested)
   // =========================================================================
   if (pathname === '/') {
     return (
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border h-14 sm:h-16 w-full">
-        <div className="max-w-7xl mx-auto w-full px-3 sm:px-6 lg:px-8 flex items-center justify-between h-full">
-          {/* Left: Brand Logo + Subtle Crossmint Badge on Desktop */}
-          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-            <Link href={me ? '/dashboard' : '/'} className="flex items-center gap-2 group flex-shrink-0">
-              <Image
-                src="/images/logo.png"
-                alt="playverzus.xyz"
-                width={130}
-                height={30}
-                className="h-7 sm:h-8 w-auto object-contain transition group-hover:opacity-90"
-                priority
-              />
-            </Link>
+      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border h-16 w-full">
+        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 flex items-center justify-between h-full">
+          {/* Left: Clean Brand Logo */}
+          <Link href={me ? '/dashboard' : '/'} className="flex items-center group flex-shrink-0">
+            <Image
+              src="/images/logo.png"
+              alt="playverzus.xyz"
+              width={140}
+              height={32}
+              className="h-8 w-auto object-contain transition group-hover:opacity-90"
+              priority
+            />
+          </Link>
 
-            <div className="hidden xl:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-[10px] font-mono font-bold text-emerald-400">
-              <CrossmintLogo className="w-3.5 h-3.5" />
-              <span>Powered by Crossmint</span>
-            </div>
-          </div>
-
-          {/* Center: Streamlined Desktop Navigation (Only 3 high-impact links, zero congestion) */}
-          <nav className="hidden lg:flex items-center gap-6 text-xs font-bold tracking-wider uppercase">
+          {/* Center: Clean, Airy Desktop Navigation (Only 3 essential links with generous spacing) */}
+          <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
             <a
               href="#arenas"
-              className="text-muted-foreground hover:text-foreground transition-colors hover:text-primary"
+              className="text-muted-foreground hover:text-foreground transition-colors"
             >
               Arenas
             </a>
             <Link
               href="/tournaments"
-              className="text-muted-foreground hover:text-foreground transition-colors hover:text-primary"
+              className="text-muted-foreground hover:text-foreground transition-colors"
             >
               Tournaments
             </Link>
             <a
               href="#how-it-works"
-              className="text-muted-foreground hover:text-foreground transition-colors hover:text-primary"
+              className="text-muted-foreground hover:text-foreground transition-colors"
             >
               How It Works
             </a>
-            <Link
-              href="/leaderboards"
-              className="hidden xl:inline-block text-muted-foreground hover:text-foreground transition-colors hover:text-primary"
-            >
-              Rankings
-            </Link>
           </nav>
 
           {/* Right: Clean Action Buttons + Mobile Hamburger */}
-          <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
+          <div className="flex items-center gap-3 flex-shrink-0">
             {!me ? (
               <>
                 <Link href="/login" className="hidden sm:inline-flex">
-                  <Button variant="ghost" size="sm" className="font-bold text-xs uppercase tracking-wider h-8 sm:h-9 px-3">
+                  <Button variant="ghost" size="sm" className="font-semibold text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground">
                     Sign In
                   </Button>
                 </Link>
                 <Link href="/signup">
                   <Button
                     size="sm"
-                    className="font-bold text-xs uppercase tracking-wider bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm h-8 sm:h-9 px-3 sm:px-4"
+                    className="font-bold text-xs uppercase tracking-wider bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm h-9 px-4 rounded-xl"
                   >
                     Play Free
                   </Button>
@@ -303,22 +283,19 @@ export function TopHeader() {
             ) : (
               <>
                 <Link href="/dashboard">
-                  <Button size="sm" className="font-bold text-xs uppercase tracking-wider gap-1.5 h-8 sm:h-9 px-2.5 sm:px-3">
+                  <Button size="sm" className="font-bold text-xs uppercase tracking-wider gap-1.5 h-9 px-3.5 rounded-xl">
                     <LayoutDashboard className="w-3.5 h-3.5" />
                     <span>Dashboard</span>
                   </Button>
                 </Link>
                 <Link
                   href={`/profile/${me.username || 'me'}`}
-                  className="flex items-center gap-1.5 p-1 sm:px-2 sm:py-1 bg-card hover:bg-muted border border-border hover:border-primary/50 rounded-lg transition flex-shrink-0"
+                  className="flex items-center p-0.5 hover:ring-2 hover:ring-primary/50 rounded-full transition flex-shrink-0"
                   title="View Player Profile"
                 >
-                  <Avatar size="sm" className="w-6 h-6 sm:w-7 sm:h-7 text-xs bg-primary text-primary-foreground">
+                  <Avatar size="sm" className="w-8 h-8 text-xs bg-primary text-primary-foreground">
                     <AvatarFallback>{avatarLetter}</AvatarFallback>
                   </Avatar>
-                  <span className="hidden xl:inline text-xs font-bold text-foreground truncate max-w-[80px]">
-                    @{me.username}
-                  </span>
                 </Link>
               </>
             )}
@@ -327,7 +304,7 @@ export function TopHeader() {
             <button
               type="button"
               onClick={() => setMobileMenuOpen((prev) => !prev)}
-              className="lg:hidden h-8 w-8 sm:h-9 sm:w-9 rounded-lg bg-card hover:bg-muted border border-border text-foreground flex items-center justify-center transition-colors flex-shrink-0"
+              className="md:hidden h-9 w-9 rounded-xl bg-card hover:bg-muted border border-border text-foreground flex items-center justify-center transition-colors flex-shrink-0"
               aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
               aria-expanded={mobileMenuOpen}
             >
@@ -346,16 +323,16 @@ export function TopHeader() {
         {mounted &&
           mobileMenuOpen &&
           createPortal(
-            <div className="fixed inset-0 top-14 sm:top-16 z-[9999] lg:hidden flex flex-col">
+            <div className="fixed inset-0 top-16 z-[9999] md:hidden flex flex-col">
               {/* Tap-outside Backdrop */}
               <div
-                className="fixed inset-0 top-14 sm:top-16 bg-black/75 backdrop-blur-sm transition-opacity"
+                className="fixed inset-0 top-16 bg-black/75 backdrop-blur-sm transition-opacity"
                 onClick={() => setMobileMenuOpen(false)}
                 aria-hidden="true"
               />
 
               {/* Menu Container: Slides down from the top header */}
-              <div className="relative z-10 w-full bg-zinc-950/98 border-b border-border shadow-2xl p-4 sm:p-6 max-h-[calc(100vh-3.5rem)] sm:max-h-[calc(100vh-4rem)] overflow-y-auto animate-in slide-in-from-top-2 duration-200">
+              <div className="relative z-10 w-full bg-zinc-950/98 border-b border-border shadow-2xl p-4 sm:p-6 max-h-[calc(100vh-4rem)] overflow-y-auto animate-in slide-in-from-top-2 duration-200">
                 {/* Crossmint Trust Pill */}
                 <div className="inline-flex items-center gap-1.5 px-2.5 py-1 mb-4 rounded-full bg-zinc-900 border border-zinc-800 text-[10px] font-mono font-bold text-emerald-400">
                   <CrossmintLogo className="w-3.5 h-3.5" />
@@ -442,12 +419,12 @@ export function TopHeader() {
                   {!me ? (
                     <>
                       <Link href="/signup" onClick={() => setMobileMenuOpen(false)}>
-                        <Button className="w-full font-bold text-xs uppercase tracking-wider bg-primary text-primary-foreground shadow-sm h-10">
+                        <Button className="w-full font-bold text-xs uppercase tracking-wider bg-primary text-primary-foreground shadow-sm h-10 rounded-xl">
                           Start Competing Free
                         </Button>
                       </Link>
                       <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
-                        <Button variant="outline" className="w-full font-bold text-xs uppercase tracking-wider h-10">
+                        <Button variant="outline" className="w-full font-bold text-xs uppercase tracking-wider h-10 rounded-xl">
                           Sign In to Account
                         </Button>
                       </Link>
@@ -455,7 +432,7 @@ export function TopHeader() {
                   ) : (
                     <>
                       <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)}>
-                        <Button className="w-full font-bold text-xs uppercase tracking-wider gap-2 h-10">
+                        <Button className="w-full font-bold text-xs uppercase tracking-wider gap-2 h-10 rounded-xl">
                           <LayoutDashboard className="w-4 h-4" />
                           <span>Enter Arena Dashboard</span>
                         </Button>
@@ -466,7 +443,7 @@ export function TopHeader() {
                           onClick={() => setMobileMenuOpen(false)}
                           className="flex-1"
                         >
-                          <Button variant="outline" className="w-full font-bold text-xs uppercase tracking-wider gap-2 h-10">
+                          <Button variant="outline" className="w-full font-bold text-xs uppercase tracking-wider gap-2 h-10 rounded-xl">
                             <Avatar size="sm" className="w-5 h-5 text-[10px] bg-primary text-primary-foreground">
                               <AvatarFallback>{avatarLetter}</AvatarFallback>
                             </Avatar>
@@ -479,7 +456,7 @@ export function TopHeader() {
                             setMobileMenuOpen(false);
                             handleSignOut();
                           }}
-                          className="font-bold text-xs uppercase tracking-wider text-destructive hover:bg-destructive/10 gap-2 h-10 px-4"
+                          className="font-bold text-xs uppercase tracking-wider text-destructive hover:bg-destructive/10 gap-2 h-10 px-4 rounded-xl"
                         >
                           <LogOut className="w-4 h-4" />
                           <span>Sign Out</span>
@@ -497,17 +474,17 @@ export function TopHeader() {
   }
 
   // =========================================================================
-  // 2. AUTHENTICATED & IN-APP TOP HEADER (Clean, Decongested, LaserScan Style)
+  // 2. AUTHENTICATED & IN-APP TOP HEADER (Spacious, Minimal, Decongested)
   // =========================================================================
   return (
-    <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-border h-14 sm:h-16 flex items-center justify-between px-2.5 sm:px-6 lg:px-8 gap-2 sm:gap-4 w-full">
-      {/* Left: Mobile Menu Toggle + Mark + Active Arena Dropdown */}
-      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink-0">
-        {/* Mobile menu toggle (Menu / X) */}
+    <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-border h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8 gap-4 w-full">
+      {/* Left: Mobile Toggle + Logo mark (< lg) OR Page Heading (lg+) */}
+      <div className="flex items-center gap-3 min-w-0 flex-shrink-0">
+        {/* Mobile menu toggle (Only visible on < lg) */}
         <button
           type="button"
           onClick={() => setMobileMenuOpen((prev) => !prev)}
-          className="lg:hidden h-8 w-8 sm:h-9 sm:w-9 rounded-lg bg-card hover:bg-muted border border-border text-foreground flex items-center justify-center transition-colors flex-shrink-0"
+          className="lg:hidden h-9 w-9 rounded-xl bg-card hover:bg-muted border border-border text-foreground flex items-center justify-center transition-colors flex-shrink-0"
           aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
           aria-expanded={mobileMenuOpen}
         >
@@ -518,7 +495,7 @@ export function TopHeader() {
           )}
         </button>
 
-        {/* Mobile Brand Mark */}
+        {/* Mobile Brand Mark (< lg) */}
         <Link
           href={me ? '/dashboard' : '/'}
           className="lg:hidden flex items-center justify-center flex-shrink-0"
@@ -528,50 +505,19 @@ export function TopHeader() {
             alt="playverzus.xyz"
             width={28}
             height={28}
-            className="w-6 h-6 sm:w-7 sm:h-7 object-contain"
+            className="w-7 h-7 object-contain"
           />
         </Link>
 
-        {/* Active Game Dropdown Switcher (Anchored dropdown - visible on md+) */}
-        <div className="relative hidden md:block">
-          <button
-            type="button"
-            onClick={() => setGameDropdownOpen((prev) => !prev)}
-            aria-expanded={gameDropdownOpen}
-            className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-card hover:bg-muted border border-border hover:border-primary/50 transition group text-left min-w-0"
-            title="Switch Active Game Arena"
-          >
-            <GamePoster
-              game={activeCatalogGame}
-              aspect="mini"
-              className="w-5 h-7 rounded flex-shrink-0"
-            />
-            <div className="flex flex-col min-w-0">
-              <span className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider leading-none flex items-center gap-1">
-                Arena <ChevronDown className={`w-3 h-3 text-primary transition-transform duration-200 ${gameDropdownOpen ? 'rotate-180' : ''}`} />
-              </span>
-              <span className="text-xs font-bold text-foreground group-hover:text-primary transition-colors truncate max-w-[120px] leading-tight">
-                {activeCatalogGame.displayName}
-              </span>
-            </div>
-          </button>
-
-          <GameDropdown
-            open={gameDropdownOpen}
-            onClose={() => setGameDropdownOpen(false)}
-          />
-        </div>
-
-        {/* Current Page Context Title (Only on wide screens xl+ to keep topbar uncluttered) */}
-        <div className="hidden xl:flex items-center gap-2 text-left min-w-0">
-          <span className="text-muted-foreground/30 text-xs">/</span>
-          <span className="text-xs font-bold text-foreground tracking-tight leading-tight truncate">
+        {/* Clean Page Title (Desktop lg+) */}
+        <div className="hidden lg:flex items-center min-w-0">
+          <h1 className="text-sm font-bold text-foreground tracking-tight truncate">
             {pageContext.title}
-          </span>
+          </h1>
         </div>
       </div>
 
-      {/* Center: Omnisearch (Only on wide desktop xl+) */}
+      {/* Center: Slim Omnisearch (Desktop xl+) */}
       <div className="hidden xl:flex items-center flex-1 max-w-xs mx-4 relative min-w-0">
         <Search className="absolute left-3 w-4 h-4 text-muted-foreground pointer-events-none" />
         <input
@@ -579,81 +525,47 @@ export function TopHeader() {
           placeholder="Search duels, tournaments..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-9 pr-10 py-1.5 bg-muted/50 hover:bg-muted focus:bg-muted border border-border focus:border-primary rounded-lg text-xs text-foreground placeholder:text-muted-foreground focus:outline-none transition"
+          className="w-full pl-9 pr-10 py-1.5 bg-muted/40 hover:bg-muted/70 focus:bg-muted border border-border focus:border-primary rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none transition"
         />
-        <span className="absolute right-2 px-1.5 py-0.5 rounded bg-background border border-border text-[9px] font-mono text-muted-foreground pointer-events-none">
+        <span className="absolute right-2.5 px-1.5 py-0.5 rounded bg-background border border-border text-[9px] font-mono text-muted-foreground pointer-events-none">
           ⌘K
         </span>
       </div>
 
-      {/* Right: Decongested Wallet Balance + Notification Bell + Profile Avatar */}
-      <div className="flex items-center gap-1.5 sm:gap-2.5 flex-shrink-0">
-        {/* Compact Wallet Balance Display */}
-        <div className="flex items-center bg-card border border-border rounded-lg p-0.5 sm:p-1 gap-1 shadow-sm">
-          <Link
-            href="/cashier"
-            className="px-2 py-1 font-mono font-bold text-xs hover:text-primary transition flex items-center gap-1.5"
-            title="Open Cashier & Balance Management"
-          >
-            <span
-              className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
-                walletMode === 'REAL' ? 'bg-emerald-400' : 'bg-purple-400'
-              }`}
-            />
-            {walletMode === 'REAL' ? (
-              <span className="text-emerald-400 font-semibold">{formatUSDC(cashAmount)}</span>
-            ) : (
-              <span className="text-purple-300 font-semibold">
-                {formatPoints(pointsAmount)} <span className="text-[9px] text-muted-foreground font-sans">PTS</span>
-              </span>
-            )}
-          </Link>
+      {/* Right: Decongested Clean Wallet + Bell + Avatar */}
+      <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+        {/* Sleek Wallet Balance Pill */}
+        <Link
+          href="/cashier"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-card hover:bg-muted border border-border hover:border-primary/50 transition shadow-sm"
+          title="Open Cashier & Wallet Management"
+        >
+          <span
+            className={`w-2 h-2 rounded-full flex-shrink-0 ${
+              walletMode === 'REAL' ? 'bg-emerald-400' : 'bg-purple-400'
+            }`}
+          />
+          {walletMode === 'REAL' ? (
+            <span className="text-emerald-400 font-mono font-bold text-xs">{formatUSDC(cashAmount)}</span>
+          ) : (
+            <span className="text-purple-300 font-mono font-bold text-xs">
+              {formatPoints(pointsAmount)} <span className="text-[10px] text-muted-foreground font-sans">PTS</span>
+            </span>
+          )}
+        </Link>
 
-          {/* Quick Top-up Button */}
-          <Link href="/cashier?tab=deposit" className="hidden sm:inline-flex">
-            <Button
-              size="icon"
-              variant="default"
-              className="w-6 h-6 rounded-md"
-              title="Quick Deposit / Top Up"
-            >
-              <Plus className="w-3.5 h-3.5" />
-            </Button>
-          </Link>
-        </div>
-
-        {/* Notification Bell with Popover Dropdown */}
+        {/* Notification Bell */}
         <NotificationBell />
 
-        {/* Clean Gamer Profile Chip */}
+        {/* Clean Gamer Profile Avatar */}
         <Link
           href={`/profile/${me?.username || 'me'}`}
-          className="flex items-center gap-1.5 sm:gap-2 p-1 sm:pl-1 sm:pr-2.5 bg-card hover:bg-muted border border-border hover:border-primary/50 rounded-lg transition group flex-shrink-0"
+          className="flex items-center p-0.5 hover:ring-2 hover:ring-primary/50 rounded-full transition group flex-shrink-0"
           title="View Player Profile"
         >
-          <div className="relative flex-shrink-0">
-            <Avatar size="sm" className="w-7 h-7 text-xs bg-primary text-primary-foreground">
-              <AvatarFallback>{avatarLetter}</AvatarFallback>
-            </Avatar>
-            <div className="absolute -bottom-1 -right-1">
-              <EloBadge elo={eloRating} size="sm" />
-            </div>
-          </div>
-          <div className="hidden xl:flex flex-col text-left leading-none">
-            <span className="text-xs font-bold text-foreground group-hover:text-primary transition-colors flex items-center gap-1.5">
-              <CountryFlag
-                code={me?.country_code || me?.region}
-                fallbackSeed={me?.username || me?.id || 'me'}
-                size="xs"
-              />
-              <span className="truncate max-w-[80px]">
-                {me?.username ? `@${me.username}` : 'Gamer'}
-              </span>
-            </span>
-            <span className="text-[10px] font-mono text-muted-foreground mt-0.5">
-              {eloRating} <span className="text-[8px] uppercase">ELO</span>
-            </span>
-          </div>
+          <Avatar size="sm" className="w-8 h-8 text-xs bg-primary text-primary-foreground">
+            <AvatarFallback>{avatarLetter}</AvatarFallback>
+          </Avatar>
         </Link>
       </div>
 
@@ -663,16 +575,16 @@ export function TopHeader() {
       {mounted &&
         mobileMenuOpen &&
         createPortal(
-          <div className="fixed inset-0 top-14 sm:top-16 z-[9999] lg:hidden flex flex-col">
+          <div className="fixed inset-0 top-16 z-[9999] lg:hidden flex flex-col">
             {/* Tap-outside Backdrop */}
             <div
-              className="fixed inset-0 top-14 sm:top-16 bg-black/75 backdrop-blur-sm transition-opacity"
+              className="fixed inset-0 top-16 bg-black/75 backdrop-blur-sm transition-opacity"
               onClick={() => setMobileMenuOpen(false)}
               aria-hidden="true"
             />
 
             {/* Menu Dropdown Container */}
-            <div className="relative z-10 w-full bg-zinc-950/98 border-b border-border shadow-2xl p-4 sm:p-6 max-h-[calc(100vh-3.5rem)] sm:max-h-[calc(100vh-4rem)] overflow-y-auto animate-in slide-in-from-top-2 duration-200">
+            <div className="relative z-10 w-full bg-zinc-950/98 border-b border-border shadow-2xl p-4 sm:p-6 max-h-[calc(100vh-4rem)] overflow-y-auto animate-in slide-in-from-top-2 duration-200">
               {/* Play Mode & Deposit Controls */}
               <div className="space-y-2 mb-4">
                 <div className="flex items-center justify-between p-2.5 rounded-xl bg-card border border-border">
@@ -696,7 +608,7 @@ export function TopHeader() {
                 </div>
 
                 <Link href="/cashier?tab=deposit" onClick={() => setMobileMenuOpen(false)}>
-                  <Button variant="default" size="sm" className="w-full text-xs font-bold gap-1.5 shadow-sm h-9">
+                  <Button variant="default" size="sm" className="w-full text-xs font-bold gap-1.5 shadow-sm h-10 rounded-xl">
                     <Plus className="w-3.5 h-3.5" />
                     <span>Deposit / Top Up Balance</span>
                   </Button>
@@ -731,7 +643,7 @@ export function TopHeader() {
                 </Link>
               </div>
 
-              {/* Navigation Links Grid (2 columns on tablet, 1 column on mobile) */}
+              {/* Navigation Links Grid */}
               <div className="space-y-1 mb-4">
                 <span className="text-[10px] uppercase font-bold text-muted-foreground font-mono tracking-wider px-2 py-1 block">
                   Arena Navigation
@@ -769,7 +681,7 @@ export function TopHeader() {
                       setMobileMenuOpen(false);
                       handleSignOut();
                     }}
-                    className="w-full justify-start text-xs font-bold text-destructive hover:text-destructive hover:bg-destructive/10 gap-2 h-10"
+                    className="w-full justify-start text-xs font-bold text-destructive hover:text-destructive hover:bg-destructive/10 gap-2 h-10 rounded-xl"
                   >
                     <LogOut className="w-4 h-4" />
                     <span>Sign Out of Arena</span>
