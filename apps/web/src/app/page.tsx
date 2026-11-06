@@ -214,9 +214,9 @@ function HomeContent() {
 
         {/* Trust Bar with Visual Crossmint Logo */}
         <div className="inline-flex items-center gap-2 sm:gap-5 px-4 sm:px-6 py-2.5 rounded-2xl bg-zinc-900/90 border border-zinc-800 text-xs font-mono font-bold tracking-wider flex-wrap justify-center shadow-md">
-          <span className="flex items-center gap-2 text-emerald-400">
-            <CrossmintLogo className="w-4 h-4" />
-            <span>Powered by Crossmint</span>
+          <span className="flex items-center gap-2 text-foreground">
+            <span className="text-muted-foreground text-[11px] font-sans">Powered by</span>
+            <CrossmintLogo variant="full" className="h-4 w-auto" />
           </span>
           <span className="text-zinc-700 hidden sm:inline">|</span>
           <span className="flex items-center gap-1.5 text-foreground">
@@ -267,9 +267,9 @@ function HomeContent() {
 
         {/* Live Proof Metrics Strip (FACEIT Live Stats Vibe) */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 w-full pt-8 sm:pt-12 border-t border-border">
-          <Card className="p-4 sm:p-5 rounded-xl bg-card border-border shadow-sm flex flex-col items-center text-center">
-            <span className="font-mono text-xl sm:text-2xl font-black text-emerald-400">Crossmint</span>
-            <span className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider mt-1">Smart Escrow Vault</span>
+          <Card className="p-4 sm:p-5 rounded-xl bg-card border-border shadow-sm flex flex-col items-center justify-center text-center">
+            <CrossmintLogo variant="full" className="h-6 w-auto" />
+            <span className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider mt-1.5">Smart Escrow Vault</span>
           </Card>
 
           <Card className="p-4 sm:p-5 rounded-xl bg-card border-border shadow-sm flex flex-col items-center text-center">
@@ -426,8 +426,8 @@ function HomeContent() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
           <Card className="bg-card border border-border p-6 rounded-2xl space-y-3 shadow-sm hover:border-zinc-700 transition flex flex-col justify-between">
             <div className="space-y-3">
-              <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 text-emerald-400 flex items-center justify-center font-bold">
-                <ShieldCheck className="w-5 h-5 text-emerald-400" />
+              <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center p-2">
+                <CrossmintLogo variant="icon" className="w-6 h-6" />
               </div>
               <h3 className="font-bold text-base text-foreground">Escrow Protection</h3>
               <p className="text-xs text-muted-foreground leading-relaxed">
@@ -703,10 +703,9 @@ function HomeContent() {
 
           <div className="space-y-1.5">
             <span className="text-[10px] uppercase font-bold text-zinc-400 block tracking-wider">Infrastructure</span>
-            <p className="text-xs text-foreground font-semibold flex items-center gap-1.5">
-              <CrossmintLogo className="w-3.5 h-3.5" />
-              <span>Powered by Crossmint</span>
-            </p>
+            <div className="flex items-center gap-1.5 pt-0.5">
+              <CrossmintLogo variant="full" className="h-4 w-auto" />
+            </div>
             <span className="text-[10px] text-muted-foreground block">
               Enterprise Custody & Escrow
             </span>

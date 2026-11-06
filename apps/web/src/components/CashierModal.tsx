@@ -38,6 +38,7 @@ import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { CountryFlag } from './CountryFlag';
+import { CrossmintLogo } from './CrossmintLogo';
 
 interface CashierModalProps {
   open: boolean;
@@ -564,8 +565,8 @@ export function CashierModal({
               {/* Escrow Guarantee Strip */}
               <div className="p-3 bg-muted/50 border border-border rounded-xl flex items-center justify-between text-xs text-muted-foreground">
                 <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                  <span>Segregated USDC Escrow · 0% Platform Spread</span>
+                  <CrossmintLogo variant="icon" className="w-4 h-4" />
+                  <span>Crossmint Segregated USDC Escrow · 0% Platform Spread</span>
                 </div>
                 <span className="font-mono text-[10px] text-foreground font-semibold">
                   Speed: {activeRail?.processingTime || 'Instant'}
@@ -650,8 +651,8 @@ export function CashierModal({
       {crossmintModalOpen && (
         <div className="fixed inset-0 z-[60] bg-background/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in">
           <div className="bg-card border border-border rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-5 text-center">
-            <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto text-xl">
-              💳
+            <div className="flex items-center justify-center mx-auto pt-2 pb-1">
+              <CrossmintLogo variant="full" className="h-8 w-auto" />
             </div>
             <div>
               <h3 className="text-lg font-black text-foreground">Global Card & Apple Pay Checkout</h3>

@@ -39,6 +39,7 @@ import {
 } from '../../lib/currency';
 import { AuthGuard } from '../../components/AuthGuard';
 import { CountryFlag } from '../../components/CountryFlag';
+import { CrossmintLogo } from '../../components/CrossmintLogo';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/card';
@@ -261,7 +262,7 @@ function CashierContent() {
 
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="text-xs font-mono bg-emerald-500/10 text-emerald-400 border-emerald-500/30 font-bold gap-1.5 py-1 px-2.5">
-            <ShieldCheck className="w-3.5 h-3.5" />
+            <CrossmintLogo variant="icon" className="w-3.5 h-3.5" />
             <span>Crossmint Regulated Escrow & KYC</span>
           </Badge>
         </div>
@@ -608,7 +609,7 @@ function CashierContent() {
 
               {/* Security & Regulatory Escrow Notice */}
               <div className="p-4 rounded-xl bg-muted/40 border border-border flex items-start gap-3 text-xs text-muted-foreground">
-                <ShieldCheck className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
+                <CrossmintLogo variant="icon" className="w-5 h-5 flex-shrink-0 mt-0.5" />
                 <div className="space-y-0.5">
                   <div className="font-bold text-foreground">Crossmint Smart Custody & Regulated USDC Escrow</div>
                   <p className="text-[11px] leading-relaxed">
@@ -625,8 +626,8 @@ function CashierContent() {
       {crossmintModalOpen && (
         <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in">
           <div className="bg-card border border-border rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-5 text-center">
-            <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto text-xl">
-              💳
+            <div className="flex items-center justify-center mx-auto pt-2 pb-1">
+              <CrossmintLogo variant="full" className="h-8 w-auto" />
             </div>
             <div>
               <h3 className="text-lg font-black text-foreground">Global Card & Apple Pay Checkout</h3>

@@ -20,6 +20,7 @@ import { useCapturePipeline as useMatchCapture } from '../hooks/useCapturePipeli
 import { LiveScore } from './LiveScore';
 import { CountryFlag } from './CountryFlag';
 import { GamePoster } from './GamePoster';
+import { CrossmintLogo } from './CrossmintLogo';
 import { notifyUser, requestNotificationPermission } from '../lib/notifications';
 import { apiClient } from '../lib/api';
 import { useGameAccountsStore } from '../lib/gameAccountsStore';
@@ -366,8 +367,9 @@ export function MatchRoom({
               </div>
             </div>
           </div>
-          <Badge variant="copper" className="font-mono text-xs self-start sm:self-center">
-            Escrow Released & Elo Updated ✓
+          <Badge variant="copper" className="font-mono text-xs self-start sm:self-center flex items-center gap-1.5 py-1 px-3">
+            <CrossmintLogo variant="icon" className="w-3.5 h-3.5 inline-block" />
+            <span>Crossmint Escrow Settled ✓</span>
           </Badge>
         </Card>
       )}

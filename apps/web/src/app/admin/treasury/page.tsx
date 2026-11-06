@@ -39,6 +39,7 @@ import {
   TrendingUp,
   Percent,
 } from 'lucide-react';
+import { CrossmintLogo } from '../../../components/CrossmintLogo';
 
 interface DiscrepancyItem {
   userId: string;
@@ -976,7 +977,8 @@ export default function AdminTreasuryPage() {
             <div>
               <h3 className="text-base font-black text-foreground flex items-center gap-2">
                 <ArrowUpRight className="w-5 h-5 text-emerald-400" />
-                <span>Withdraw Platform Earnings via Crossmint</span>
+                <span>Withdraw Platform Earnings via</span>
+                <CrossmintLogo variant="full" className="h-4.5 w-auto inline-block" />
               </h3>
               <p className="text-xs text-muted-foreground">
                 Execute an audited owner dividend payout directly from your Crossmint Treasury Wallet via On-Chain USDC Transfer or Direct Fiat Bank Off-Ramp.
