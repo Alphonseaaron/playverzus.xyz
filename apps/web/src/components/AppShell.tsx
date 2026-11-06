@@ -6,6 +6,7 @@ import { GameRail } from './GameRail';
 import { TopHeader } from './TopHeader';
 import { PartyBar } from './PartyBar';
 import { NotificationToastContainer } from './NotificationToastContainer';
+import { BackToTop } from './BackToTop';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -37,6 +38,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <main className="flex-1 w-full flex flex-col min-w-0">
           {children}
         </main>
+        <BackToTop />
         <NotificationToastContainer />
       </div>
     );
@@ -50,6 +52,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <main className="flex-1 w-full min-w-0">
           {children}
         </main>
+        <BackToTop />
         <NotificationToastContainer />
       </div>
     );
@@ -63,6 +66,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 min-w-0">
           {children}
         </main>
+        <BackToTop />
         <NotificationToastContainer />
       </div>
     );
@@ -79,6 +83,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             {children}
           </main>
         </div>
+        <BackToTop />
         <NotificationToastContainer />
       </div>
     );
@@ -96,6 +101,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </main>
       </div>
       <PartyBar />
+      <BackToTop />
       <NotificationToastContainer />
     </div>
   );

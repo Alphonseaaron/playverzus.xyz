@@ -9,7 +9,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Menu,
   X,
-  Search,
   Plus,
   ArrowLeftRight,
   LayoutDashboard,
@@ -37,7 +36,6 @@ import { OFFICIAL_GAMES, getGameById } from '../lib/gamesCatalog';
 import { GamePoster } from './GamePoster';
 import { Button } from './ui/button';
 import { Avatar, AvatarFallback } from './ui/avatar';
-import { CrossmintLogo } from './CrossmintLogo';
 
 interface HeaderWallet {
   cashEur?: number;
@@ -85,7 +83,6 @@ export function TopHeader() {
   const queryClient = useQueryClient();
   const { activeGame } = useGameStore();
   const { mode: walletMode, toggleMode: toggleWalletMode } = useWalletModeStore();
-  const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -222,7 +219,7 @@ export function TopHeader() {
   }
 
   // =========================================================================
-  // 1. DEDICATED PUBLIC MARKETING HEADER FOR LANDING PAGE (Clean, Uncongested)
+  // 1. DEDICATED PUBLIC MARKETING HEADER FOR LANDING PAGE (Pure, Minimal, Spacious)
   // =========================================================================
   if (pathname === '/') {
     return (
@@ -240,33 +237,11 @@ export function TopHeader() {
             />
           </Link>
 
-          {/* Center: Clean, Airy Desktop Navigation (Only 3 essential links with generous spacing) */}
-          <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
-            <a
-              href="#arenas"
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Arenas
-            </a>
-            <Link
-              href="/tournaments"
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Tournaments
-            </Link>
-            <a
-              href="#how-it-works"
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              How It Works
-            </a>
-          </nav>
-
-          {/* Right: Clean Action Buttons + Mobile Hamburger */}
-          <div className="flex items-center gap-3 flex-shrink-0">
+          {/* Right: Clean Action Buttons (Sign In + Play Free) + Mobile Menu Toggle */}
+          <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
             {!me ? (
               <>
-                <Link href="/login" className="hidden sm:inline-flex">
+                <Link href="/login">
                   <Button variant="ghost" size="sm" className="font-semibold text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground">
                     Sign In
                   </Button>
@@ -283,7 +258,7 @@ export function TopHeader() {
             ) : (
               <>
                 <Link href="/dashboard">
-                  <Button size="sm" className="font-bold text-xs uppercase tracking-wider gap-1.5 h-9 px-3.5 rounded-xl">
+                  <Button size="sm" className="font-bold text-xs uppercase tracking-wider gap-1.5 h-9 px-4 rounded-xl">
                     <LayoutDashboard className="w-3.5 h-3.5" />
                     <span>Dashboard</span>
                   </Button>
@@ -333,12 +308,6 @@ export function TopHeader() {
 
               {/* Menu Container: Slides down from the top header */}
               <div className="relative z-10 w-full bg-zinc-950/98 border-b border-border shadow-2xl p-4 sm:p-6 max-h-[calc(100vh-4rem)] overflow-y-auto animate-in slide-in-from-top-2 duration-200">
-                {/* Crossmint Trust Pill */}
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 mb-4 rounded-full bg-zinc-900 border border-zinc-800 text-[10px] font-mono font-bold text-emerald-400">
-                  <CrossmintLogo className="w-3.5 h-3.5" />
-                  <span>Powered by Crossmint Escrow</span>
-                </div>
-
                 {/* Navigation Links Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-5">
                   <a
@@ -474,11 +443,11 @@ export function TopHeader() {
   }
 
   // =========================================================================
-  // 2. AUTHENTICATED & IN-APP TOP HEADER (Spacious, Minimal, Decongested)
+  // 2. AUTHENTICATED & IN-APP TOP HEADER (Clean, Minimal, Spacious)
   // =========================================================================
   return (
     <header className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-border h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8 gap-4 w-full">
-      {/* Left: Mobile Toggle + Logo mark (< lg) OR Page Heading (lg+) */}
+      {/* Left: Mobile Toggle + Logo mark (< lg) OR Clean Page Heading (lg+) */}
       <div className="flex items-center gap-3 min-w-0 flex-shrink-0">
         {/* Mobile menu toggle (Only visible on < lg) */}
         <button
@@ -515,21 +484,6 @@ export function TopHeader() {
             {pageContext.title}
           </h1>
         </div>
-      </div>
-
-      {/* Center: Slim Omnisearch (Desktop xl+) */}
-      <div className="hidden xl:flex items-center flex-1 max-w-xs mx-4 relative min-w-0">
-        <Search className="absolute left-3 w-4 h-4 text-muted-foreground pointer-events-none" />
-        <input
-          type="text"
-          placeholder="Search duels, tournaments..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-9 pr-10 py-1.5 bg-muted/40 hover:bg-muted/70 focus:bg-muted border border-border focus:border-primary rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none transition"
-        />
-        <span className="absolute right-2.5 px-1.5 py-0.5 rounded bg-background border border-border text-[9px] font-mono text-muted-foreground pointer-events-none">
-          ⌘K
-        </span>
       </div>
 
       {/* Right: Decongested Clean Wallet + Bell + Avatar */}
