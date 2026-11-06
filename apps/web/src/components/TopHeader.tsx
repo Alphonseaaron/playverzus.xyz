@@ -41,6 +41,7 @@ import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Sheet, SheetHeader, SheetTitle } from './ui/sheet';
 import { Avatar, AvatarFallback } from './ui/avatar';
+import { CrossmintLogo } from './CrossmintLogo';
 
 interface HeaderWallet {
   cashEur?: number;
@@ -222,7 +223,7 @@ export function TopHeader() {
             </Link>
 
             <div className="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-[10px] font-mono font-bold text-emerald-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <CrossmintLogo className="w-3.5 h-3.5" />
               <span>Powered by Crossmint</span>
             </div>
           </div>

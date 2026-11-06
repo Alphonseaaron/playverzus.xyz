@@ -50,6 +50,7 @@ import { Button } from '../components/ui/button';
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '../components/ui/card';
 import { ParallaxStoryScenes } from '../components/ParallaxStoryScenes';
 import { SquadShowcase } from '../components/SquadShowcase';
+import { CrossmintLogo } from '../components/CrossmintLogo';
 
 interface UserProfile {
   id: string;
@@ -218,26 +219,26 @@ function HomeContent() {
           </span>
         </h1>
 
-        {/* Sub-headline */}
+        {/* Sub-headline: Automation Front & Center */}
         <p className="text-base sm:text-xl text-muted-foreground max-w-2xl leading-relaxed font-medium">
-          Play across PC, Console, and Mobile. Win instantly.
+          <strong className="text-foreground font-black">Play. Verify. Get Paid.</strong> It’s that simple. Our Visual Verification Engine™ automates the entire lifecycle from entry to instant USDC settlement.
         </p>
 
-        {/* Trust Bar (Institutional Proof Points) */}
+        {/* Trust Bar with Visual Crossmint Logo */}
         <div className="inline-flex items-center gap-2 sm:gap-5 px-4 sm:px-6 py-2.5 rounded-2xl bg-zinc-900/90 border border-zinc-800 text-xs font-mono font-bold tracking-wider flex-wrap justify-center shadow-md">
-          <span className="flex items-center gap-1.5 text-emerald-400">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            Powered by Crossmint
+          <span className="flex items-center gap-2 text-emerald-400">
+            <CrossmintLogo className="w-4 h-4" />
+            <span>Powered by Crossmint</span>
           </span>
           <span className="text-zinc-700 hidden sm:inline">|</span>
           <span className="flex items-center gap-1.5 text-foreground">
             <Coins className="w-3.5 h-3.5 text-primary" />
-            USDC Settlements
+            <span>USDC Settlements</span>
           </span>
           <span className="text-zinc-700 hidden sm:inline">|</span>
           <span className="flex items-center gap-1.5 text-purple-400">
             <Scan className="w-3.5 h-3.5" />
-            Visual Verification Engine™
+            <span>Visual Verification Engine™</span>
           </span>
         </div>
 
@@ -248,7 +249,7 @@ function HomeContent() {
               <Link href="/signup?redirect=/challenges" className="w-full sm:w-auto">
                 <Button size="lg" className="w-full sm:w-auto font-black text-sm uppercase tracking-wider px-8 h-12 gap-2 bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm">
                   <Rocket className="w-4 h-4" />
-                  <span>Start Competing</span>
+                  <span>Start Competing Free</span>
                 </Button>
               </Link>
               <Link href="/tournaments" className="w-full sm:w-auto">
@@ -263,7 +264,7 @@ function HomeContent() {
               <Link href="/challenges" className="w-full sm:w-auto">
                 <Button size="lg" className="w-full sm:w-auto font-black text-sm uppercase tracking-wider px-8 h-12 gap-2 bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm">
                   <Swords className="w-4 h-4" />
-                  <span>Start Competing</span>
+                  <span>Start Competing Free</span>
                 </Button>
               </Link>
               <Link href="/tournaments" className="w-full sm:w-auto">
@@ -300,7 +301,7 @@ function HomeContent() {
         </div>
       </section>
 
-      {/* 3. PARALLAX STORYLINE: 4-STAGE MATCH LIFECYCLE */}
+      {/* 3. "HOW IT WORKS" (4-STEP AUTOMATED COMPETITIVE LIFECYCLE) */}
       <ParallaxStoryScenes />
 
       {/* 4. "WHY PLAYVERZUS?" SECTION (THE TECH MOAT) */}
@@ -339,7 +340,7 @@ function HomeContent() {
               <h3 className="font-bold text-lg text-foreground">Proprietary Visual Intelligence</h3>
             </div>
             <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-              While others wait for manual referee approval, our AI-driven verification layer parses official game UIs in real-time. Zero human error. Zero tampering.
+              While others wait for manual referee approval, our AI-driven verification layer parses game UIs in real-time. Zero human error. Zero tampering.
             </p>
           </Card>
 
@@ -372,19 +373,19 @@ function HomeContent() {
       {/* 5. COMPETITIVE SQUADS & CLAN ROSTERS SHOWCASE */}
       <SquadShowcase />
 
-      {/* 6. SUPPORTED COMPETITIVE GAME ARENAS */}
+      {/* 6. SUPPORTED CURATED GAME ARENAS */}
       <section id="arenas" className="space-y-6 sm:space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2 text-primary font-mono text-xs font-bold uppercase tracking-wider">
               <Gamepad2 className="w-4 h-4" />
-              <span>OFFICIAL COMPETITIVE ROSTER</span>
+              <span>CURATED COMPETITIVE ROSTER</span>
             </div>
             <h2 className="text-3xl sm:text-4xl font-black uppercase tracking-tight text-foreground">
               Select Your Arena
             </h2>
             <p className="text-xs sm:text-sm text-muted-foreground">
-              Battle in officially calibrated titles with automated round tracking and instant score verification.
+              Battle in our curated competitive arenas with automated round tracking and instant score verification.
             </p>
           </div>
 
@@ -679,7 +680,7 @@ function HomeContent() {
               </div>
               <h3 className="font-bold text-base text-foreground">Compliant Framework</h3>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Operating as a skill-based competition platform, ensuring zero human referees and strict regulatory adherence.
+                Operating as a skill-based competition platform, designed for global regulatory compliance with zero human referees.
               </p>
             </div>
           </Card>
@@ -693,7 +694,7 @@ function HomeContent() {
             READY TO COMPETE?
           </span>
           <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tight text-foreground">
-            Claim Your First Win Today
+            Start Competing Free
           </h2>
           <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
             Create your account in 30 seconds. Connect your favorite game gamertag and enter free 1v1 duels or real USDC championship brackets.
@@ -704,7 +705,7 @@ function HomeContent() {
           <Link href="/signup">
             <Button size="lg" className="font-black text-xs uppercase tracking-wider px-8 h-12 bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm">
               <Rocket className="w-4 h-4 mr-2" />
-              <span>Start Competing</span>
+              <span>Start Competing Free</span>
             </Button>
           </Link>
           <Link href="/tournaments">
@@ -731,15 +732,20 @@ function HomeContent() {
               <span className="font-black text-sm text-foreground">Playverzus.xyz</span>
             </div>
             <p className="text-[11px] text-muted-foreground leading-relaxed">
-              The Infrastructure for Global Skill Gaming.
+              The Global Infrastructure for Skill-Based Competition.
+            </p>
+            <p className="text-[10px] text-zinc-500 font-mono leading-relaxed pt-1">
+              Playverzus Technologies Inc. <br />
+              Registered Entity · Skill Gaming Infrastructure <br />
+              Global Operations: Nairobi · Delaware · London
             </p>
           </div>
 
           <div className="space-y-1.5">
             <span className="text-[10px] uppercase font-bold text-zinc-400 block tracking-wider">Infrastructure</span>
             <p className="text-xs text-foreground font-semibold flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-400" />
-              Powered by Crossmint
+              <CrossmintLogo className="w-3.5 h-3.5" />
+              <span>Powered by Crossmint</span>
             </p>
             <span className="text-[10px] text-muted-foreground block">
               Enterprise Custody & Escrow
@@ -768,12 +774,15 @@ function HomeContent() {
               <Link href="/responsible-gaming" className="hover:text-foreground transition-colors">
                 Responsible Gaming
               </Link>
+              <Link href="/responsible-gaming#compliance" className="hover:text-foreground transition-colors">
+                Compliance & Licensing
+              </Link>
             </div>
           </div>
         </div>
 
         <div className="pt-6 border-t border-zinc-900 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-zinc-500">
-          <span>© 2026 Playverzus. All rights reserved. Operating as a skill-based competition platform.</span>
+          <span>© 2026 Playverzus Technologies Inc. All rights reserved. Operating as a skill-based competition infrastructure.</span>
           <div className="flex items-center gap-4">
             <Link href="/support" className="hover:text-foreground transition-colors">Support Desk</Link>
             <Link href="/community/polls" className="hover:text-foreground transition-colors">Roadmap Polls</Link>

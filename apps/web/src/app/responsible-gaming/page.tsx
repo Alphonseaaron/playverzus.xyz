@@ -61,8 +61,8 @@ export default function ResponsibleGamingPage() {
       </div>
 
       <div className="space-y-6 text-xs text-muted-foreground leading-relaxed font-sans pt-4 border-t border-border">
-        <section className="space-y-2">
-          <h2 className="text-base font-bold text-foreground">1. Skill Gaming Regulatory Standard</h2>
+        <section id="compliance" className="space-y-2">
+          <h2 className="text-base font-bold text-foreground">1. Skill Gaming Regulatory Standard &amp; Compliance</h2>
           <p>
             Under relevant international and federal statutes, competitions where outcome is predominantly determined by physical coordination, strategic acumen, reflex speed, and game mastery constitute lawful games of skill. Playverzus does not offer games of chance, lotteries, or casino gambling.
           </p>

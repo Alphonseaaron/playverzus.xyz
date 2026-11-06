@@ -113,6 +113,13 @@ export function SquadShowcase() {
           <p className="text-xs sm:text-sm text-muted-foreground max-w-xl">
             Assemble a 2v2 duo, 3v3 trio, or 4v4 squad. Challenge rival teams in private room brackets with automated score parsing and team prize pools.
           </p>
+          <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground pt-1">
+            <span className="w-2 h-2 rounded-full bg-primary/70 animate-pulse" />
+            <span>Sample competitive rosters shown.</span>
+            <Link href="/challenges" className="text-primary hover:underline font-bold inline-flex items-center gap-1">
+              <span>Create your own clan or squad roster &rarr;</span>
+            </Link>
+          </div>
         </div>
 
         <Link href="/signup?redirect=/challenges">

@@ -20,15 +20,20 @@ import {
   Coins,
   ChevronRight,
   ExternalLink,
+  Layers,
+  ArrowRightLeft,
 } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from './ui/card';
+import { CrossmintLogo } from './CrossmintLogo';
 
 interface StoryScene {
   id: string;
-  step: string;
+  stepNumber: string;
+  stepFraction: string;
   title: string;
+  shortAction: string;
   tagline: string;
   character: {
     name: string;
@@ -52,9 +57,11 @@ interface StoryScene {
 const STORY_SCENES: StoryScene[] = [
   {
     id: 'stage-1',
-    step: 'STAGE 01',
-    title: '1. Lock In Your Stake',
-    tagline: 'Secured Instantly via Crossmint Escrow',
+    stepNumber: '01',
+    stepFraction: 'STAGE 1 OF 4',
+    title: '1. Lock In',
+    shortAction: 'Lock In',
+    tagline: 'Funds Secured via Crossmint Escrow',
     character: {
       name: 'Kaelen "Striker" Voss',
       codename: 'STRIKER-01',
@@ -65,7 +72,7 @@ const STORY_SCENES: StoryScene[] = [
       accentColor: 'text-primary',
     },
     summary:
-      'Connect your wallet or use email sign-in. Entry fees are secured instantly via Crossmint Escrow. Your prize pool is guaranteed before the match begins.',
+      'Connect your wallet or use 1-click email sign-in. Entry fees are secured instantly via Crossmint Escrow. Your prize pool is guaranteed before the match begins.',
     details: [
       'Crossmint Smart Vault: 100% on-chain escrow locks funds before match kickoff.',
       'Guaranteed Prize Pools: Your winnings are fully collateralized before start.',
@@ -85,9 +92,11 @@ const STORY_SCENES: StoryScene[] = [
   },
   {
     id: 'stage-2',
-    step: 'STAGE 02',
-    title: '2. Compete in Your Arena',
-    tagline: 'Platform Agnostic · PC, Console, and Mobile',
+    stepNumber: '02',
+    stepFraction: 'STAGE 2 OF 4',
+    title: '2. Compete',
+    shortAction: 'Compete',
+    tagline: 'Curated Arenas · PC, Console, and Mobile',
     character: {
       name: 'Major Jax Bennett',
       codename: 'VANGUARD-09',
@@ -98,10 +107,10 @@ const STORY_SCENES: StoryScene[] = [
       accentColor: 'text-indigo-400',
     },
     summary:
-      'Play your favorite titles—from Counter-Strike 2 to Tekken 8—on any platform. Our system supports the full spectrum of competitive gaming, not just those with limited APIs.',
+      'Play in curated competitive arenas across PC, Console, and Mobile. Our system operates without restrictive developer APIs, unlocking the full spectrum of competitive gaming.',
     details: [
-      'Full Ecosystem: Competitions across PC, PlayStation 5, Xbox Series X, and Mobile.',
-      'Zero API Barriers: Unrestricted by publisher rate limits or missing developer endpoints.',
+      'Universal Spectrum: Competitions across PC, PlayStation 5, Xbox Series X, and Mobile.',
+      'Zero API Limits: Unrestricted by publisher developer keys or rate limits.',
       'Native Gameplay: Launch normally on Steam, Battle.net, Riot, or console network.',
     ],
     hud: {
@@ -109,7 +118,7 @@ const STORY_SCENES: StoryScene[] = [
       title: 'Arena Match Session',
       badge: 'MATCH IN PROGRESS',
       stats: [
-        { label: 'Active Arena', value: 'Counter-Strike 2', color: 'text-foreground' },
+        { label: 'Curated Arena', value: 'Counter-Strike 2', color: 'text-foreground' },
         { label: 'Platform Rail', value: 'Universal Ingest', color: 'text-muted-foreground' },
         { label: 'Lobby Server', value: 'EU-Central // Direct', color: 'text-primary' },
         { label: 'Interface State', value: 'Active In-Game', color: 'text-emerald-400' },
@@ -118,9 +127,11 @@ const STORY_SCENES: StoryScene[] = [
   },
   {
     id: 'stage-3',
-    step: 'STAGE 03',
-    title: '3. Automated Visual Verification',
-    tagline: 'Proprietary Visual Intelligence · Zero Human Referees',
+    stepNumber: '03',
+    stepFraction: 'STAGE 3 OF 4',
+    title: '3. Verify',
+    shortAction: 'Verify',
+    tagline: 'Visual Verification Engine™ · Zero Human Referees',
     character: {
       name: 'A.R.I.A. Arbiter',
       codename: 'ARBITER-01',
@@ -133,9 +144,9 @@ const STORY_SCENES: StoryScene[] = [
     summary:
       'Our proprietary Visual Verification Engine™ analyzes final match states directly from the game interface. It is faster, more universal, and more accurate than traditional API dependencies.',
     details: [
-      'Visual Intelligence: Direct game UI parsing certifies final round states in seconds.',
+      'Visual Verification Engine™: Analyzes official game UIs directly in real-time.',
       'Zero Human Referees: Eliminates manual referee bias, delays, and disputed claims.',
-      'Universal Reliability: Operates seamlessly regardless of publisher API downtime.',
+      'Universal Accuracy: Operates reliably across all gaming platforms and game updates.',
     ],
     hud: {
       type: 'ocr',
@@ -151,9 +162,11 @@ const STORY_SCENES: StoryScene[] = [
   },
   {
     id: 'stage-4',
-    step: 'STAGE 04',
-    title: '4. Instant USDC Settlement',
-    tagline: 'Automatic Crossmint Disbursement · Immediate Liquidity',
+    stepNumber: '04',
+    stepFraction: 'STAGE 4 OF 4',
+    title: '4. Settle',
+    shortAction: 'Settle',
+    tagline: 'Instant USDC Payout · Zero Wait',
     character: {
       name: 'Elena "Valkyrie" Rostova',
       codename: 'CHAMPION-07',
@@ -164,7 +177,7 @@ const STORY_SCENES: StoryScene[] = [
       accentColor: 'text-purple-400',
     },
     summary:
-      'Results are confirmed in seconds. Once verified, Crossmint automatically releases your winnings to your wallet. No waiting. No friction.',
+      'Results are confirmed in seconds. Once verified, Crossmint automatically releases your winnings directly to your wallet. No waiting. No friction.',
     details: [
       'Automated Release: Smart contracts disburse funds instantly upon engine confirmation.',
       'Zero Holding Periods: No multi-day administrative delays or manual review queues.',
@@ -218,46 +231,93 @@ export function ParallaxStoryScenes() {
 
   return (
     <section id="how-it-works" ref={containerRef} className="space-y-8 sm:space-y-12">
-      {/* Section Header */}
+      {/* 1. Section Header */}
       <div className="text-center max-w-3xl mx-auto space-y-3">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-primary text-xs font-bold tracking-wider uppercase">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-primary text-xs font-bold tracking-wider uppercase shadow-sm">
           <Scan className="w-3.5 h-3.5" />
-          <span>PROPRIETARY COMPETITIVE ARCHITECTURE</span>
+          <span>AUTOMATED COMPETITIVE LIFECYCLE</span>
         </div>
         <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black uppercase tracking-tight text-foreground">
-          From Challenge to Instant Payout in 4 Steps
+          From Challenge to Instant Payout in Seconds
         </h2>
         <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-          We have removed the friction from competitive gaming. No referees. No delays. No manual disputes.
+          We have removed the friction from competitive gaming. No referees. No delays. No manual disputes. Just pure, automated competition.
         </p>
       </div>
 
-      {/* Stage Selector Tabs */}
-      <div className="flex items-center justify-center gap-2 flex-wrap">
-        {STORY_SCENES.map((scene, idx) => (
-          <button
-            key={scene.id}
-            type="button"
-            onClick={() => setActiveStage(idx)}
-            className={`px-3.5 sm:px-5 py-2.5 rounded-xl font-mono text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 border ${
-              activeStage === idx
-                ? 'bg-zinc-900 border-primary text-primary shadow-sm ring-1 ring-primary/40'
-                : 'bg-card border-border text-muted-foreground hover:text-foreground hover:border-zinc-700'
-            }`}
-          >
-            <span
-              className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-black ${
-                activeStage === idx ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+      {/* 2. Visual "Flow" Indicator: All 4 Steps Visible at a Glance */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 relative">
+        {STORY_SCENES.map((scene, idx) => {
+          const isActive = activeStage === idx;
+          return (
+            <button
+              key={scene.id}
+              type="button"
+              onClick={() => setActiveStage(idx)}
+              className={`text-left p-4 sm:p-5 rounded-2xl border transition-all flex flex-col justify-between gap-3 group relative ${
+                isActive
+                  ? 'bg-zinc-900 border-primary ring-1 ring-primary/40 shadow-md'
+                  : 'bg-card border-border hover:border-zinc-700 hover:bg-muted/40'
               }`}
             >
-              0{idx + 1}
-            </span>
-            <span>{scene.title.split('. ')[1] || scene.title}</span>
-          </button>
-        ))}
+              <div className="flex items-center justify-between w-full">
+                <span
+                  className={`font-mono text-xs font-black px-2 py-0.5 rounded-md ${
+                    isActive ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                  }`}
+                >
+                  {scene.stepNumber}
+                </span>
+
+                <span className="font-mono text-[10px] text-muted-foreground uppercase font-bold">
+                  {scene.stepFraction}
+                </span>
+              </div>
+
+              <div>
+                <h3 className={`font-black text-sm sm:text-base uppercase tracking-tight transition-colors ${
+                  isActive ? 'text-primary' : 'text-foreground group-hover:text-primary'
+                }`}>
+                  {scene.title}
+                </h3>
+                <p className="text-[11px] text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
+                  {scene.tagline}
+                </p>
+              </div>
+
+              {/* Linear pipeline connector pill */}
+              <div className="pt-2 border-t border-border/60 flex items-center justify-between text-[10px] font-mono">
+                <span className={isActive ? 'text-primary font-bold' : 'text-zinc-500'}>
+                  {isActive ? '● Active Inspector' : 'Inspect Step'}
+                </span>
+                <ChevronRight className={`w-3.5 h-3.5 transition-transform ${
+                  isActive ? 'text-primary translate-x-1' : 'text-muted-foreground'
+                }`} />
+              </div>
+            </button>
+          );
+        })}
       </div>
 
-      {/* 2-Column Split: Character Dossier & Live Match HUD */}
+      {/* 3. Linear Flow Bar: [Lock In] ⮕ [Compete] ⮕ [Verify] ⮕ [Settle] */}
+      <div className="hidden sm:flex items-center justify-between px-6 py-3 rounded-xl bg-zinc-950 border border-zinc-800 text-xs font-mono text-muted-foreground">
+        <span className="font-bold text-foreground">AUTOMATION PIPELINE:</span>
+        <div className="flex items-center gap-3">
+          <span className={activeStage === 0 ? 'text-primary font-bold' : ''}>[01 Lock In]</span>
+          <span className="text-zinc-600">⮕</span>
+          <span className={activeStage === 1 ? 'text-primary font-bold' : ''}>[02 Compete]</span>
+          <span className="text-zinc-600">⮕</span>
+          <span className={activeStage === 2 ? 'text-primary font-bold' : ''}>[03 Verify]</span>
+          <span className="text-zinc-600">⮕</span>
+          <span className={activeStage === 3 ? 'text-primary font-bold' : ''}>[04 Settle]</span>
+        </div>
+        <span className="text-emerald-400 font-bold flex items-center gap-1.5">
+          <CrossmintLogo className="w-3.5 h-3.5" />
+          <span>Fully Automated (&lt; 2s)</span>
+        </span>
+      </div>
+
+      {/* 4. Deep-Dive Inspector: 2-Column Split (Character Dossier & Simulated HUD) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         {/* Left Column: Stage Details (7 Cols) */}
         <div
@@ -268,7 +328,7 @@ export function ParallaxStoryScenes() {
             <div className="space-y-4">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <Badge variant="outline" className="font-mono text-xs text-primary border-primary/30">
-                  {currentScene.step}
+                  {currentScene.stepFraction}
                 </Badge>
                 <span className="font-mono text-xs font-bold text-muted-foreground tracking-wider uppercase">
                   {currentScene.tagline}
@@ -326,24 +386,17 @@ export function ParallaxStoryScenes() {
                 onClick={() => setActiveStage((prev) => (prev > 0 ? prev - 1 : STORY_SCENES.length - 1))}
                 className="text-xs font-mono font-bold text-muted-foreground hover:text-foreground transition-colors"
               >
-                &larr; PREVIOUS STAGE
+                &larr; PREVIOUS STEP
               </button>
-              <div className="flex gap-1.5">
-                {STORY_SCENES.map((_, sIdx) => (
-                  <div
-                    key={sIdx}
-                    className={`h-1.5 rounded-full transition-all ${
-                      activeStage === sIdx ? 'w-6 bg-primary' : 'w-1.5 bg-zinc-800'
-                    }`}
-                  />
-                ))}
+              <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-primary">
+                <span>{currentScene.stepFraction}</span>
               </div>
               <button
                 type="button"
                 onClick={() => setActiveStage((prev) => (prev < STORY_SCENES.length - 1 ? prev + 1 : 0))}
                 className="text-xs font-mono font-bold text-primary hover:underline transition-all"
               >
-                NEXT STAGE &rarr;
+                NEXT STEP &rarr;
               </button>
             </div>
           </Card>

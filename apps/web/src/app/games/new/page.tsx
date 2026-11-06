@@ -222,7 +222,7 @@ function NewGameProfileForm() {
             Administrator Game Calibration Required
           </h2>
           <p className="text-xs sm:text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
-            To guarantee fair competitive score verification and zero fraud, only Platform &amp; Tournament Administrators can calibrate and add official games to the arena catalog. Want to see a new game added? Propose it in the Community Feature Polls!
+            To guarantee fair competitive score verification and zero fraud, only Platform &amp; Tournament Administrators can curate and register supported game arenas in the competitive catalog. Want to see a new game added? Propose it in the Community Feature Polls!
           </p>
           <div className="flex items-center justify-center gap-3 pt-2">
             <Link href="/games">
