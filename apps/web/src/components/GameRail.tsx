@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Swords,
   Trophy,
@@ -19,17 +19,13 @@ import {
   Globe,
   LogOut,
 } from 'lucide-react';
-import { useQueryClient } from '@tanstack/react-query';
 import { useGameStore } from '../lib/gameStore';
 import { apiClient } from '../lib/api';
 import { getSupabaseClient } from '../lib/supabase';
 import type { GameProfile } from '@playverzus/core';
-import { OFFICIAL_GAMES, getGameById, type CatalogGame } from '../lib/gamesCatalog';
+import { OFFICIAL_GAMES, getGameById } from '../lib/gamesCatalog';
 import { GamePoster } from './GamePoster';
 import { AdminSidebar } from './AdminSidebar';
-import { Badge } from './ui/badge';
-import { Button } from './ui/button';
-import { Card } from './ui/card';
 import { Separator } from './ui/separator';
 
 export function GameRail() {
@@ -37,18 +33,26 @@ export function GameRail() {
   const queryClient = useQueryClient();
   const { activeGame, setActiveGame, initializeDefaultGame } = useGameStore();
 
-  // All hooks must be called before any conditional returns (React Rules of Hooks)
+  // All hooks called before any conditional return
   const { data: games } = useQuery<GameProfile[]>({
     queryKey: ['approved-games-rail'],
     queryFn: () => apiClient<GameProfile[]>('/games'),
-    enabled: !['/', '/privacy', '/terms', '/login', '/signup'].includes(pathname) && !pathname.startsWith('/admin') && !pathname.startsWith('/matches/room/') && !(pathname.startsWith('/matches/') && pathname !== '/matches/new'),
+    enabled:
+      !['/', '/privacy', '/terms', '/login', '/signup'].includes(pathname) &&
+      !pathname.startsWith('/admin') &&
+      !pathname.startsWith('/matches/room/') &&
+      !(pathname.startsWith('/matches/') && pathname !== '/matches/new'),
   });
 
   const { data: me } = useQuery<{ id: string; role?: string } | null>({
     queryKey: ['gamerail-me'],
     queryFn: () => apiClient<{ id: string; role?: string }>('/profile/me').catch(() => null),
     staleTime: 30000,
-    enabled: !['/', '/privacy', '/terms', '/login', '/signup'].includes(pathname) && !pathname.startsWith('/admin') && !pathname.startsWith('/matches/room/') && !(pathname.startsWith('/matches/') && pathname !== '/matches/new'),
+    enabled:
+      !['/', '/privacy', '/terms', '/login', '/signup'].includes(pathname) &&
+      !pathname.startsWith('/admin') &&
+      !pathname.startsWith('/matches/room/') &&
+      !(pathname.startsWith('/matches/') && pathname !== '/matches/new'),
   });
 
   const isStaff = Boolean(me?.role && me.role !== 'PLAYER');
@@ -110,15 +114,12 @@ export function GameRail() {
     return null;
   }
 
-  // If inside the admin console, render the dedicated shadcn Admin Sidebar
+  // If inside the admin console, render the dedicated Admin Sidebar
   if (pathname.startsWith('/admin')) {
     return <AdminSidebar className="hidden lg:flex" />;
   }
 
   const activeCatalogGame = getGameById(activeGame?.id);
-
-  // Pinned top esports titles for quick 1-click switching
-  const pinnedGames = OFFICIAL_GAMES.slice(0, 4);
 
   const navItems = [
     { href: me ? '/dashboard' : '/', label: me ? 'Dashboard' : 'Overview', icon: LayoutDashboard, exact: true },
@@ -131,12 +132,17 @@ export function GameRail() {
 
   return (
     <>
-      <aside className="hidden lg:flex w-64 flex-shrink-0 bg-card border-r border-border flex-col justify-between p-4 pb-6 select-none h-screen min-h-screen sticky top-0 overflow-y-auto scrollbar-none z-30 space-y-6">
-        <div className="space-y-6">
+      {/* 1. Layout Spacer: Reserves exact 256px width in desktop flex container so content does not underlap */}
+      <div className="hidden lg:block w-64 flex-shrink-0" aria-hidden="true" />
+
+      {/* 2. Fixed Stationary Sidebar: Stays maintained on screen, never scrolls with the page */}
+      <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-64 flex-col bg-card border-r border-border select-none z-30 h-screen overflow-hidden">
+        {/* Top Fixed Region: Brand, Active Arena, Navigation */}
+        <div className="flex-shrink-0 p-4 pb-2 space-y-3">
           {/* Brand Logo & Name */}
           <Link
             href={me ? '/dashboard' : '/'}
-            className="flex items-center gap-2 px-2 py-1 text-foreground hover:opacity-90 transition group"
+            className="flex items-center gap-2 px-1 py-1 text-foreground hover:opacity-90 transition group"
           >
             <Image
               src="/images/logo.png"
@@ -148,21 +154,21 @@ export function GameRail() {
             />
           </Link>
 
-          {/* Active Game Selector */}
-          <div className="space-y-1.5">
-            <span className="text-[10px] uppercase font-bold text-muted-foreground font-mono tracking-wider px-2">
+          {/* Active Arena Selector */}
+          <div className="space-y-1">
+            <span className="text-[10px] uppercase font-bold text-muted-foreground font-mono tracking-wider px-1">
               Active Arena
             </span>
             <Link
               href="/games"
-              className="flex items-center justify-between p-2 rounded-xl bg-card hover:bg-muted/80 border border-border hover:border-primary/50 transition group text-left w-full shadow-sm"
+              className="flex items-center justify-between p-2 rounded-xl bg-secondary/50 hover:bg-muted/80 border border-border hover:border-primary/50 transition group text-left w-full shadow-sm"
               title="Click to view full game roster & switch arena"
             >
               <div className="flex items-center gap-2.5 min-w-0">
                 <GamePoster
                   game={activeCatalogGame}
                   aspect="thumb"
-                  className="w-9 h-12 rounded-lg flex-shrink-0 shadow-sm"
+                  className="w-8 h-10 rounded-md flex-shrink-0 shadow-sm"
                 />
                 <div className="min-w-0 flex-1">
                   <span className="text-xs font-bold text-foreground truncate block group-hover:text-primary transition-colors">
@@ -178,8 +184,8 @@ export function GameRail() {
           </div>
 
           {/* Primary Navigation Links */}
-          <div className="space-y-1">
-            <span className="text-[10px] uppercase font-bold text-muted-foreground font-mono tracking-wider px-2 mb-1.5 block">
+          <div className="space-y-0.5">
+            <span className="text-[10px] uppercase font-bold text-muted-foreground font-mono tracking-wider px-1 mb-1 block">
               Menu
             </span>
             {navItems.map((item) => {
@@ -192,7 +198,7 @@ export function GameRail() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                  className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
                     isActive
                       ? 'bg-primary text-primary-foreground font-semibold shadow-sm'
                       : 'text-muted-foreground hover:text-foreground hover:bg-muted'
@@ -204,58 +210,59 @@ export function GameRail() {
               );
             })}
           </div>
+        </div>
 
-          <Separator />
+        <Separator className="flex-shrink-0 mx-4 w-auto" />
 
-          {/* Quick Game Switcher (Pinned Favorites) */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between px-2">
-              <span className="text-[10px] uppercase font-bold text-muted-foreground font-mono tracking-wider flex items-center gap-1">
-                <Flame className="w-3 h-3 text-primary" />
-                Featured
-              </span>
-              <Link
-                href="/games"
-                className="text-[11px] text-primary hover:underline font-semibold"
-              >
-                All ({OFFICIAL_GAMES.length})
-              </Link>
-            </div>
+        {/* Middle Scrollable Region: ONLY the list of games scrolls! */}
+        <div className="flex-1 min-h-0 overflow-y-auto px-4 py-2.5 space-y-1.5 scrollbar-thin scrollbar-thumb-zinc-800 hover:scrollbar-thumb-zinc-700">
+          <div className="flex items-center justify-between px-1 mb-1">
+            <span className="text-[10px] uppercase font-bold text-muted-foreground font-mono tracking-wider flex items-center gap-1">
+              <Flame className="w-3 h-3 text-primary" />
+              Arenas ({OFFICIAL_GAMES.length})
+            </span>
+            <Link
+              href="/games"
+              className="text-[11px] text-primary hover:underline font-semibold"
+            >
+              All Games
+            </Link>
+          </div>
 
-            <div className="space-y-1">
-              {pinnedGames.map((game) => {
-                const isSelected = activeCatalogGame.id.toLowerCase() === game.id.toLowerCase();
-                return (
-                  <button
-                    key={game.id}
-                    type="button"
-                    onClick={() => setActiveGame(game)}
-                    className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition border text-left w-full ${
-                      isSelected
-                        ? 'bg-secondary border-primary/40 text-foreground font-semibold'
-                        : 'bg-transparent hover:bg-muted/70 border-transparent text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 truncate">
-                      <GamePoster
-                        game={game}
-                        aspect="mini"
-                        className="w-4 h-6 rounded flex-shrink-0"
-                      />
-                      <span className="truncate text-xs">{game.displayName}</span>
-                    </div>
-                    {isSelected && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+          {/* Games list: scrolls independently; last game sits cleanly right above the Settings section */}
+          <div className="space-y-1 pb-2">
+            {OFFICIAL_GAMES.map((game) => {
+              const isSelected = activeCatalogGame.id.toLowerCase() === game.id.toLowerCase();
+              return (
+                <button
+                  key={game.id}
+                  type="button"
+                  onClick={() => setActiveGame(game)}
+                  className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition border text-left w-full ${
+                    isSelected
+                      ? 'bg-secondary border-primary/40 text-foreground font-semibold shadow-sm'
+                      : 'bg-transparent hover:bg-muted/70 border-transparent text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 truncate">
+                    <GamePoster
+                      game={game}
+                      aspect="mini"
+                      className="w-4 h-5 rounded flex-shrink-0"
+                    />
+                    <span className="truncate text-xs">{game.displayName}</span>
+                  </div>
+                  {isSelected && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0 ml-1" />
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* Bottom Utility Links */}
-        <div className="pt-3 border-t border-border flex flex-col gap-2 px-2 text-xs">
+        {/* Bottom Pinned Region: Settings remains firmly below, never scrolls out of view */}
+        <div className="flex-shrink-0 mt-auto p-3 border-t border-border bg-card flex flex-col gap-2 text-xs">
           <div className={`flex items-center ${isStaff ? 'justify-between' : 'justify-start'}`}>
             {isStaff && (
               <Link
@@ -272,7 +279,7 @@ export function GameRail() {
               href="/settings"
               className={`flex items-center gap-1.5 transition ${
                 pathname.startsWith('/settings') ? 'text-primary font-bold' : 'text-muted-foreground hover:text-foreground'
-              } ${!isStaff ? 'w-full py-1 rounded-lg hover:text-foreground' : ''}`}
+              } ${!isStaff ? 'w-full py-0.5 rounded-lg hover:text-foreground' : ''}`}
             >
               <Settings className="w-3.5 h-3.5" />
               <span>Settings</span>

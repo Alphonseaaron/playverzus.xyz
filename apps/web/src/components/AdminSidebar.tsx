@@ -262,113 +262,116 @@ export function AdminSidebar({ onNavClick, className = '' }: AdminSidebarProps) 
   }
 
   return (
-    <aside
-      className={`w-64 flex-shrink-0 bg-card border-r border-border flex flex-col justify-between p-4 pb-6 select-none h-screen min-h-screen sticky top-0 overflow-y-auto scrollbar-none z-30 ${className}`}
-    >
-      <div className="space-y-6">
-        {/* Admin Brand & Shield Header */}
-        <div className="space-y-2">
-          <Link
-            href="/admin"
-            onClick={onNavClick}
-            className="flex items-center gap-3 px-2 py-1 text-foreground hover:opacity-90 transition group"
-          >
-            <div className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-black shadow-sm transition-transform group-hover:scale-105">
-              <ShieldAlert className="w-5 h-5" />
-            </div>
-            <div className="flex flex-col min-w-0">
-              <div className="flex items-center gap-1.5">
-                <span className="font-black text-sm tracking-tight text-foreground leading-tight">
-                  ADMIN CONSOLE
+    <>
+      <div className={`hidden lg:block w-64 flex-shrink-0 ${className.includes('hidden') ? 'hidden lg:block' : ''}`} aria-hidden="true" />
+      <aside
+        className={`w-64 flex-shrink-0 bg-card border-r border-border flex flex-col justify-between select-none h-screen fixed left-0 top-0 bottom-0 z-30 overflow-hidden ${className}`}
+      >
+        <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-6 scrollbar-thin">
+          {/* Admin Brand & Shield Header */}
+          <div className="space-y-2">
+            <Link
+              href="/admin"
+              onClick={onNavClick}
+              className="flex items-center gap-3 px-2 py-1 text-foreground hover:opacity-90 transition group"
+            >
+              <div className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-black shadow-sm transition-transform group-hover:scale-105">
+                <ShieldAlert className="w-5 h-5" />
+              </div>
+              <div className="flex flex-col min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-black text-sm tracking-tight text-foreground leading-tight">
+                    ADMIN CONSOLE
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono text-primary uppercase tracking-wider leading-none">
+                  Operations & Moderation
                 </span>
               </div>
-              <span className="text-[10px] font-mono text-primary uppercase tracking-wider leading-none">
-                Operations & Moderation
-              </span>
-            </div>
-          </Link>
+            </Link>
 
-          {/* Operational Health Badge */}
-          <div className="flex items-center justify-between px-3 py-1.5 rounded-xl bg-secondary/60 border border-border text-[10px] font-mono text-muted-foreground">
-            <span className="flex items-center gap-1.5">
-              <Activity className="w-3 h-3 text-emerald-400 animate-pulse" />
-              <span>SYSTEM LIVE</span>
-            </span>
-            <span className="font-bold text-foreground">v2.4-STABLE</span>
+            {/* Operational Health Badge */}
+            <div className="flex items-center justify-between px-3 py-1.5 rounded-xl bg-secondary/60 border border-border text-[10px] font-mono text-muted-foreground">
+              <span className="flex items-center gap-1.5">
+                <Activity className="w-3 h-3 text-emerald-400 animate-pulse" />
+                <span>SYSTEM LIVE</span>
+              </span>
+              <span className="font-bold text-foreground">v2.4-STABLE</span>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Grouped Nav Items */}
+          <div className="space-y-6">
+            {navSections.map((section) => (
+              <div key={section.group} className="space-y-2">
+                <span className="px-2 text-[10px] font-mono font-bold uppercase tracking-wider text-muted-foreground/70">
+                  {section.group}
+                </span>
+
+                <div className="space-y-1">
+                  {section.items.map((item) => {
+                    const baseHref = item.href.split('?')[0] ?? item.href;
+                    const isActive = item.exact
+                      ? pathname === item.href
+                      : pathname === item.href || pathname.startsWith(baseHref);
+                    const Icon = item.icon;
+
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={onNavClick}
+                        className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                          isActive
+                            ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <Icon className="w-4 h-4 flex-shrink-0" />
+                          <span className="truncate">{item.label}</span>
+                        </div>
+
+                        {item.badge && (
+                          <Badge
+                            variant={item.badgeVariant || (isActive ? 'secondary' : 'default')}
+                            className="text-[9px] px-1.5 py-0 font-mono flex-shrink-0 ml-1.5"
+                          >
+                            {item.badge}
+                          </Badge>
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
-        <Separator />
+        {/* Footer: Return to Player Experience */}
+        <div className="flex-shrink-0 mt-auto p-4 border-t border-border bg-card space-y-3">
+          <Link href="/" onClick={onNavClick}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full justify-start text-xs font-bold gap-2 text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Return to Arena</span>
+            </Button>
+          </Link>
 
-        {/* Grouped Nav Items */}
-        <div className="space-y-6">
-          {navSections.map((section) => (
-            <div key={section.group} className="space-y-2">
-              <span className="px-2 text-[10px] font-mono font-bold uppercase tracking-wider text-muted-foreground/70">
-                {section.group}
-              </span>
-
-              <div className="space-y-1">
-                {section.items.map((item) => {
-                  const baseHref = item.href.split('?')[0] ?? item.href;
-                  const isActive = item.exact
-                    ? pathname === item.href
-                    : pathname === item.href || pathname.startsWith(baseHref);
-                  const Icon = item.icon;
-
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={onNavClick}
-                      className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                        isActive
-                          ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20'
-                          : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <Icon className="w-4 h-4 flex-shrink-0" />
-                        <span className="truncate">{item.label}</span>
-                      </div>
-
-                      {item.badge && (
-                        <Badge
-                          variant={item.badgeVariant || (isActive ? 'secondary' : 'default')}
-                          className="text-[9px] px-1.5 py-0 font-mono flex-shrink-0 ml-1.5"
-                        >
-                          {item.badge}
-                        </Badge>
-                      )}
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
+          <div className="px-2 text-[10px] text-muted-foreground flex items-center justify-between font-mono">
+            <span>Security Clearance</span>
+            <Badge variant="copper" className="text-[9px] font-mono px-1.5 py-0 uppercase">
+              {role.replace(/_/g, ' ')}
+            </Badge>
+          </div>
         </div>
-      </div>
-
-      {/* Footer: Return to Player Experience */}
-      <div className="pt-6 border-t border-border space-y-3">
-        <Link href="/" onClick={onNavClick}>
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full justify-start text-xs font-bold gap-2 text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Return to Arena</span>
-          </Button>
-        </Link>
-
-        <div className="px-2 text-[10px] text-muted-foreground flex items-center justify-between font-mono">
-          <span>Security Clearance</span>
-          <Badge variant="copper" className="text-[9px] font-mono px-1.5 py-0 uppercase">
-            {role.replace(/_/g, ' ')}
-          </Badge>
-        </div>
-      </div>
-    </aside>
+      </aside>
+    </>
   );
 }
