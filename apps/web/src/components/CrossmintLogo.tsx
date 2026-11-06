@@ -1,5 +1,4 @@
 import React from 'react';
-import Image from 'next/image';
 
 interface CrossmintLogoProps {
   className?: string;
@@ -9,9 +8,9 @@ interface CrossmintLogoProps {
 }
 
 /**
- * Official Crossmint Brand Component
- * - variant="icon" or showWordmark=false: Renders the official 4-leaf emerald green Crossmint mark on transparent background.
- * - variant="full" or showWordmark=true: Renders the complete brandmark with green leaf icon and crisp white wordmark on transparent background.
+ * Official Crossmint Brand Component (Ultra-Sharp Vector SVG)
+ * - Infinite mathematical resolution at any DPI / zoom level.
+ * - Emerald green clover mark (#00D287) + crisp pure white text (#FFFFFF) on transparent background.
  */
 export function CrossmintLogo({
   className = 'w-4 h-4',
@@ -23,29 +22,57 @@ export function CrossmintLogo({
 
   if (isFull) {
     return (
-      <span className="inline-flex items-center align-middle">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/crossmint-logo.png"
-          srcSet="/crossmint-logo.png 1x, /crossmint-logo-512.png 2x"
-          alt={alt}
-          className={`h-5 w-auto object-contain select-none ${className}`}
-          loading="eager"
-        />
+      <span className="inline-flex items-center align-middle" aria-label={alt}>
+        <svg
+          viewBox="0 0 320 80"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className={`h-5 w-auto select-none ${className}`}
+        >
+          {/* Emerald Green 4-Leaf Clover Icon */}
+          <g transform="translate(4, 6) scale(0.68)">
+            <path
+              d="M 4.89 3.80 L 4.08 17.39 L 8.70 33.15 L 18.48 43.48 L 33.97 50.82 L 21.47 54.35 L 10.87 63.32 L 4.62 79.89 L 4.08 95.38 L 21.47 95.65 L 34.51 91.03 L 41.03 85.60 L 50.00 67.93 L 56.52 82.61 L 65.22 91.03 L 78.80 95.65 L 94.84 95.65 L 95.11 81.79 L 89.13 64.13 L 81.79 56.52 L 64.67 49.73 L 80.98 43.48 L 89.13 35.05 L 93.48 25.54 L 95.65 4.62 L 80.98 4.08 L 65.49 8.70 L 56.25 16.85 L 48.91 30.98 L 45.38 20.11 L 37.23 10.60 L 23.91 4.89 Z"
+              fill="#00D287"
+              fillRule="evenodd"
+            />
+            <path d="M 23.10 22.01 L 32.88 28.80 L 50.27 47.28 L 58.70 41.03 L 74.73 24.46 L 75.82 25.00 L 68.75 34.78 L 52.17 50.54 L 74.46 75.82 L 62.50 67.12 L 48.37 52.45 L 22.28 76.09 L 32.34 62.50 L 47.28 49.18 L 38.59 38.04 L 23.37 23.64 Z" fill="#08080C"/>
+          </g>
+
+          {/* Pure White Vector Wordmark ("crossmint") */}
+          <g fill="#FFFFFF" fillRule="evenodd">
+            <path d="M 254.06 31.09 L 253.28 31.72 L 253.28 55.31 L 253.44 55.78 L 254.22 56.09 L 258.12 56.09 L 258.59 55.94 L 259.06 55.31 L 259.06 32.03 L 258.75 31.41 L 257.81 30.94 Z" fill="#FFFFFF"/>
+            <path d="M 282.50 31.72 L 278.44 30.31 L 273.28 31.25 L 270.78 33.12 L 270.16 32.97 L 269.84 31.41 L 269.06 30.94 L 265.78 30.94 L 264.69 31.72 L 264.84 55.78 L 269.53 56.09 L 270.62 55.47 L 270.62 40.16 L 271.25 38.12 L 273.28 36.25 L 274.69 35.94 L 278.12 36.25 L 279.84 37.66 L 280.94 39.69 L 281.09 55.62 L 281.72 56.09 L 285.94 56.09 L 287.03 55.47 L 286.72 38.12 L 285.78 35.16 Z" fill="#FFFFFF"/>
+            <path d="M 210.31 30.94 L 210.31 55.94 L 216.09 55.47 L 216.09 39.53 L 218.28 36.56 L 219.84 35.94 L 223.59 36.41 L 226.09 39.69 L 226.41 55.94 L 232.19 55.47 L 232.19 39.53 L 234.69 36.25 L 239.69 36.41 L 242.03 39.53 L 242.34 55.78 L 248.12 55.62 L 247.81 37.34 L 247.03 34.84 L 243.75 31.41 L 236.72 30.47 L 233.59 31.41 L 230.31 33.91 L 227.97 31.56 L 225.16 30.47 L 220.94 30.47 L 217.03 32.50 L 214.53 30.62 Z" fill="#FFFFFF"/>
+            <path d="M 195.31 30.31 L 191.72 31.25 L 188.75 33.44 L 186.88 36.88 L 187.03 39.84 L 187.81 42.03 L 190.47 44.53 L 197.50 46.25 L 199.22 47.19 L 200.16 48.44 L 200.16 50.31 L 197.81 52.34 L 194.53 52.34 L 192.19 50.62 L 190.78 48.44 L 186.88 49.06 L 186.41 51.09 L 187.50 52.97 L 190.94 55.78 L 194.53 56.88 L 197.34 57.03 L 201.25 56.09 L 204.53 53.44 L 205.94 50.31 L 205.78 47.19 L 204.38 44.38 L 202.19 42.66 L 193.12 39.69 L 192.34 38.59 L 192.34 37.03 L 195.16 34.84 L 198.28 35.16 L 201.09 38.28 L 204.69 37.34 L 205.47 36.56 L 203.59 33.12 L 201.41 31.41 Z" fill="#FFFFFF"/>
+            <path d="M 173.44 30.31 L 169.69 31.25 L 166.72 33.44 L 165.00 35.94 L 165.00 40.47 L 166.41 42.97 L 168.44 44.53 L 176.72 46.88 L 178.12 48.59 L 178.12 50.16 L 175.62 52.34 L 172.03 52.19 L 169.84 50.31 L 168.91 48.59 L 164.69 49.22 L 164.22 50.47 L 166.41 54.06 L 168.91 55.78 L 175.16 57.03 L 179.22 56.09 L 182.19 53.75 L 183.59 51.09 L 183.59 46.88 L 182.34 44.38 L 180.16 42.66 L 171.56 40.00 L 170.16 38.12 L 170.31 37.03 L 172.66 35.00 L 175.31 34.84 L 177.34 36.09 L 178.91 38.28 L 179.84 38.44 L 182.97 37.34 L 183.44 36.09 L 182.03 33.75 L 179.38 31.41 Z" fill="#FFFFFF"/>
+            <path d="M 147.81 30.31 L 143.44 31.25 L 140.62 32.97 L 138.91 34.53 L 136.41 38.75 L 135.78 43.75 L 136.56 48.75 L 137.81 51.41 L 139.69 53.59 L 142.97 55.94 L 146.72 56.88 L 149.84 57.03 L 154.06 56.09 L 156.56 54.69 L 158.59 52.81 L 160.94 48.91 L 161.88 43.28 L 160.94 38.44 L 159.69 35.94 L 157.81 33.75 L 154.06 31.25 L 149.84 30.31 Z" fill="#FFFFFF"/>
+            <path d="M 148.44 35.31 L 150.16 35.47 L 152.81 36.72 L 154.69 38.59 L 155.94 42.19 L 155.94 45.31 L 154.84 48.44 L 152.03 51.09 L 150.00 51.56 L 146.41 51.41 L 145.00 50.78 L 143.59 49.53 L 142.34 47.97 L 141.56 44.53 L 141.72 41.41 L 142.19 40.31 L 142.19 39.69 L 142.81 38.59 L 143.91 37.34 L 145.16 36.41 L 147.03 35.62 Z" fill="#08080C"/>
+            <path d="M 134.06 30.47 L 131.88 30.31 L 129.53 30.94 L 128.44 31.56 L 126.72 33.44 L 125.94 32.97 L 125.62 30.78 L 120.47 30.78 L 120.16 55.31 L 120.62 55.94 L 125.62 56.09 L 126.25 55.62 L 126.25 41.72 L 126.56 39.38 L 127.34 38.12 L 129.38 36.25 L 134.06 35.62 Z" fill="#FFFFFF"/>
+            <path d="M 105.47 30.00 L 99.38 31.41 L 95.62 33.91 L 93.75 36.41 L 92.03 42.50 L 92.50 47.19 L 95.16 52.50 L 99.53 55.47 L 103.28 56.56 L 110.31 55.78 L 114.53 52.66 L 116.72 49.22 L 111.72 47.03 L 110.00 49.22 L 107.81 50.78 L 104.69 51.25 L 101.88 50.47 L 99.53 47.97 L 98.44 44.38 L 98.91 39.84 L 102.03 36.41 L 105.31 35.78 L 108.12 36.09 L 111.72 39.84 L 116.09 37.66 L 115.94 36.25 L 113.12 32.81 L 110.47 31.41 Z" fill="#FFFFFF"/>
+            <path d="M 294.38 23.12 L 294.53 30.47 L 293.44 31.09 L 289.69 31.25 L 289.38 35.47 L 290.31 36.09 L 293.28 36.09 L 294.06 36.88 L 294.06 49.38 L 295.62 54.06 L 298.75 56.09 L 304.06 56.09 L 305.00 55.47 L 305.00 51.56 L 300.62 50.78 L 300.16 50.16 L 299.69 37.19 L 300.31 36.09 L 304.38 36.09 L 305.00 35.62 L 305.00 31.56 L 304.53 31.09 L 300.47 31.09 L 300.00 30.62 L 299.84 24.06 L 299.22 23.12 Z" fill="#FFFFFF"/>
+            <path d="M 254.06 19.06 L 253.12 20.00 L 252.66 20.78 L 252.50 21.41 L 252.66 22.50 L 253.12 23.28 L 253.12 23.75 L 253.28 24.06 L 253.75 24.53 L 254.69 25.00 L 256.25 25.47 L 256.88 25.47 L 257.97 25.16 L 258.59 24.53 L 258.91 23.91 L 259.53 23.28 L 259.84 22.50 L 259.84 21.72 L 259.53 20.62 L 259.22 20.16 L 258.28 19.22 L 257.81 18.91 L 256.72 18.59 L 255.47 18.59 L 254.69 18.75 Z" fill="#FFFFFF"/>
+          </g>
+        </svg>
       </span>
     );
   }
 
   return (
-    <span className="inline-flex items-center align-middle">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src="/crossmint-icon.png"
-        srcSet="/crossmint-icon.png 1x, /crossmint-icon-256.png 2x"
-        alt={alt}
-        className={`object-contain select-none ${className}`}
-        loading="eager"
-      />
+    <span className="inline-flex items-center align-middle" aria-label={alt}>
+      <svg
+        viewBox="0 0 100 100"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className={`select-none ${className}`}
+      >
+        <path
+          d="M 4.89 3.80 L 4.08 17.39 L 8.70 33.15 L 18.48 43.48 L 33.97 50.82 L 21.47 54.35 L 10.87 63.32 L 4.62 79.89 L 4.08 95.38 L 21.47 95.65 L 34.51 91.03 L 41.03 85.60 L 50.00 67.93 L 56.52 82.61 L 65.22 91.03 L 78.80 95.65 L 94.84 95.65 L 95.11 81.79 L 89.13 64.13 L 81.79 56.52 L 64.67 49.73 L 80.98 43.48 L 89.13 35.05 L 93.48 25.54 L 95.65 4.62 L 80.98 4.08 L 65.49 8.70 L 56.25 16.85 L 48.91 30.98 L 45.38 20.11 L 37.23 10.60 L 23.91 4.89 Z"
+          fill="#00D287"
+          fillRule="evenodd"
+        />
+        <path d="M 23.10 22.01 L 32.88 28.80 L 50.27 47.28 L 58.70 41.03 L 74.73 24.46 L 75.82 25.00 L 68.75 34.78 L 52.17 50.54 L 74.46 75.82 L 62.50 67.12 L 48.37 52.45 L 22.28 76.09 L 32.34 62.50 L 47.28 49.18 L 38.59 38.04 L 23.37 23.64 Z" fill="#08080C"/>
+      </svg>
     </span>
   );
 }
