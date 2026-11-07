@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useCapturePipeline as useMatchCapture } from '../hooks/useCapturePipeline';
 import { LiveScore } from './LiveScore';
+import { MatchReadinessStepper } from './MatchReadinessStepper';
 import { CountryFlag } from './CountryFlag';
 import { GamePoster } from './GamePoster';
 import { CrossmintLogo } from './CrossmintLogo';
@@ -372,6 +373,27 @@ export function MatchRoom({
             <span>Crossmint Escrow Settled ✓</span>
           </Badge>
         </Card>
+      )}
+
+      {/* 4-Step Match Readiness Stepper (Auto-Machine Registration & Step-by-Step Ease) */}
+      {status !== 'SETTLED' && (
+        <MatchReadinessStepper
+          matchId={matchId}
+          gameId={profile.id}
+          gameName={profile.displayName}
+          gamePlatform={profile.platform || 'UNIVERSAL'}
+          roomCode={roomCode}
+          isHost={isPlayerA}
+          isParticipant={isParticipant}
+          hasOpponent={Boolean(playerBId)}
+          isReady={isPlayerA ? isReadyA : isReadyB}
+          opponentReady={isPlayerA ? isReadyB : isReadyA}
+          isCapturing={capture.status === 'CAPTURING'}
+          onToggleReady={toggleReady}
+          onStartCapture={capture.startCapture}
+          onCopyRoomLink={handleCopyLink}
+          copiedLink={copiedLink}
+        />
       )}
 
       {/* Head-to-Head Competitor Roster with In-Game Gamertags */}
