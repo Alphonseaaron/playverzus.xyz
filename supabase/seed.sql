@@ -20,13 +20,13 @@ values
   ),
   (
     '00000000-0000-0000-0000-000000000002',
-    'EA Sports FC 25',
+    'EA Sports FC 27',
     'HEAD_TO_HEAD',
     'CONSOLE',
-    '{"x":0.05,"y":0.05,"w":0.2,"h":0.08}'::jsonb,
+    '{"x":0.042,"y":0.042,"w":0.177,"h":0.060}'::jsonb,
     '{"min":0,"max":20}'::jsonb,
-    array['FULL TIME','MATCH OVER','FINAL SCORE'],
-    '(\d{1,2})\s*[-:]\s*(\d{1,2})',
+    array['FULL TIME','FT','MATCH OVER','FINAL SCORE','OPPONENT HAS LEFT','FORFEITED'],
+    '(?:[A-Z0-9]{2,4}\s*)?(\d{1,2})\s*[-:]\s*(\d{1,2})',
     true,
     true
   ),

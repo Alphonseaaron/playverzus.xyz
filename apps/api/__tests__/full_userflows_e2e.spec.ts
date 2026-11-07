@@ -51,13 +51,13 @@ function createInMemoryPlatformDb() {
       },
       {
         id: 'game-fc25-console',
-        display_name: 'EA Sports FC 25',
+        display_name: 'EA Sports FC 27',
         game_type: 'HEAD_TO_HEAD',
         platform: 'CONSOLE',
-        roi: { x: 0.05, y: 0.05, w: 0.2, h: 0.08 },
+        roi: { x: 0.042, y: 0.042, w: 0.177, h: 0.060 },
         constraints: { min: 0, max: 20 },
-        end_keywords: ['FULL TIME', 'MATCH OVER', 'FINAL SCORE'],
-        regex_pattern: '(\\d{1,2})\\s*[-:]\\s*(\\d{1,2})',
+        end_keywords: ['FULL TIME', 'FT', 'MATCH OVER', 'FINAL SCORE', 'OPPONENT HAS LEFT', 'FORFEITED'],
+        regex_pattern: '(?:[A-Z0-9]{2,4}\\s*)?(\\d{1,2})\\s*[-:]\\s*(\\d{1,2})',
         approved: true,
         is_official: true,
       },
@@ -571,13 +571,13 @@ describe('End-to-End Multi-Actor & Multi-Platform Userflow Verification Suite (Z
     expect(topPlayers[0]?.wins).toBe(1);
   });
 
-  it('Flow 2: Console (PS5 / Xbox) 1v1 Duel (EA Sports FC 25 & Tekken 8) — Zero-Manual STREAM_INGEST & Gamertag Binding', async () => {
+  it('Flow 2: Console (PS5 / Xbox) 1v1 Duel (EA Sports FC 27 & Tekken 8) — Zero-Manual STREAM_INGEST & Gamertag Binding', async () => {
     const db = createInMemoryPlatformDb();
     const apiMatchService = new ApiMatchService();
     (apiMatchService as any).supabase = db;
     (apiMatchService as any).coreMatchService = new CoreMatchService({ client: db });
 
-    // 1. Create EA Sports FC 25 Console Duel between Nigeria (u-nga) and Brazil (u-bra)
+    // 1. Create EA Sports FC 27 Console Duel between Nigeria (u-nga) and Brazil (u-bra)
     const fcMatch = await apiMatchService.createMatch('u-nga', 'game-fc25-console', null, 'BO1', 100);
     await apiMatchService.acceptMatch(fcMatch.id, 'u-bra');
 
@@ -747,9 +747,9 @@ describe('End-to-End Multi-Actor & Multi-Platform Userflow Verification Suite (Z
     (apiMatchService as any).supabase = db;
     (apiMatchService as any).coreMatchService = new CoreMatchService({ client: db });
 
-    // 1. Create 4-player EA Sports FC 25 Global Cup with 1,000 PTS Prize Pool
+    // 1. Create 4-player EA Sports FC 27 Global Cup with 1,000 PTS Prize Pool
     const tour = await tournamentService.createTournament('u-usa', {
-      name: 'EA FC 25 Global Champions Cup',
+      name: 'EA FC 27 Global Champions Cup',
       profileId: 'game-fc25-console',
       format: 'SINGLE_ELIM',
       size: 4,
