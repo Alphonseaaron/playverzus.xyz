@@ -294,27 +294,55 @@ export const OFFICIAL_GAMES: CatalogGame[] = [
 
 const UUID_TO_CATALOG_SLUG: Record<string, string> = {
   '00000000-0000-0000-0000-000000000001': 'cs2',
+  'counter-strike-2': 'cs2',
   '00000000-0000-0000-0000-000000000002': 'eafc',
+  'ea-fc-27': 'eafc',
+  'eafc27': 'eafc',
+  'fc27': 'eafc',
+  'fifa27': 'eafc',
+  'ea-fc-25': 'eafc',
+  'eafc25': 'eafc',
+  'fc25': 'eafc',
   '00000000-0000-0000-0000-000000000003': 'rl',
+  'rocket-league': 'rl',
   '00000000-0000-0000-0000-000000000004': 'val',
+  valorant: 'val',
   '00000000-0000-0000-0000-000000000005': 'dota2',
+  dota: 'dota2',
   '00000000-0000-0000-0000-000000000006': 'cod',
+  'cod-warzone': 'cod',
+  warzone: 'cod',
   '00000000-0000-0000-0000-000000000007': 'fortnite',
   '00000000-0000-0000-0000-000000000008': 'tekken8',
+  'tekken-8': 'tekken8',
   '00000000-0000-0000-0000-000000000009': 'chess',
   '00000000-0000-0000-0000-000000000010': 'apex',
+  'apex-legends': 'apex',
   '00000000-0000-0000-0000-000000000011': 'marvelrivals',
+  'marvel-rivals': 'marvelrivals',
+  mr: 'marvelrivals',
   '00000000-0000-0000-0000-000000000012': 'lol',
+  'league-of-legends': 'lol',
   '00000000-0000-0000-0000-000000000013': 'mlbb',
+  'mobile-legends': 'mlbb',
   '11111111-1111-1111-1111-111111111111': 'subway',
+  'subway-surfers': 'subway',
 };
 
-export function getGameById(id?: string | null): CatalogGame {
-  const fallback = OFFICIAL_GAMES[0]!;
-  if (!id) return fallback;
-  const normalized = (UUID_TO_CATALOG_SLUG[id.toLowerCase()] || id).toLowerCase();
-  const found = OFFICIAL_GAMES.find(
-    (g) => g.id.toLowerCase() === normalized || g.displayName.toLowerCase().includes(normalized),
+export function findCatalogGame(idOrSlugOrName?: string | null): CatalogGame | undefined {
+  if (!idOrSlugOrName) return undefined;
+  const raw = idOrSlugOrName.toLowerCase().trim();
+  const slug = UUID_TO_CATALOG_SLUG[raw] || raw;
+  return OFFICIAL_GAMES.find(
+    (g) =>
+      g.id.toLowerCase() === slug ||
+      g.shortName.toLowerCase() === slug ||
+      g.displayName.toLowerCase() === raw ||
+      g.displayName.toLowerCase().includes(raw) ||
+      raw.includes(g.id.toLowerCase())
   );
-  return found || fallback;
+}
+
+export function getGameById(id?: string | null): CatalogGame {
+  return findCatalogGame(id) || OFFICIAL_GAMES[0]!;
 }

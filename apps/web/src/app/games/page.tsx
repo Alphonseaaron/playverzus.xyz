@@ -6,7 +6,7 @@ import { Gamepad2, Plus, Sparkles, Trophy, Users, Shield } from 'lucide-react';
 import { GameProfileCard } from '../../components/GameProfileCard';
 import { apiClient } from '../../lib/api';
 import { useGameStore } from '../../lib/gameStore';
-import { OFFICIAL_GAMES, type CatalogGame } from '../../lib/gamesCatalog';
+import { OFFICIAL_GAMES, getGameById, findCatalogGame, type CatalogGame } from '../../lib/gamesCatalog';
 import type { GameProfile } from '@playverzus/core';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -29,9 +29,8 @@ export default function GamesPage() {
     me?.role && ['ADMIN', 'SUPER_ADMIN', 'TOURNAMENT_ADMIN'].includes(me.role),
   );
 
-  const officialIds = new Set(OFFICIAL_GAMES.map((g) => g.id.toLowerCase()));
   const customGames = (games || []).filter(
-    (g) => !officialIds.has(g.id.toLowerCase())
+    (g) => !findCatalogGame(g.id) && !findCatalogGame(g.displayName || (g as any).display_name)
   );
   const allGames = [...OFFICIAL_GAMES, ...customGames];
 
@@ -83,15 +82,15 @@ export default function GamesPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {allGames.map((g) => {
-            const catalogItem = OFFICIAL_GAMES.find((c) => c.id.toLowerCase() === g.id.toLowerCase());
+            const catalogItem = findCatalogGame(g.id) || findCatalogGame(g.displayName || (g as any).display_name);
             const icon = catalogItem?.icon || '🎮';
             const posterUrl = catalogItem?.posterUrl;
             const bannerUrl = catalogItem?.bannerUrl;
             const tagline = catalogItem?.tagline || (g as any).tagline || 'Competitive Esports Duel';
-            const displayName = g.displayName || (g as any).display_name || 'Untitled Game';
-            const platform = g.platform || 'UNIVERSAL';
+            const displayName = catalogItem?.displayName || g.displayName || (g as any).display_name || 'Untitled Game';
+            const platform = catalogItem?.platform || g.platform || 'UNIVERSAL';
             const platforms = (g as any).constraints?.platforms;
-            const isOfficial = g.isOfficial ?? (g as any).is_official ?? false;
+            const isOfficial = catalogItem?.isOfficial ?? g.isOfficial ?? (g as any).is_official ?? false;
 
             return (
               <GameProfileCard

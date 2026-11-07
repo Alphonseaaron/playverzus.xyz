@@ -20,7 +20,7 @@ import { usePartyStore } from '../../../lib/partyStore';
 import { formatEUR, formatPoints } from '../../../lib/currency';
 import { CountrySelect } from '../../../components/CountrySelect';
 import { AuthGuard } from '../../../components/AuthGuard';
-import { OFFICIAL_GAMES, getGameById } from '../../../lib/gamesCatalog';
+import { OFFICIAL_GAMES, getGameById, findCatalogGame } from '../../../lib/gamesCatalog';
 import { useWalletModeStore } from '../../../lib/walletModeStore';
 import { useGameAccountsStore } from '../../../lib/gameAccountsStore';
 import type { GameProfile, MatchFormat } from '@playverzus/core';
@@ -148,7 +148,7 @@ function NewMatchForm() {
             <option value="">Select a competitive game...</option>
             {allAvailableGames.map((p) => {
               const dName = p.displayName || (p as any).display_name || 'Game';
-              const catalogItem = OFFICIAL_GAMES.find((c) => c.id.toLowerCase() === p.id.toLowerCase());
+              const catalogItem = findCatalogGame(p.id) || findCatalogGame(p.displayName || (p as any).display_name) || getGameById(p.id);
               const icon = catalogItem?.icon || '🎮';
               return (
                 <option key={p.id} value={p.id}>

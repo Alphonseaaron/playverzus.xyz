@@ -19,7 +19,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { apiClient } from '../../../lib/api';
-import { getGameById, OFFICIAL_GAMES, type CatalogGame } from '../../../lib/gamesCatalog';
+import { getGameById, findCatalogGame, OFFICIAL_GAMES, type CatalogGame } from '../../../lib/gamesCatalog';
 import { useGameStore } from '../../../lib/gameStore';
 import { useGameAccountsStore } from '../../../lib/gameAccountsStore';
 import { EloBadge } from '../../../components/EloBadge';
@@ -92,7 +92,7 @@ export default function GameHubPage() {
 
   const catalogFallback = getGameById(id);
   const resolvedProfile = profile || catalogFallback;
-  const catalogItem = OFFICIAL_GAMES.find((c) => c.id.toLowerCase() === resolvedProfile.id.toLowerCase()) || catalogFallback;
+  const catalogItem = findCatalogGame(resolvedProfile.id) || findCatalogGame(resolvedProfile.displayName) || catalogFallback;
   const tagline = catalogItem?.tagline || 'Competitive Matchmaking Arena';
 
   // Gamertag handle integration

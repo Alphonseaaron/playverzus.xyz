@@ -27,7 +27,7 @@ import { AuthGuard } from '../../components/AuthGuard';
 import { apiClient } from '../../lib/api';
 import { useGameStore } from '../../lib/gameStore';
 import { formatEUR, formatPoints } from '../../lib/currency';
-import { getGameById, OFFICIAL_GAMES } from '../../lib/gamesCatalog';
+import { getGameById, findCatalogGame, OFFICIAL_GAMES } from '../../lib/gamesCatalog';
 import { notifyUser } from '../../lib/notifications';
 import { toUserFriendlyWalletError } from '../../lib/walletErrors';
 import { Badge } from '../../components/ui/badge';
@@ -393,11 +393,7 @@ function DashboardContent() {
                       {matches.map((m) => {
                         const isWin = m.winner_id === userProfile?.id;
                         const gameTitle = m.game_profiles?.display_name || catalogGame.displayName;
-                        const catalogItem = OFFICIAL_GAMES.find(
-                          (c) =>
-                            c.id.toLowerCase() === m.profile_id?.toLowerCase() ||
-                            c.displayName.toLowerCase() === gameTitle.toLowerCase()
-                        ) || catalogGame;
+                        const catalogItem = findCatalogGame(m.profile_id) || findCatalogGame(gameTitle) || catalogGame;
 
                         return (
                           <TableRow key={m.id} className="hover:bg-muted/30">
