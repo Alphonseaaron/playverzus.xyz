@@ -8,6 +8,7 @@ export interface CatalogGame extends GameProfile {
   tagline: string;
   gradient: string;
   defaultRoi: ROI;
+  platforms?: string[];
 }
 
 export const OFFICIAL_GAMES: CatalogGame[] = [
@@ -40,6 +41,7 @@ export const OFFICIAL_GAMES: CatalogGame[] = [
     bannerUrl: '/fc27_banner.jpg',
     tagline: '1v1 Competitive Football Matches',
     gradient: 'from-emerald-700 via-teal-900 to-stone-950',
+    platforms: ['PC', 'PS5', 'XBOX'],
     platform: 'CONSOLE',
     gameType: 'HEAD_TO_HEAD',
     approved: true,
@@ -236,8 +238,8 @@ export const OFFICIAL_GAMES: CatalogGame[] = [
     displayName: 'Mobile Legends: Bang Bang',
     shortName: 'MLBB',
     icon: '📱',
-    posterUrl: '/mlbb_poster.jpg',
-    bannerUrl: '/mlbb_banner.jpg',
+    posterUrl: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=600&q=80',
+    bannerUrl: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=1200&q=80',
     tagline: '5v5 Blitz & 1v1 Mid Lane Duels',
     gradient: 'from-amber-700 via-orange-950 to-stone-950',
     platform: 'MOBILE',

@@ -351,7 +351,7 @@ function HomeContent() {
                   {/* Top-Right Platform Badge */}
                   <div className="absolute top-3 right-3">
                     <Badge variant="secondary" className="font-mono text-[10px] bg-zinc-900/90 border-zinc-700 backdrop-blur-md">
-                      {game.platform}
+                      {game.platforms && game.platforms.length > 0 ? game.platforms.join(' · ') : game.platform}
                     </Badge>
                   </div>
 
