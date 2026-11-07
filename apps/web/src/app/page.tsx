@@ -748,6 +748,13 @@ function HomeContent() {
             <Link href="/admin/treasury" className="text-primary hover:underline">Block Explorer</Link>
           </div>
         </div>
+
+        {/* Nominative Fair Use & Trademark Attribution */}
+        <div className="pt-4 border-t border-zinc-900/60 text-[10px] text-zinc-600 leading-relaxed font-mono">
+          <p>
+            Disclaimer: EA SPORTS FC, Counter-Strike, Apex Legends, Marvel Rivals, Valorant, Rocket League, Call of Duty, Tekken, Fortnite, League of Legends, Dota 2, Mobile Legends: Bang Bang, Subway Surfers, and respective titles, logos, and cover assets are trademarks or registered trademarks of their respective owners (Electronic Arts Inc., Valve Corporation, Riot Games, Epic Games, Activision Publishing, Bandai Namco, NetEase, Moonton, SYBO Games). Playverzus is an independent matchmaking and skill competition platform and is not sponsored by, endorsed by, or affiliated with these game publishers or rights holders.
+          </p>
+        </div>
       </footer>
     </div>
   );
