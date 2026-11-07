@@ -36,7 +36,7 @@ const STAKE_PRESETS_DEMO = [0, 100, 250, 500, 1000, 2500];
 function NewMatchForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const defaultProfileId = searchParams.get('profileId') || '';
+  const defaultProfileId = searchParams.get('profileId') || searchParams.get('gameId') || '';
 
   const { activeGame, setActiveGameById } = useGameStore();
   const { members } = usePartyStore();
