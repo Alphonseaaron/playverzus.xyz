@@ -13,7 +13,8 @@ import {
   Eye, 
   Sparkles,
   ChevronRight,
-  Settings2
+  Settings2,
+  Play
 } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
@@ -22,6 +23,7 @@ import { Input } from './ui/input';
 import { useMachineStore, MachinePlatform, IngestMethod } from '../lib/useMachineStore';
 import { useGameAccountsStore } from '../lib/gameAccountsStore';
 import { CrossmintLogo } from './CrossmintLogo';
+import { GameplaySetupTutorialModal } from './GameplaySetupTutorialModal';
 
 interface MatchReadinessStepperProps {
   matchId: string;
@@ -62,6 +64,7 @@ export function MatchReadinessStepper({
   const { getGamertag, setGamertag, getGamertagLabel } = useGameAccountsStore();
 
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [tutorialOpen, setTutorialOpen] = useState(false);
   const [wizardPlatform, setWizardPlatform] = useState<MachinePlatform>(
     gamePlatform.toUpperCase().includes('CONSOLE') ? 'CONSOLE' : 'PC'
   );
@@ -130,15 +133,27 @@ export function MatchReadinessStepper({
           </div>
         </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleOpenWizard}
-          className="text-xs gap-1.5 h-8 font-mono self-start sm:self-center"
-        >
-          <Settings2 className="w-3.5 h-3.5" />
-          <span>{activeMachine ? 'Switch Machine' : 'Register Machine'}</span>
-        </Button>
+        <div className="flex items-center gap-2 self-start sm:self-center">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setTutorialOpen(true)}
+            className="text-xs gap-1.5 h-8 font-bold border-primary/40 text-primary hover:bg-primary/10"
+          >
+            <Play className="w-3.5 h-3.5 fill-primary" />
+            <span>Watch 14s Video Guide</span>
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleOpenWizard}
+            className="text-xs gap-1.5 h-8 font-mono"
+          >
+            <Settings2 className="w-3.5 h-3.5" />
+            <span>{activeMachine ? 'Switch Machine' : 'Register Machine'}</span>
+          </Button>
+        </div>
       </div>
 
       {/* 4 Interactive Progress Cards */}
@@ -409,6 +424,13 @@ export function MatchReadinessStepper({
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* 14s Gameplay & Machine Setup Tutorial Modal */}
+      <GameplaySetupTutorialModal
+        open={tutorialOpen}
+        onOpenChange={setTutorialOpen}
+        initialTab="video"
+      />
     </div>
   );
 }
