@@ -11,10 +11,10 @@ values
     'Counter-Strike 2',
     'HEAD_TO_HEAD',
     'PC',
-    '{"x":0.4,"y":0.02,"w":0.2,"h":0.08}'::jsonb,
+    '{"x":0.465,"y":0.005,"w":0.070,"h":0.080}'::jsonb,
     '{"min":0,"max":30}'::jsonb,
-    array['MATCH POINT','VICTORY','DEFEAT','TERRORISTS WIN','COUNTER-TERRORISTS WIN'],
-    '(\d{1,2})\s*[-:]\s*(\d{1,2})',
+    array['ROUND WON','ROUND LOST','MATCH POINT','VICTORY','DEFEAT','TERRORISTS WIN','COUNTER-TERRORISTS WIN','MATCH COMPLETED','CLINCHED THE MATCH'],
+    '(\d{1,2})\s*[-:\s]\s*(\d{1,2})',
     true,
     true
   ),
