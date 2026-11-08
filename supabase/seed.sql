@@ -138,6 +138,18 @@ values
     true,
     true
   ),
+  (
+    '00000000-0000-0000-0000-000000000016',
+    'Subway Surfers',
+    'HIGH_SCORE',
+    'MOBILE',
+    '{"x":0.820,"y":0.025,"w":0.160,"h":0.065}'::jsonb,
+    '{"min":0,"max":100000000,"maxJumpPerSec":5000}'::jsonb,
+    array['GAME OVER','SAVE ME','HIGH SCORE','TOP RUN','REVIVE','TAP TO PLAY'],
+    '(?:(?:SCORE|High Score|Top Run)[\s\S]*?)?(\d{3,9})',
+    true,
+    true
+  ),
   -- Universal Archetypes
   (
     '11111111-1111-1111-1111-111111111111',

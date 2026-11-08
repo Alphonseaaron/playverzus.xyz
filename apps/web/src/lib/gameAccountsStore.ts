@@ -40,6 +40,8 @@ const PLATFORM_LABELS: Record<string, string> = {
   '00000000-0000-0000-0000-000000000008': 'Tekken ID / PSN / Gamertag',
   subway: 'Gamer Handle',
   '11111111-1111-1111-1111-111111111111': 'Gamer Handle',
+  '00000000-0000-0000-0000-000000000016': 'Gamer Handle / Subway Tag',
+  'subway-surfers': 'Gamer Handle / Subway Tag',
   pubgm: 'PUBG Character ID / IGN',
   '00000000-0000-0000-0000-000000000014': 'PUBG Character ID / IGN',
   pubgpc: 'Steam ID / PUBG In-Game Name',
