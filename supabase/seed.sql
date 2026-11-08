@@ -186,6 +186,18 @@ values
     true,
     true
   ),
+  (
+    '00000000-0000-0000-0000-000000000019',
+    'EA Sports FC Mobile',
+    'HEAD_TO_HEAD',
+    'MOBILE',
+    '{"x":0.177,"y":0.111,"w":0.083,"h":0.054}'::jsonb,
+    '{"min":0,"max":20}'::jsonb,
+    array['FULL TIME','FT','MATCH OVER','MATCH HIGHLIGHTS','ADD FRIEND','CONTINUE','FINAL SCORE','EXTRA TIME','PENALTY SHOOTOUT','VICTORY','DEFEAT','FORFEIT'],
+    '(?:[A-Z0-9]{2,4}\s*)?(\d{1,2})\s*[-:v\s]\s*(\d{1,2})',
+    true,
+    true
+  ),
   -- Universal Archetypes
   (
     '11111111-1111-1111-1111-111111111111',

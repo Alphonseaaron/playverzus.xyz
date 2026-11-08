@@ -14,3 +14,4 @@ coverage
 apps/*/.env
 apps/*/.env.local
 *.tsbuildinfo
+scratch/

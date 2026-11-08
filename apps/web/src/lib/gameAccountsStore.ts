@@ -57,6 +57,11 @@ const PLATFORM_LABELS: Record<string, string> = {
   efootball: 'Konami ID / PSN / Gamertag',
   '00000000-0000-0000-0000-000000000018': 'Konami ID / PSN / Gamertag',
   'efootball-console': 'Konami ID / PSN / Gamertag',
+  eafcm: 'EA ID / In-Game Name',
+  '00000000-0000-0000-0000-000000000019': 'EA ID / In-Game Name',
+  'fc-mobile': 'EA ID / In-Game Name',
+  'fcmobile': 'EA ID / In-Game Name',
+  'fifa-mobile': 'EA ID / In-Game Name',
 };
 
 export const useGameAccountsStore = create<GameAccountsState>((set, get) => ({
