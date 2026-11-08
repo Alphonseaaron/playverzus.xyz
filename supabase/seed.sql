@@ -150,6 +150,18 @@ values
     true,
     true
   ),
+  (
+    '00000000-0000-0000-0000-000000000010',
+    'Apex Legends',
+    'HEAD_TO_HEAD',
+    'PC',
+    '{"x":0.750,"y":0.068,"w":0.120,"h":0.055}'::jsonb,
+    '{"min":0,"max":50,"maxJumpPerSec":5}'::jsonb,
+    array['CHAMPION','YOU ARE THE CHAMPION','YOU ARE THE APEX CHAMPIONS','#1 APEX CHAMPIONS','VICTORY','SQUAD ELIMINATED','MATCH SUMMARY','SQUAD PLACED'],
+    '(?:(?:KILLS|ASSISTS|DAMAGE)[\s\S]*?)?(\d{1,2})',
+    true,
+    true
+  ),
   -- Universal Archetypes
   (
     '11111111-1111-1111-1111-111111111111',

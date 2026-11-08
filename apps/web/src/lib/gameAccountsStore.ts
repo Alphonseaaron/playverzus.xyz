@@ -24,6 +24,8 @@ const STORAGE_KEY = 'playverzus_game_accounts';
 const PLATFORM_LABELS: Record<string, string> = {
   cs2: 'Steam ID / Gamertag',
   '00000000-0000-0000-0000-000000000001': 'Steam ID / Gamertag',
+  apex: 'EA ID / Gamertag',
+  '00000000-0000-0000-0000-000000000010': 'EA ID / Gamertag',
   eafc: 'EA ID',
   '00000000-0000-0000-0000-000000000002': 'EA ID',
   rl: 'Epic Games ID',
