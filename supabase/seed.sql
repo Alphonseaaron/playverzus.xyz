@@ -162,6 +162,30 @@ values
     true,
     true
   ),
+  (
+    '00000000-0000-0000-0000-000000000017',
+    'eFootball Mobile',
+    'HEAD_TO_HEAD',
+    'MOBILE',
+    '{"x":0.092,"y":0.105,"w":0.058,"h":0.055}'::jsonb,
+    '{"min":0,"max":20}'::jsonb,
+    array['FULL TIME','FT','MATCH ENDED','FINAL SCORE','HALF TIME','EXTRA TIME','PENALTY SHOOTOUT','VICTORY','DEFEAT','OPPONENT HAS FORFEITED','FORFEIT'],
+    '(?:[A-Z0-9]{2,4}\s*)?(\d{1,2})\s*[-:\s]\s*(\d{1,2})',
+    true,
+    true
+  ),
+  (
+    '00000000-0000-0000-0000-000000000018',
+    'eFootball (Console & PC)',
+    'HEAD_TO_HEAD',
+    'CONSOLE',
+    '{"x":0.112,"y":0.062,"w":0.056,"h":0.052}'::jsonb,
+    '{"min":0,"max":20}'::jsonb,
+    array['FULL TIME','FT','MATCH OVER','FINAL SCORE','EXTRA TIME','PENALTY SHOOTOUT','VICTORY','DEFEAT','OPPONENT HAS CONCEDED','FORFEITED'],
+    '(?:[A-Z0-9]{2,4}\s*)?(\d{1,2})\s*[-:\s]\s*(\d{1,2})',
+    true,
+    true
+  ),
   -- Universal Archetypes
   (
     '11111111-1111-1111-1111-111111111111',

@@ -51,6 +51,12 @@ const PLATFORM_LABELS: Record<string, string> = {
   chess: 'Chess.com Username',
   'chess.com': 'Chess.com Username',
   '00000000-0000-0000-0000-000000000009': 'Chess.com Username',
+  efootballm: 'Konami ID / Owner Name',
+  '00000000-0000-0000-0000-000000000017': 'Konami ID / Owner Name',
+  'efootball-mobile': 'Konami ID / Owner Name',
+  efootball: 'Konami ID / PSN / Gamertag',
+  '00000000-0000-0000-0000-000000000018': 'Konami ID / PSN / Gamertag',
+  'efootball-console': 'Konami ID / PSN / Gamertag',
 };
 
 export const useGameAccountsStore = create<GameAccountsState>((set, get) => ({
