@@ -40,6 +40,10 @@ const PLATFORM_LABELS: Record<string, string> = {
   '00000000-0000-0000-0000-000000000008': 'Tekken ID / PSN / Gamertag',
   subway: 'Gamer Handle',
   '11111111-1111-1111-1111-111111111111': 'Gamer Handle',
+  pubgm: 'PUBG Character ID / IGN',
+  '00000000-0000-0000-0000-000000000014': 'PUBG Character ID / IGN',
+  pubgpc: 'Steam ID / PUBG In-Game Name',
+  '00000000-0000-0000-0000-000000000015': 'Steam ID / PUBG In-Game Name',
 };
 
 export const useGameAccountsStore = create<GameAccountsState>((set, get) => ({

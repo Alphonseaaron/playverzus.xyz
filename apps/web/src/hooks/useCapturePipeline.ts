@@ -32,6 +32,9 @@ export function useCapturePipeline(
 
   const lastSubmittedTextRef = useRef<string | null>(null);
   const lastSubmittedTimeRef = useRef<number>(0);
+  const highWaterScoreRef = useRef<number>(0);
+  const highWaterTextRef = useRef<string | null>(null);
+  const cycleCountRef = useRef<number>(0);
 
   // Initialize Tesseract worker
   useEffect(() => {
@@ -261,64 +264,123 @@ export function useCapturePipeline(
         const v = videoRef.current;
         if (v.videoWidth === 0 || v.videoHeight === 0) return;
 
-        const roi = profile.roi;
-        const sx = Math.max(0, Math.floor(roi.x * v.videoWidth));
-        const sy = Math.max(0, Math.floor(roi.y * v.videoHeight));
-        const sw = Math.max(10, Math.floor(roi.w * v.videoWidth));
-        const sh = Math.max(10, Math.floor(roi.h * v.videoHeight));
+        cycleCountRef.current++;
 
-        canvas.width = sw;
-        canvas.height = sh;
+        // Multi-Zone Candidate Cascade (Primary ROI + Dynamic Fallbacks for custom HUDs & modals)
+        const candidateRois = [
+          profile.roi,
+          ...(profile.secondaryRois || []),
+        ];
 
-        // Apply grayscale and threshold enhancement via canvas filter
-        ctx.filter = 'grayscale(100%) contrast(150%) brightness(90%)';
-        ctx.drawImage(v, sx, sy, sw, sh, 0, 0, sw, sh);
+        let recognizedText = '';
+        let recognizedConfidence = 0;
 
-        try {
-          const { data } = await workerRef.current.recognize(canvas);
-          const text = data.text?.trim() ?? '';
-          const confidence = (data.confidence ?? 0) / 100;
+        for (let i = 0; i < candidateRois.length; i++) {
+          const roi = candidateRois[i]!;
+          const sx = Math.max(0, Math.floor(roi.x * v.videoWidth));
+          const sy = Math.max(0, Math.floor(roi.y * v.videoHeight));
+          const sw = Math.max(10, Math.floor(roi.w * v.videoWidth));
+          const sh = Math.max(10, Math.floor(roi.h * v.videoHeight));
 
-          if (text.length > 0) {
-            // Check end keywords
-            const isFinal = profile.endKeywords.some((kw) =>
-              text.toLowerCase().includes(kw.toLowerCase()),
-            );
+          canvas.width = sw;
+          canvas.height = sh;
 
-            setState((prev) => ({
-              ...prev,
-              lastScore: text,
-              confidence,
-              status: isFinal ? 'VERIFYING' : 'CAPTURING',
-            }));
+          // Apply grayscale and contrast enhancement via canvas filter
+          ctx.filter = 'grayscale(100%) contrast(160%) brightness(95%)';
+          ctx.drawImage(v, sx, sy, sw, sh, 0, 0, sw, sh);
 
-            // Only send HTTP POST if score actually changed, game is final, or 30s elapsed heartbeat
-            const textChanged = text !== lastSubmittedTextRef.current;
-            const heartbeatDue = Date.now() - lastSubmittedTimeRef.current > 30_000;
+          try {
+            const { data } = await workerRef.current.recognize(canvas);
+            const rawText = data.text?.trim() ?? '';
+            const conf = (data.confidence ?? 0) / 100;
 
-            if (textChanged || isFinal || heartbeatDue) {
-              lastSubmittedTextRef.current = text;
-              lastSubmittedTimeRef.current = Date.now();
+            if (rawText.length > 0) {
+              const matchesPattern = profile.regexPattern
+                ? new RegExp(profile.regexPattern, 'i').test(rawText)
+                : false;
+              const matchesEnd = profile.endKeywords.some((kw) =>
+                rawText.toLowerCase().includes(kw.toLowerCase()),
+              );
 
-              // Submit score to backend
-              await apiClient(`/matches/${matchId}/score`, {
-                method: 'POST',
-                body: JSON.stringify({
-                  rawText: text,
-                  confidence,
-                  isFinal,
-                  source: 'CLIENT_OCR',
-                  gamertag: gamertag || undefined,
-                }),
-              });
+              if (matchesPattern || matchesEnd || conf > 0.65) {
+                recognizedText = rawText;
+                recognizedConfidence = conf;
+                break; // Found strong anchor in this zone
+              } else if (!recognizedText) {
+                recognizedText = rawText;
+                recognizedConfidence = conf;
+              }
             }
-
-            if (isFinal) {
-              await stopCapture();
-            }
+          } catch {
+            // Zone scan skip
           }
-        } catch {
-          // Non-fatal frame parse drop, retry on next interval
+
+          if (recognizedText && recognizedConfidence > 0.8) {
+            break;
+          }
+        }
+
+        // Check if game end keywords are present
+        const isFinal = profile.endKeywords.some((kw) =>
+          recognizedText.toLowerCase().includes(kw.toLowerCase()),
+        );
+
+        // Monotonic High-Water Mark Accumulation:
+        // In Battle Royales & Kill Races (PUBG, Warzone, Apex), kills only increase.
+        // If HUD fades or disappears (bag, map, scope ADS), maintain high water mark!
+        let effectiveText = recognizedText;
+        if (profile.regexPattern && recognizedText) {
+          try {
+            const rx = new RegExp(profile.regexPattern, 'i');
+            const match = rx.exec(recognizedText);
+            if (match && match[1]) {
+              const parsedVal = parseInt(match[1].replace(/,/g, ''), 10);
+              if (!isNaN(parsedVal)) {
+                if (parsedVal >= highWaterScoreRef.current) {
+                  highWaterScoreRef.current = parsedVal;
+                  highWaterTextRef.current = recognizedText;
+                } else if (parsedVal < highWaterScoreRef.current && !isFinal) {
+                  effectiveText = highWaterTextRef.current || `${highWaterScoreRef.current} KILLS`;
+                }
+              }
+            }
+          } catch {}
+        }
+
+        if (!effectiveText && highWaterTextRef.current) {
+          effectiveText = highWaterTextRef.current;
+        }
+
+        if (effectiveText && effectiveText.length > 0) {
+          setState((prev) => ({
+            ...prev,
+            lastScore: effectiveText,
+            confidence: recognizedConfidence || 0.95,
+            status: isFinal ? 'VERIFYING' : 'CAPTURING',
+          }));
+
+          const textChanged = effectiveText !== lastSubmittedTextRef.current;
+          const heartbeatDue = Date.now() - lastSubmittedTimeRef.current > 30_000;
+
+          if (textChanged || isFinal || heartbeatDue) {
+            lastSubmittedTextRef.current = effectiveText;
+            lastSubmittedTimeRef.current = Date.now();
+
+            await apiClient(`/matches/${matchId}/score`, {
+              method: 'POST',
+              body: JSON.stringify({
+                rawText: effectiveText,
+                confidence: recognizedConfidence || 0.95,
+                isFinal,
+                source: 'CLIENT_OCR',
+                gamertag: gamertag || undefined,
+              }),
+            });
+          }
+
+          if (isFinal) {
+            await stopCapture();
+          }
         }
       }, 1500);
     } catch (err: unknown) {

@@ -30,6 +30,7 @@ export interface GameProfile {
   gameType: GameType;
   platform: Platform;
   roi: ROI;
+  secondaryRois?: ROI[];
   constraints: GameConstraints;
   endKeywords: string[];
   regexPattern?: string | null;

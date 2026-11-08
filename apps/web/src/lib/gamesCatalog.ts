@@ -8,6 +8,7 @@ export interface CatalogGame extends GameProfile {
   tagline: string;
   gradient: string;
   defaultRoi: ROI;
+  secondaryRois?: ROI[];
   platforms?: string[];
 }
 
@@ -292,6 +293,56 @@ export const OFFICIAL_GAMES: CatalogGame[] = [
     roi: { x: 0.3, y: 0.3, w: 0.4, h: 0.2 },
     constraints: {},
   },
+
+  {
+    id: 'pubgm',
+    displayName: 'PUBG Mobile',
+    shortName: 'PUBGM',
+    icon: '📱',
+    posterUrl: '/pubgm_poster.jpg',
+    bannerUrl: '/pubgm_banner.jpg',
+    tagline: '1v1 Kill Race & Battle Royale Duels',
+    gradient: 'from-amber-600 via-yellow-900 to-stone-950',
+    platforms: ['MOBILE', 'EMULATOR', 'PC'],
+    platform: 'MOBILE',
+    gameType: 'HEAD_TO_HEAD',
+    approved: true,
+    isOfficial: true,
+    endKeywords: ['WINNER WINNER CHICKEN DINNER', 'CHICKEN DINNER', 'BETTER LUCK NEXT TIME', 'MATCH OVER', 'TOTAL ELIMINATIONS', 'DEFEATED', 'CONTINUE'],
+    regexPattern: '(?:Eliminations|Elimination|Kills|Remaining)?\\s*[:\\s]*(\\d{1,2})',
+    defaultRoi: { x: 0.015, y: 0.018, w: 0.230, h: 0.085 },
+    roi: { x: 0.015, y: 0.018, w: 0.230, h: 0.085 },
+    secondaryRois: [
+      { x: 0.770, y: 0.018, w: 0.215, h: 0.085 },
+      { x: 0.200, y: 0.200, w: 0.600, h: 0.600 },
+    ],
+    constraints: { min: 0, max: 50 },
+  },
+
+  {
+    id: 'pubgpc',
+    displayName: 'PUBG: BATTLEGROUNDS',
+    shortName: 'PUBG',
+    icon: '🪖',
+    posterUrl: '/pubgpc_poster.jpg',
+    bannerUrl: '/pubgpc_banner.jpg',
+    tagline: 'Tactical Battle Royale Kill Race & Survival',
+    gradient: 'from-orange-700 via-amber-950 to-stone-950',
+    platforms: ['PC', 'PS5', 'XBOX'],
+    platform: 'PC',
+    gameType: 'HEAD_TO_HEAD',
+    approved: true,
+    isOfficial: true,
+    endKeywords: ['WINNER WINNER CHICKEN DINNER', 'CHICKEN DINNER', 'BETTER LUCK NEXT TIME', 'MATCH RESULTS', 'RANK #', 'MATCH FINISHED'],
+    regexPattern: '(?:ALIVE[\\s\\S]*?)?(\\d{1,2})\\s*(?:KILLS?|kills?|💀)?',
+    defaultRoi: { x: 0.810, y: 0.020, w: 0.170, h: 0.090 },
+    roi: { x: 0.810, y: 0.020, w: 0.170, h: 0.090 },
+    secondaryRois: [
+      { x: 0.020, y: 0.020, w: 0.200, h: 0.090 },
+      { x: 0.180, y: 0.180, w: 0.640, h: 0.640 },
+    ],
+    constraints: { min: 0, max: 50 },
+  },
 ];
 
 const UUID_TO_CATALOG_SLUG: Record<string, string> = {
@@ -329,6 +380,14 @@ const UUID_TO_CATALOG_SLUG: Record<string, string> = {
   'mobile-legends': 'mlbb',
   '11111111-1111-1111-1111-111111111111': 'subway',
   'subway-surfers': 'subway',
+  '00000000-0000-0000-0000-000000000014': 'pubgm',
+  'pubg-mobile': 'pubgm',
+  'pubgm': 'pubgm',
+  'bgmi': 'pubgm',
+  '00000000-0000-0000-0000-000000000015': 'pubgpc',
+  'pubg-pc': 'pubgpc',
+  'pubgpc': 'pubgpc',
+  'pubg': 'pubgpc',
 };
 
 export function findCatalogGame(idOrSlugOrName?: string | null): CatalogGame | undefined {

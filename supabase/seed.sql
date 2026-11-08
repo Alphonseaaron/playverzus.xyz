@@ -102,6 +102,30 @@ values
     true,
     true
   ),
+  (
+    '00000000-0000-0000-0000-000000000014',
+    'PUBG Mobile',
+    'HEAD_TO_HEAD',
+    'MOBILE',
+    '{"x":0.015,"y":0.018,"w":0.230,"h":0.085}'::jsonb,
+    '{"min":0,"max":50}'::jsonb,
+    array['WINNER WINNER CHICKEN DINNER','CHICKEN DINNER','BETTER LUCK NEXT TIME','MATCH OVER','TOTAL ELIMINATIONS','DEFEATED','CONTINUE'],
+    '(?:Eliminations|Elimination|Kills|Remaining)?\s*[:\s]*(\d{1,2})',
+    true,
+    true
+  ),
+  (
+    '00000000-0000-0000-0000-000000000015',
+    'PUBG: BATTLEGROUNDS',
+    'HEAD_TO_HEAD',
+    'PC',
+    '{"x":0.810,"y":0.020,"w":0.170,"h":0.090}'::jsonb,
+    '{"min":0,"max":50}'::jsonb,
+    array['WINNER WINNER CHICKEN DINNER','CHICKEN DINNER','BETTER LUCK NEXT TIME','MATCH RESULTS','RANK #','MATCH FINISHED'],
+    '(?:ALIVE[\s\S]*?)?(\d{1,2})\s*(?:KILLS?|kills?|💀)?',
+    true,
+    true
+  ),
   -- Universal Archetypes
   (
     '11111111-1111-1111-1111-111111111111',
