@@ -22,6 +22,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Input } from './ui/input';
 import { useMachineStore, MachinePlatform, IngestMethod } from '../lib/useMachineStore';
 import { useGameAccountsStore } from '../lib/gameAccountsStore';
+import { findCatalogGame } from '../lib/gamesCatalog';
 import { CrossmintLogo } from './CrossmintLogo';
 import { GameplaySetupTutorialModal } from './GameplaySetupTutorialModal';
 
@@ -109,8 +110,11 @@ export function MatchReadinessStepper({
     setWizardOpen(false);
   };
 
-  // 4 Standardized Readiness Steps
-  const step1Done = Boolean(activeMachine && myGamertag);
+  const catalogGame = findCatalogGame(gameId);
+  const isSoloGame = catalogGame?.gameType === 'HIGH_SCORE' || catalogGame?.gameType === 'LOW_TIME';
+
+  // 4 Standardized Readiness Steps (Solo games like Subway Surfers bind to device session directly)
+  const step1Done = Boolean(activeMachine && (isSoloGame || myGamertag));
   const step2Done = Boolean(hasOpponent);
   const step3Done = Boolean(isCapturing);
   const step4Done = Boolean(isReady && opponentReady);
@@ -189,6 +193,8 @@ export function MatchReadinessStepper({
           <div className="text-[11px] font-mono text-muted-foreground mt-1 truncate">
             {myGamertag ? (
               <span className="text-emerald-400 font-bold">{myGamertag}</span>
+            ) : isSoloGame ? (
+              <span className="text-emerald-400/80 font-medium">Session Bound (Solo Duel)</span>
             ) : (
               <button
                 onClick={handleOpenWizard}
