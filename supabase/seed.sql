@@ -126,6 +126,18 @@ values
     true,
     true
   ),
+  (
+    '00000000-0000-0000-0000-000000000009',
+    'Chess.com',
+    'HEAD_TO_HEAD',
+    'PC',
+    '{"x":0.660,"y":0.580,"w":0.330,"h":0.270}'::jsonb,
+    '{"min":0,"max":1}'::jsonb,
+    array['WON BY CHECKMATE','CHECKMATE','WON BY RESIGNATION','RESIGNATION','RESIGNED','WON ON TIME','TIME OUT','TIMEOUT','GAME OVER','STALEMATE','DRAW AGREED','GAME DRAWN','DRAW','REMATCH','GAME REVIEW','1-0','0-1','1/2-1/2'],
+    '(?:won by|won on)?\s*([a-zA-Z]+)|(?:(\d{1,2})\s*[-:]\s*(\d{1,2}))',
+    true,
+    true
+  ),
   -- Universal Archetypes
   (
     '11111111-1111-1111-1111-111111111111',

@@ -44,6 +44,9 @@ const PLATFORM_LABELS: Record<string, string> = {
   '00000000-0000-0000-0000-000000000014': 'PUBG Character ID / IGN',
   pubgpc: 'Steam ID / PUBG In-Game Name',
   '00000000-0000-0000-0000-000000000015': 'Steam ID / PUBG In-Game Name',
+  chess: 'Chess.com Username',
+  'chess.com': 'Chess.com Username',
+  '00000000-0000-0000-0000-000000000009': 'Chess.com Username',
 };
 
 export const useGameAccountsStore = create<GameAccountsState>((set, get) => ({
