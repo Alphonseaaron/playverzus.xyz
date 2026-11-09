@@ -107,10 +107,10 @@ values
     'Tekken 8',
     'BINARY_RESULT',
     'CONSOLE',
-    '{"x":0.3,"y":0.3,"w":0.4,"h":0.2}'::jsonb,
+    '{"x":0.280,"y":0.280,"w":0.440,"h":0.360}'::jsonb,
     '{}'::jsonb,
-    array['K.O.','PERFECT','GREAT','WINNER','YOU WIN','YOU LOSE'],
-    null,
+    array['K.O.','DOUBLE K.O.','PERFECT','GREAT','YOU WIN','YOU LOSE','WINNER','VICTORY','DEFEAT','TIME UP','DRAW','MATCH RESULTS','REMATCH'],
+    '(?:(K\\.O\\.|DOUBLE K\\.O\\.|PERFECT|GREAT|YOU WIN|YOU LOSE|WINNER|VICTORY|DEFEAT))|(?:(\\d)\\s*[-:\\s]\\s*(\\d))',
     true,
     true
   ),
