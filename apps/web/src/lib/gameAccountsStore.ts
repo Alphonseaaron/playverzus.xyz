@@ -62,6 +62,11 @@ const PLATFORM_LABELS: Record<string, string> = {
   'fc-mobile': 'EA ID / In-Game Name',
   'fcmobile': 'EA ID / In-Game Name',
   'fifa-mobile': 'EA ID / In-Game Name',
+  '8ballpool': 'Miniclip ID / Unique ID',
+  '00000000-0000-0000-0000-000000000020': 'Miniclip ID / Unique ID',
+  '8-ball-pool': 'Miniclip ID / Unique ID',
+  '8bp': 'Miniclip ID / Unique ID',
+  'eightballpool': 'Miniclip ID / Unique ID',
 };
 
 export const useGameAccountsStore = create<GameAccountsState>((set, get) => ({

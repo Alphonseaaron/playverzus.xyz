@@ -198,6 +198,18 @@ values
     true,
     true
   ),
+  (
+    '00000000-0000-0000-0000-000000000020',
+    '8 Ball Pool',
+    'HEAD_TO_HEAD',
+    'MOBILE',
+    '{"x":0.427,"y":0.009,"w":0.146,"h":0.060}'::jsonb,
+    '{"min":0,"max":20}'::jsonb,
+    array['YOU WIN','WINNER','YOU LOSE','VICTORY','DEFEAT','MATCH OVER','GAME OVER','OPPONENT LEFT','TIME OUT','SCRATCH','8 BALL POTTED','CONCEDED'],
+    '(?:[A-Z0-9]{2,4}\\s*)?(\\d{1,2})\\s*[-:\\s]\\s*(\\d{1,2})|(?:WINNER|YOU WIN|VICTORY)',
+    true,
+    true
+  ),
   -- Universal Archetypes
   (
     '11111111-1111-1111-1111-111111111111',

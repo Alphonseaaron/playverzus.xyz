@@ -514,6 +514,44 @@ export const OFFICIAL_GAMES: CatalogGame[] = [
     constraints: { min: 0, max: 20 },
   },
 
+  {
+    id: '8ballpool',
+    displayName: '8 Ball Pool',
+    shortName: '8BP',
+    icon: '🎱',
+    posterUrl: '/8ballpool_poster.jpg',
+    bannerUrl: '/8ballpool_banner.jpg',
+    tagline: '1v1 Authentic Multiplayer Pool & Billiards Duels',
+    gradient: 'from-blue-700 via-indigo-950 to-stone-950',
+    platforms: ['MOBILE', 'WEB', 'ANDROID', 'IOS'],
+    platform: 'MOBILE',
+    gameType: 'HEAD_TO_HEAD',
+    approved: true,
+    isOfficial: true,
+    endKeywords: [
+      'YOU WIN',
+      'WINNER',
+      'YOU LOSE',
+      'VICTORY',
+      'DEFEAT',
+      'MATCH OVER',
+      'GAME OVER',
+      'OPPONENT LEFT',
+      'TIME OUT',
+      'SCRATCH',
+      '8 BALL POTTED',
+      'CONCEDED',
+    ],
+    regexPattern: '(?:[A-Z0-9]{2,4}\\s*)?(\\d{1,2})\\s*[-:\\s]\\s*(\\d{1,2})|(?:WINNER|YOU WIN|VICTORY)',
+    defaultRoi: { x: 0.427, y: 0.009, w: 0.146, h: 0.060 },
+    roi: { x: 0.427, y: 0.009, w: 0.146, h: 0.060 },
+    secondaryRois: [
+      { x: 0.020, y: 0.009, w: 0.235, h: 0.125 },
+      { x: 0.745, y: 0.009, w: 0.235, h: 0.125 },
+      { x: 0.260, y: 0.230, w: 0.480, h: 0.540 },
+    ],
+    constraints: { min: 0, max: 20 },
+  },
 ];
 
 const UUID_TO_CATALOG_SLUG: Record<string, string> = {
@@ -581,6 +619,13 @@ const UUID_TO_CATALOG_SLUG: Record<string, string> = {
   'fcmobile': 'eafcm',
   'fifa-mobile': 'eafcm',
   'ea-sports-fc-mobile': 'eafcm',
+  '00000000-0000-0000-0000-000000000020': '8ballpool',
+  '8ballpool': '8ballpool',
+  '8-ball-pool': '8ballpool',
+  '8ball': '8ballpool',
+  'eightballpool': '8ballpool',
+  'eight-ball-pool': '8ballpool',
+  '8bp': '8ballpool',
 };
 
 export function findCatalogGame(idOrSlugOrName?: string | null): CatalogGame | undefined {
