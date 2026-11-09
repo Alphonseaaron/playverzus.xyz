@@ -95,10 +95,10 @@ values
     'Fortnite',
     'HEAD_TO_HEAD',
     'PC',
-    '{"x":0.75,"y":0.02,"w":0.2,"h":0.08}'::jsonb,
+    '{"x":0.835,"y":0.285,"w":0.153,"h":0.060}'::jsonb,
     '{"min":0,"max":99}'::jsonb,
-    array['VICTORY ROYALE','MATCH COMPLETED','ELIMINATED'],
-    '(\d{1,2})\s*(?:KILLS)?',
+    array['VICTORY ROYALE','#1 VICTORY ROYALE','PLACED','YOU PLACED','ELIMINATIONS','ELIMINATED','VIEW MATCH STATS','RETURN TO LOBBY','GAME OVER'],
+    '(?:(?:#?1\s*)?VICTORY\s*ROYALE!?)|(?:YOU\s*PLACED\s*#?(\d{1,3}))|(?:(\d{1,2})\s*(?:ELIMINATIONS?|KILLS?))',
     true,
     true
   ),
