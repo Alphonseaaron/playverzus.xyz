@@ -47,10 +47,10 @@ values
     'Rocket League',
     'HEAD_TO_HEAD',
     'PC',
-    '{"x":0.42,"y":0.02,"w":0.16,"h":0.08}'::jsonb,
+    '{"x":0.404,"y":0.000,"w":0.192,"h":0.082}'::jsonb,
     '{"min":0,"max":25}'::jsonb,
-    array['WINNER','GAME OVER','FINAL'],
-    '(\d{1,2})\s*[-:]\s*(\d{1,2})',
+    array['WINNER','WINNER BY FORFEIT','ORANGE WINS','BLUE WINS','VICTORY','DEFEAT','OVERTIME','MATCH OVER','GAME OVER','FINAL','FORFEIT','CONCEDED','PLAY AGAIN'],
+    '(?:(\d{1,2})\s*[-:\s]\s*(\d{1,2}))|(?:WINNER|VICTORY|ORANGE WINS|BLUE WINS)',
     true,
     true
   ),
