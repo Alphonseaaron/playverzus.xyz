@@ -175,6 +175,18 @@ values
     true
   ),
   (
+    '00000000-0000-0000-0000-000000000011',
+    'Marvel Rivals',
+    'HEAD_TO_HEAD',
+    'PC',
+    '{"x":0.340,"y":0.010,"w":0.320,"h":0.135}'::jsonb,
+    '{"min":0,"max":100}'::jsonb,
+    array['VICTORY','DEFEAT','FINAL SCORE','ROUND COMPLETE','OVERTIME','MVP','SVP','ACE','KO','MATCH COMPLETED','HEROES WIN'],
+    '(?:FINAL\s*SCORE\s*(\d{1,2})\s*[:\-]\s*(\d{1,2}))|(?:(\d{1,2})\s*[:\-]\s*(\d{1,2}))|(?:VICTORY|DEFEAT|MVP|ACE)',
+    true,
+    true
+  ),
+  (
     '00000000-0000-0000-0000-000000000017',
     'eFootball Mobile',
     'HEAD_TO_HEAD',
