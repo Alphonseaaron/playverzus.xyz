@@ -234,6 +234,18 @@ values
     true,
     true
   ),
+  (
+    '00000000-0000-0000-0000-000000000012',
+    'League of Legends',
+    'HEAD_TO_HEAD',
+    'PC',
+    '{"x":0.795,"y":0.000,"w":0.203,"h":0.036}'::jsonb,
+    '{"min":0,"max":500}'::jsonb,
+    array['VICTORY','DEFEAT','CONTINUE','FIRST BLOOD','YOU HAVE SLAIN AN ENEMY','ENEMY TURRET DESTROYED','ENEMY INHIBITOR DESTROYED','ACE','PENTAKILL','QUADRA KILL','TRIPLE KILL','DOUBLE KILL','SURRENDER','REMAKE'],
+    '(?:(\d{1,3})\s*vs\s*(\d{1,3}))|(?:(\d{1,2})\/(\d{1,2})\/(\d{1,2}))|(?:VICTORY|DEFEAT|CONTINUE|FIRST BLOOD|ACE)',
+    true,
+    true
+  ),
   -- Universal Archetypes
   (
     '11111111-1111-1111-1111-111111111111',
