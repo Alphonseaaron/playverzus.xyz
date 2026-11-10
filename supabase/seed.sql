@@ -246,6 +246,18 @@ values
     true,
     true
   ),
+  (
+    '00000000-0000-0000-0000-000000000013',
+    'Mobile Legends: Bang Bang',
+    'HEAD_TO_HEAD',
+    'MOBILE',
+    '{"x":0.435,"y":0.000,"w":0.130,"h":0.052}'::jsonb,
+    '{"min":0,"max":200}'::jsonb,
+    array['VICTORY','DEFEAT','TAP TO CONTINUE','CONTINUE','FIRST BLOOD','SHUT DOWN','DESTROYED','WIPED OUT','SAVAGE','MANIAC','TRIPLE KILL','DOUBLE KILL','LEGENDARY','KILLING SPREE','MEGA KILL','UNSTOPPABLE','GODLIKE','MVP','SURRENDER'],
+    '(?:(\d{1,3})\s+(\d{1,2}:\d{2})\s+(\d{1,3}))|(?:(\d{1,2})\s+(\d{1,2})\s+(\d{1,2})\s+\$(\d{1,5}))|(?:VICTORY|DEFEAT|TAP TO CONTINUE|FIRST BLOOD|SHUT DOWN|DESTROYED|WIPED OUT|SAVAGE|MANIAC)',
+    true,
+    true
+  ),
   -- Universal Archetypes
   (
     '11111111-1111-1111-1111-111111111111',
