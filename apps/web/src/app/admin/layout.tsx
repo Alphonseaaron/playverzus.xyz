@@ -202,12 +202,12 @@ export default function AdminLayout({
   if (isReviewer && !pathname.startsWith('/admin/review')) {
     return (
       <div className="max-w-md mx-auto py-16 px-4">
-        <Card className="p-8 bg-card border-amber-500/30 shadow-2xl text-center space-y-6">
-          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-500 border border-amber-500/20 mx-auto flex items-center justify-center shadow-lg">
+        <Card className="p-8 bg-card border-primary/40 shadow-2xl text-center space-y-6">
+          <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary border border-primary/20 mx-auto flex items-center justify-center shadow-lg">
             <AlertTriangle className="w-7 h-7" />
           </div>
           <div className="space-y-2">
-            <Badge variant="warning" className="font-mono text-[10px]">
+            <Badge variant="copper" className="font-mono text-[10px]">
               REVIEWER SCOPE RESTRICTION
             </Badge>
             <h1 className="text-2xl font-black tracking-tight text-foreground">
@@ -240,12 +240,12 @@ export default function AdminLayout({
   if (isSupport && !pathname.startsWith('/admin/support') && !pathname.startsWith('/admin/polls')) {
     return (
       <div className="max-w-md mx-auto py-16 px-4">
-        <Card className="p-8 bg-card border-amber-500/30 shadow-2xl text-center space-y-6">
-          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-500 border border-amber-500/20 mx-auto flex items-center justify-center shadow-lg">
+        <Card className="p-8 bg-card border-primary/40 shadow-2xl text-center space-y-6">
+          <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary border border-primary/20 mx-auto flex items-center justify-center shadow-lg">
             <Headphones className="w-7 h-7" />
           </div>
           <div className="space-y-2">
-            <Badge variant="warning" className="font-mono text-[10px]">
+            <Badge variant="copper" className="font-mono text-[10px]">
               SUPPORT STAFF SCOPE
             </Badge>
             <h1 className="text-2xl font-black tracking-tight text-foreground">
@@ -278,12 +278,12 @@ export default function AdminLayout({
   if (isTournamentAdmin && !pathname.startsWith('/admin/seasons') && !pathname.startsWith('/admin/profiles')) {
     return (
       <div className="max-w-md mx-auto py-16 px-4">
-        <Card className="p-8 bg-card border-amber-500/30 shadow-2xl text-center space-y-6">
-          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-500 border border-amber-500/20 mx-auto flex items-center justify-center shadow-lg">
+        <Card className="p-8 bg-card border-primary/40 shadow-2xl text-center space-y-6">
+          <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary border border-primary/20 mx-auto flex items-center justify-center shadow-lg">
             <Trophy className="w-7 h-7" />
           </div>
           <div className="space-y-2">
-            <Badge variant="warning" className="font-mono text-[10px]">
+            <Badge variant="copper" className="font-mono text-[10px]">
               TOURNAMENT DIRECTOR SCOPE
             </Badge>
             <h1 className="text-2xl font-black tracking-tight text-foreground">
@@ -316,12 +316,12 @@ export default function AdminLayout({
   if (isFinanceAuditor && !pathname.startsWith('/admin/treasury')) {
     return (
       <div className="max-w-md mx-auto py-16 px-4">
-        <Card className="p-8 bg-card border-amber-500/30 shadow-2xl text-center space-y-6">
-          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-500 border border-amber-500/20 mx-auto flex items-center justify-center shadow-lg">
+        <Card className="p-8 bg-card border-primary/40 shadow-2xl text-center space-y-6">
+          <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary border border-primary/20 mx-auto flex items-center justify-center shadow-lg">
             <Landmark className="w-7 h-7" />
           </div>
           <div className="space-y-2">
-            <Badge variant="warning" className="font-mono text-[10px]">
+            <Badge variant="copper" className="font-mono text-[10px]">
               FINANCE AUDITOR SCOPE
             </Badge>
             <h1 className="text-2xl font-black tracking-tight text-foreground">
@@ -354,12 +354,12 @@ export default function AdminLayout({
   if (isCommunityManager && !pathname.startsWith('/admin/polls') && !pathname.startsWith('/admin/sponsors')) {
     return (
       <div className="max-w-md mx-auto py-16 px-4">
-        <Card className="p-8 bg-card border-amber-500/30 shadow-2xl text-center space-y-6">
-          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-500 border border-amber-500/20 mx-auto flex items-center justify-center shadow-lg">
+        <Card className="p-8 bg-card border-primary/40 shadow-2xl text-center space-y-6">
+          <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary border border-primary/20 mx-auto flex items-center justify-center shadow-lg">
             <Vote className="w-7 h-7" />
           </div>
           <div className="space-y-2">
-            <Badge variant="warning" className="font-mono text-[10px]">
+            <Badge variant="copper" className="font-mono text-[10px]">
               COMMUNITY MANAGER SCOPE
             </Badge>
             <h1 className="text-2xl font-black tracking-tight text-foreground">
@@ -414,7 +414,7 @@ export default function AdminLayout({
           <Badge
             variant={
               isReviewer
-                ? 'warning'
+                ? 'default'
                 : isSupport
                 ? 'secondary'
                 : isTournamentAdmin
