@@ -222,6 +222,18 @@ values
     true,
     true
   ),
+  (
+    '00000000-0000-0000-0000-000000000021',
+    'Mortal Kombat 11',
+    'BINARY_RESULT',
+    'CONSOLE',
+    '{"x":0.095,"y":0.135,"w":0.810,"h":0.295}'::jsonb,
+    '{}'::jsonb,
+    array['WINS','FLAWLESS VICTORY','FATALITY','BRUTALITY','FRIENDSHIP','MERCY','QUITALITY','FINISH HIM','FINISH HER','VICTORY','DEFEAT','KONTINUE','REMATCH','NEXT OPPONENT'],
+    '(?:([A-Z][A-Z\s\-'']+)\s+WINS)|(?:(FLAWLESS VICTORY|FATALITY|BRUTALITY|FRIENDSHIP|QUITALITY|FINISH HIM|FINISH HER|VICTORY|DEFEAT|KONTINUE|REMATCH))',
+    true,
+    true
+  ),
   -- Universal Archetypes
   (
     '11111111-1111-1111-1111-111111111111',
