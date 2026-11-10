@@ -34,6 +34,8 @@ const PLATFORM_LABELS: Record<string, string> = {
   'rocketleague': 'Epic Games ID / Gamertag',
   val: 'Riot ID (Name#TAG)',
   '00000000-0000-0000-0000-000000000004': 'Riot ID (Name#TAG)',
+  valorant: 'Riot ID (Name#TAG)',
+  'riot-valorant': 'Riot ID (Name#TAG)',
   dota2: 'Steam ID / Friend Code',
   '00000000-0000-0000-0000-000000000005': 'Steam ID / Friend Code',
   cod: 'Activision ID',

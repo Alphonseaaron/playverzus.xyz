@@ -57,12 +57,12 @@ values
   (
     '00000000-0000-0000-0000-000000000004',
     'Valorant',
-    'BINARY_RESULT',
+    'HEAD_TO_HEAD',
     'PC',
-    '{"x":0.35,"y":0.2,"w":0.3,"h":0.15}'::jsonb,
-    '{}'::jsonb,
-    array['VICTORY','DEFEAT','MATCH COMPLETED'],
-    null,
+    '{"x":0.404,"y":0.011,"w":0.193,"h":0.086}'::jsonb,
+    '{"min":0,"max":40}'::jsonb,
+    array['VICTORY','DEFEAT','WON','ROUND WON','ROUND LOST','CLUTCH','ACE','FLAWLESS','THRIFTY','TEAM ACE','MATCH POINT','OVERTIME','DRAW','MATCH COMPLETED','ENEMY TEAM ELIMINATED'],
+    '(?:(\d{1,2})\s*[-:\s]\s*(\d{1,2}))|(?:VICTORY|DEFEAT|ROUND WON|ROUND LOST|WON|CLUTCH|ACE)',
     true,
     true
   ),
