@@ -26,6 +26,11 @@ export class AuthController {
     return this.authService.confirmEmail(body.email);
   }
 
+  @Post('resolve-username')
+  async resolveUsername(@Body() body: { username: string }) {
+    return this.authService.resolveUsername(body.username);
+  }
+
   @Post('login')
   async login(@Body() body: { email: string; password?: string }) {
     return this.authService.login(body.email, body.password);

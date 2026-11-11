@@ -685,9 +685,9 @@ function HomeContent() {
               <Image
                 src="/images/logo-mark.png"
                 alt="playverzus.xyz"
-                width={28}
-                height={28}
-                className="w-6 h-6 object-contain"
+                width={45}
+                height={24}
+                className="h-6 w-auto object-contain"
               />
               <span className="font-black text-sm text-foreground">Playverzus.xyz</span>
             </div>

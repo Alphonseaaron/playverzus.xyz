@@ -33,13 +33,13 @@ export function AuthPromptModal({
         <div className="absolute top-0 right-0 w-40 h-40 bg-primary/10 rounded-full filter blur-3xl pointer-events-none" />
 
         <div className="flex items-start justify-between">
-          <div className="w-12 h-12 rounded-2xl bg-card border border-border flex items-center justify-center p-1.5 shadow-lg overflow-hidden">
+          <div className="h-12 px-3 rounded-2xl bg-card border border-border flex items-center justify-center shadow-lg overflow-hidden">
             <Image
               src="/images/logo-mark.png"
               alt="playverzus.xyz"
-              width={36}
-              height={36}
-              className="object-contain"
+              width={60}
+              height={32}
+              className="h-8 w-auto object-contain"
             />
           </div>
           <button

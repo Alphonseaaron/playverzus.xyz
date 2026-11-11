@@ -100,7 +100,8 @@ function SignUpForm() {
         syncAuthCookie(signInData.session.access_token);
       }
 
-      router.push(target);
+      // Use full browser navigation to ensure Edge Middleware receives the cookie synchronously
+      window.location.href = target;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       setError(msg);

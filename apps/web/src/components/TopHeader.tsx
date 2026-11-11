@@ -472,9 +472,9 @@ export function TopHeader() {
           <Image
             src="/images/logo-mark.png"
             alt="playverzus.xyz"
-            width={28}
+            width={52}
             height={28}
-            className="w-7 h-7 object-contain"
+            className="h-7 w-auto object-contain"
           />
         </Link>
 

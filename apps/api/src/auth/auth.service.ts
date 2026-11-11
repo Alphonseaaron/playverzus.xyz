@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { createServiceClient, TypedSupabaseClient } from '@playverzus/db';
 
 @Injectable()
@@ -118,6 +118,29 @@ export class AuthService {
       });
     }
     return { ok: true, userId: targetUser.id };
+  }
+
+  async resolveUsername(username: string) {
+    if (!username) {
+      throw new BadRequestException('Username is required.');
+    }
+    const cleanUsername = username.trim().toLowerCase();
+    const { data: profile } = await this.supabase
+      .from('profiles')
+      .select('id, username')
+      .ilike('username', cleanUsername)
+      .maybeSingle();
+
+    if (!profile) {
+      throw new NotFoundException(`No competitor account found with username "${username}".`);
+    }
+
+    const { data: userData, error: userError } = await this.supabase.auth.admin.getUserById(profile.id);
+    if (userError || !userData?.user?.email) {
+      throw new NotFoundException('Could not resolve email for this username.');
+    }
+
+    return { email: userData.user.email, userId: profile.id };
   }
 
   async login(email: string, password?: string) {

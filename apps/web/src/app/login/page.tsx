@@ -8,10 +8,10 @@ import { getSupabaseClient, syncAuthCookie } from '../../lib/supabase';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import { LogIn, AlertCircle, Loader2 } from 'lucide-react';
+import { LogIn, AlertCircle, Loader2, Sparkles } from 'lucide-react';
 
 function LoginForm() {
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -31,10 +31,10 @@ function LoginForm() {
     supabase.auth.getSession().then(({ data }) => {
       if (data.session?.user && data.session?.access_token) {
         syncAuthCookie(data.session.access_token);
-        router.replace(target);
+        window.location.href = target;
       }
     });
-  }, [router, target]);
+  }, [target]);
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
@@ -42,42 +42,76 @@ function LoginForm() {
     setLoading(true);
 
     try {
-      const cleanEmail = email.trim().toLowerCase();
+      const cleanIdentifier = identifier.trim();
+      if (!cleanIdentifier) {
+        throw new Error('Please enter your email address or username.');
+      }
+      if (!password) {
+        throw new Error('Please enter your password.');
+      }
+
+      // 1. Resolve email if user entered a username
+      let targetEmail = cleanIdentifier.toLowerCase();
+      if (!cleanIdentifier.includes('@')) {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identifier: cleanIdentifier }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.email) {
+          throw new Error(data.error || `Could not find an account with username "${cleanIdentifier}".`);
+        }
+        targetEmail = data.email.toLowerCase();
+      }
+
+      // 2. Authenticate with Supabase
       const supabase = getSupabaseClient();
       let { data: signInData, error: authError } = await supabase.auth.signInWithPassword({
-        email: cleanEmail,
+        email: targetEmail,
         password,
       });
 
+      // 3. Auto-confirm if pending
       if (authError && authError.message.toLowerCase().includes('email not confirmed')) {
-        // Automatically confirm email via server Admin API and retry sign-in
         await fetch('/api/auth/confirm', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: cleanEmail }),
+          body: JSON.stringify({ email: targetEmail }),
         });
 
         const retry = await supabase.auth.signInWithPassword({
-          email: cleanEmail,
+          email: targetEmail,
           password,
         });
         signInData = retry.data;
         authError = retry.error;
       }
 
-      if (authError) throw authError;
+      if (authError) {
+        if (authError.message.toLowerCase().includes('invalid login credentials')) {
+          throw new Error('Invalid email/username or password. Please verify your credentials.');
+        }
+        throw authError;
+      }
 
       if (signInData?.session?.access_token) {
         syncAuthCookie(signInData.session.access_token);
       }
 
-      router.push(target);
+      // Use full browser navigation to ensure Edge Middleware receives the cookie synchronously
+      window.location.href = target;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       setError(msg);
-    } finally {
       setLoading(false);
     }
+  };
+
+  const handleDemoFill = (emailValue: string, passValue: string) => {
+    setIdentifier(emailValue);
+    setPassword(passValue);
+    setError(null);
   };
 
   const signupLink = redirectParam
@@ -122,14 +156,18 @@ function LoginForm() {
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
-              <label className="text-xs font-bold text-foreground block">Email Address</label>
+              <label className="text-xs font-bold text-foreground block">
+                Email Address or Username
+              </label>
               <Input
-                type="email"
+                type="text"
                 required
-                placeholder="player@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                placeholder="player@example.com or username"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
                 className="text-xs"
+                autoCapitalize="none"
+                autoCorrect="off"
               />
             </div>
 
@@ -154,16 +192,51 @@ function LoginForm() {
               size="lg"
               className="w-full font-bold text-xs uppercase tracking-wider shadow-md shadow-primary/20 gap-2 mt-2"
             >
-              <LogIn className="w-4 h-4" />
-              <span>{loading ? 'Authenticating...' : 'Sign In'}</span>
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Authenticating...</span>
+                </>
+              ) : (
+                <>
+                  <LogIn className="w-4 h-4" />
+                  <span>Sign In</span>
+                </>
+              )}
             </Button>
           </form>
+
+          {/* Quick Demo Access Bar */}
+          <div className="mt-5 p-3 bg-secondary/50 border border-border rounded-xl">
+            <div className="flex items-center gap-1.5 mb-2">
+              <Sparkles className="w-3.5 h-3.5 text-primary" />
+              <span className="text-[11px] font-bold text-foreground">Quick Test Credentials</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => handleDemoFill('admin@playverzus.xyz', 'PlayVerzus2026!')}
+                className="text-left px-2.5 py-1.5 bg-background hover:bg-primary/10 border border-border rounded-lg text-[10px] text-muted-foreground hover:text-foreground transition"
+              >
+                <div className="font-bold text-foreground">Admin</div>
+                <div className="truncate">admin@playverzus.xyz</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDemoFill('player1@playverzus.xyz', 'PlayVerzus2026!')}
+                className="text-left px-2.5 py-1.5 bg-background hover:bg-primary/10 border border-border rounded-lg text-[10px] text-muted-foreground hover:text-foreground transition"
+              >
+                <div className="font-bold text-foreground">Player 1</div>
+                <div className="truncate">player1@playverzus.xyz</div>
+              </button>
+            </div>
+          </div>
 
           <div className="text-center mt-6 pt-4 border-t border-border">
             <p className="text-xs text-muted-foreground">
               Don't have a competitor account?{' '}
               <Link href={signupLink} className="text-primary hover:underline font-bold">
-                Create Account
+                Create one in 30 seconds
               </Link>
             </p>
           </div>
@@ -177,8 +250,8 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex justify-center items-center min-h-[50vh]">
-          <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        <div className="min-h-[50vh] flex items-center justify-center">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
         </div>
       }
     >
