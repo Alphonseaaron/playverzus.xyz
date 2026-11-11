@@ -18,7 +18,13 @@ export function LiveScore({ matchId, initialScoreA = null, initialScoreB = null 
   const [isLive, setIsLive] = useState(false);
 
   useEffect(() => {
-    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:4000';
+    const rawWsUrl = process.env.NEXT_PUBLIC_WS_URL;
+    const isDeadWs =
+      !rawWsUrl ||
+      rawWsUrl.includes('placeholder') ||
+      rawWsUrl.includes('verzus-xyz.onrender.com') ||
+      (typeof window !== 'undefined' && rawWsUrl.includes('localhost') && window.location.hostname !== 'localhost');
+    const wsUrl = isDeadWs ? 'https://playverzus-api.onrender.com' : rawWsUrl;
     let socket: Socket | null = null;
 
     try {

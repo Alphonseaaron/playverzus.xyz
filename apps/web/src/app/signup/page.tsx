@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense, FormEvent } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { getSupabaseClient } from '../../lib/supabase';
+import { getSupabaseClient, syncAuthCookie } from '../../lib/supabase';
 import { CountrySelect } from '../../components/CountrySelect';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -36,7 +36,8 @@ function SignUpForm() {
   useEffect(() => {
     const supabase = getSupabaseClient();
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session?.user) {
+      if (data.session?.user && data.session?.access_token) {
+        syncAuthCookie(data.session.access_token);
         router.replace(target);
       }
     });
@@ -59,35 +60,44 @@ function SignUpForm() {
     setLoading(true);
 
     try {
+      const cleanEmail = email.trim().toLowerCase();
       const supabase = getSupabaseClient();
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            username: username.trim().toLowerCase(),
-            display_name: username.trim(),
-            full_name: fullName.trim(),
-            date_of_birth: dateOfBirth,
-            phone: phone.trim(),
-            country_code: countryCode,
-            region: countryCode,
-          },
-        },
+
+      // 1. Register & auto-confirm account via server-side Admin API
+      const regRes = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: cleanEmail,
+          password,
+          username: username.trim(),
+          fullName: fullName.trim(),
+          dateOfBirth,
+          phone: phone.trim(),
+          countryCode,
+        }),
       });
 
-      if (authError) throw authError;
+      const regBody = (await regRes.json().catch(() => ({}))) as {
+        ok?: boolean;
+        error?: string;
+        userId?: string;
+      };
 
-      // Ensure profiles.region is immediately populated for country flag rendering
-      if (authData?.user?.id) {
-        try {
-          await supabase
-            .from('profiles')
-            .update({ region: countryCode })
-            .eq('id', authData.user.id);
-        } catch {
-          // Non-fatal if trigger already handled it
-        }
+      if (!regRes.ok) {
+        throw new Error(regBody.error || 'Registration failed. Please check your details.');
+      }
+
+      // 2. Establish active browser session immediately
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
+        password,
+      });
+
+      if (signInError) throw signInError;
+
+      if (signInData?.session?.access_token) {
+        syncAuthCookie(signInData.session.access_token);
       }
 
       router.push(target);

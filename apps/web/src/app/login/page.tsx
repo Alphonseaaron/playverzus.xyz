@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense, FormEvent } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { getSupabaseClient } from '../../lib/supabase';
+import { getSupabaseClient, syncAuthCookie } from '../../lib/supabase';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -29,7 +29,8 @@ function LoginForm() {
   useEffect(() => {
     const supabase = getSupabaseClient();
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session?.user) {
+      if (data.session?.user && data.session?.access_token) {
+        syncAuthCookie(data.session.access_token);
         router.replace(target);
       }
     });
@@ -41,13 +42,35 @@ function LoginForm() {
     setLoading(true);
 
     try {
+      const cleanEmail = email.trim().toLowerCase();
       const supabase = getSupabaseClient();
-      const { error: authError } = await supabase.auth.signInWithPassword({
-        email,
+      let { data: signInData, error: authError } = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
         password,
       });
 
+      if (authError && authError.message.toLowerCase().includes('email not confirmed')) {
+        // Automatically confirm email via server Admin API and retry sign-in
+        await fetch('/api/auth/confirm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: cleanEmail }),
+        });
+
+        const retry = await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password,
+        });
+        signInData = retry.data;
+        authError = retry.error;
+      }
+
       if (authError) throw authError;
+
+      if (signInData?.session?.access_token) {
+        syncAuthCookie(signInData.session.access_token);
+      }
+
       router.push(target);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
