@@ -1,6 +1,16 @@
 import { getSupabaseClient } from './supabase';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+const ACTIVE_API_URL = 'https://playverzus-api.onrender.com/api';
+
+const envApiUrl = process.env.NEXT_PUBLIC_API_URL;
+// Ensure production browsers use the live playverzus-api instead of dead/localhost hosts
+const isDeadApi =
+  !envApiUrl ||
+  envApiUrl.includes('placeholder') ||
+  envApiUrl.includes('verzus-xyz.onrender.com') ||
+  (typeof window !== 'undefined' && envApiUrl.includes('localhost') && window.location.hostname !== 'localhost');
+
+const API_BASE = isDeadApi ? ACTIVE_API_URL : envApiUrl;
 
 export async function apiClient<T>(
   endpoint: string,

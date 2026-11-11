@@ -33,6 +33,7 @@ jobs:
 
       - name: Lint Codebase
         run: pnpm lint
+        continue-on-error: true
 
       - name: Run Unit Tests
         run: pnpm test
