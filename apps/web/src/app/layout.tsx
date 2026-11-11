@@ -10,11 +10,11 @@ export const metadata: Metadata = {
   description: 'Skill-based esports matchmaking, party duels, and tournaments with automated instant match verification and anti-cheat.',
   icons: {
     icon: [
-      { url: '/favicon.ico', sizes: 'any' },
-      { url: '/icon.png', type: 'image/png', sizes: '512x512' },
+      { url: '/favicon.ico?v=20261111b', sizes: 'any' },
+      { url: '/icon.png?v=20261111b', type: 'image/png', sizes: '512x512' },
     ],
     apple: [
-      { url: '/apple-icon.png', sizes: '180x180', type: 'image/png' },
+      { url: '/apple-icon.png?v=20261111b', sizes: '180x180', type: 'image/png' },
     ],
   },
   openGraph: {
