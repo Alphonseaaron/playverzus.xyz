@@ -5,10 +5,21 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getSupabaseClient, syncAuthCookie } from '../../lib/supabase';
+import { apiClient } from '../../lib/api';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import { LogIn, AlertCircle, Loader2, Sparkles } from 'lucide-react';
+import { LogIn, AlertCircle, Loader2, Sparkles, X, ArrowLeft } from 'lucide-react';
+
+function getRoleDestination(role?: string): string {
+  if (role === 'ADMIN' || role === 'SUPER_ADMIN') return '/admin';
+  if (role === 'REVIEWER') return '/admin/review';
+  if (role === 'SUPPORT') return '/admin/support';
+  if (role === 'TOURNAMENT_ADMIN') return '/admin/seasons';
+  if (role === 'FINANCE_AUDITOR') return '/admin/treasury';
+  if (role === 'COMMUNITY_MANAGER') return '/admin/polls';
+  return '/dashboard';
+}
 
 function LoginForm() {
   const [identifier, setIdentifier] = useState('');
@@ -25,16 +36,25 @@ function LoginForm() {
       ? redirectParam
       : '/dashboard';
 
-  // If already authenticated, forward to destination or dashboard
+  // If already authenticated, forward directly to admin console (for staff) or target
   useEffect(() => {
     const supabase = getSupabaseClient();
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(async ({ data }) => {
       if (data.session?.user && data.session?.access_token) {
         syncAuthCookie(data.session.access_token);
-        window.location.href = target;
+        if (redirectParam && redirectParam !== '/dashboard' && redirectParam.startsWith('/') && !redirectParam.startsWith('//')) {
+          window.location.href = redirectParam;
+          return;
+        }
+        try {
+          const profile = await apiClient<{ role?: string }>('/profile/me');
+          window.location.href = getRoleDestination(profile?.role);
+        } catch {
+          window.location.href = '/dashboard';
+        }
       }
     });
-  }, [target]);
+  }, [redirectParam]);
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
@@ -99,8 +119,19 @@ function LoginForm() {
         syncAuthCookie(signInData.session.access_token);
       }
 
+      // If user is admin/staff and no custom redirect was specified, route straight to admin
+      let finalDest = target;
+      if (!redirectParam || redirectParam === '/dashboard') {
+        try {
+          const profile = await apiClient<{ role?: string }>('/profile/me');
+          finalDest = getRoleDestination(profile?.role);
+        } catch {
+          finalDest = '/dashboard';
+        }
+      }
+
       // Use full browser navigation to ensure Edge Middleware receives the cookie synchronously
-      window.location.href = target;
+      window.location.href = finalDest;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       setError(msg);
@@ -118,10 +149,40 @@ function LoginForm() {
     ? `/signup?redirect=${encodeURIComponent(redirectParam)}`
     : '/signup';
 
+  const dismissHref =
+    redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//')
+      ? redirectParam
+      : '/';
+
   return (
-    <div className="max-w-md mx-auto my-12 space-y-4">
-      <Card className="bg-card border-border shadow-2xl">
-        <CardHeader className="text-center pb-4 border-b border-border">
+    <div className="max-w-md mx-auto my-10 px-4 space-y-3">
+      {/* Top Dismiss / Back Navigation Bar */}
+      <div className="flex items-center justify-between px-1">
+        <Link
+          href={dismissHref}
+          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition font-medium group"
+          title="Return to previous arena page"
+        >
+          <ArrowLeft className="w-3.5 h-3.5 transition group-hover:-translate-x-0.5" />
+          <span>Return to Arena</span>
+        </Link>
+        <span className="text-[10px] font-mono uppercase text-muted-foreground tracking-wider">
+          Competitive Authentication
+        </span>
+      </div>
+
+      <Card className="bg-card border-border shadow-2xl relative">
+        {/* Prominent Dismiss (X) Button */}
+        <Link
+          href={dismissHref}
+          className="absolute top-4 right-4 w-8 h-8 rounded-full bg-secondary/70 hover:bg-secondary text-muted-foreground hover:text-foreground flex items-center justify-center transition border border-border/60 shadow-sm z-10"
+          aria-label="Close and return to arena"
+          title="Close sign in"
+        >
+          <X className="w-4 h-4" />
+        </Link>
+
+        <CardHeader className="text-center pb-4 border-b border-border pt-6">
           <Link href="/" className="inline-block mx-auto mb-2">
             <Image
               src="/images/logo.png"

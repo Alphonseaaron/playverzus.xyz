@@ -9,7 +9,7 @@ import { CountrySelect } from '../../components/CountrySelect';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import { Gift, AlertCircle, ShieldCheck, Loader2 } from 'lucide-react';
+import { Gift, AlertCircle, ShieldCheck, Loader2, X, ArrowLeft } from 'lucide-react';
 
 function SignUpForm() {
   const [email, setEmail] = useState('');
@@ -114,10 +114,40 @@ function SignUpForm() {
     ? `/login?redirect=${encodeURIComponent(redirectParam)}`
     : '/login';
 
+  const dismissHref =
+    redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//')
+      ? redirectParam
+      : '/';
+
   return (
-    <div className="max-w-md mx-auto my-12 space-y-4">
-      <Card className="bg-card border-border shadow-2xl">
-        <CardHeader className="text-center pb-4 border-b border-border">
+    <div className="max-w-md mx-auto my-10 px-4 space-y-3">
+      {/* Top Dismiss / Back Navigation Bar */}
+      <div className="flex items-center justify-between px-1">
+        <Link
+          href={dismissHref}
+          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition font-medium group"
+          title="Return to previous arena page"
+        >
+          <ArrowLeft className="w-3.5 h-3.5 transition group-hover:-translate-x-0.5" />
+          <span>Return to Arena</span>
+        </Link>
+        <span className="text-[10px] font-mono uppercase text-muted-foreground tracking-wider">
+          Competitive Registration
+        </span>
+      </div>
+
+      <Card className="bg-card border-border shadow-2xl relative">
+        {/* Prominent Dismiss (X) Button */}
+        <Link
+          href={dismissHref}
+          className="absolute top-4 right-4 w-8 h-8 rounded-full bg-secondary/70 hover:bg-secondary text-muted-foreground hover:text-foreground flex items-center justify-center transition border border-border/60 shadow-sm z-10"
+          aria-label="Close and return to arena"
+          title="Close sign up"
+        >
+          <X className="w-4 h-4" />
+        </Link>
+
+        <CardHeader className="text-center pb-4 border-b border-border pt-6">
           <Link href="/" className="inline-block mx-auto mb-2">
             <Image
               src="/images/logo.png"

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Swords,
@@ -86,10 +86,13 @@ interface UserProfileData {
   region?: string;
   country_code?: string;
   trust_score?: number;
+  role?: string;
 }
 
 function DashboardContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const viewParam = searchParams.get('view');
   const queryClient = useQueryClient();
   const { activeGame } = useGameStore();
   const [faucetLoading, setFaucetLoading] = useState(false);
@@ -176,6 +179,28 @@ function DashboardContent() {
     }
   };
 
+  const role = userProfile?.role;
+  const isStaff = Boolean(role && role !== 'PLAYER');
+
+  // Immediately forward admin and staff roles directly to their operational admin consoles
+  useEffect(() => {
+    if (isStaff && viewParam !== 'player') {
+      const dest =
+        role === 'REVIEWER'
+          ? '/admin/review'
+          : role === 'SUPPORT'
+          ? '/admin/support'
+          : role === 'TOURNAMENT_ADMIN'
+          ? '/admin/seasons'
+          : role === 'FINANCE_AUDITOR'
+          ? '/admin/treasury'
+          : role === 'COMMUNITY_MANAGER'
+          ? '/admin/polls'
+          : '/admin';
+      router.replace(dest);
+    }
+  }, [isStaff, role, viewParam, router]);
+
   const openDeposit = () => {
     router.push('/cashier?tab=deposit');
   };
@@ -183,6 +208,17 @@ function DashboardContent() {
   const openWithdraw = () => {
     router.push('/cashier?tab=withdraw');
   };
+
+  if (isStaff && viewParam !== 'player') {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] py-20 px-4 text-center">
+        <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin mb-4" />
+        <p className="text-xs font-mono text-muted-foreground uppercase tracking-wider">
+          Redirecting to Admin Operations Console...
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto w-full min-w-0 pb-16">

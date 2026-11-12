@@ -136,9 +136,9 @@ export function GameRail() {
       <div className="hidden lg:block w-64 flex-shrink-0" aria-hidden="true" />
 
       {/* 2. Fixed Stationary Sidebar: Stays maintained on screen, never scrolls with the page */}
-      <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-64 flex-col bg-card border-r border-border select-none z-30 h-screen overflow-hidden">
-        {/* Top Fixed Region: Brand, Active Arena, Navigation */}
-        <div className="flex-shrink-0 p-4 pb-2 space-y-3">
+      <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-64 flex-col justify-between bg-card border-r border-border select-none z-30 h-screen overflow-hidden">
+        {/* Unified Scrollable Body: Mirrors AdminSidebar scroll behavior for entire menu and arenas */}
+        <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-zinc-800 hover:scrollbar-thumb-zinc-700">
           {/* Brand Logo & Name */}
           <Link
             href={me ? '/dashboard' : '/'}
@@ -210,54 +210,53 @@ export function GameRail() {
               );
             })}
           </div>
-        </div>
 
-        <Separator className="flex-shrink-0 mx-4 w-auto" />
+          <Separator className="w-auto my-2" />
 
-        {/* Middle Scrollable Region: ONLY the list of games scrolls! */}
-        <div className="flex-1 min-h-0 overflow-y-auto px-4 py-2.5 space-y-1.5 scrollbar-thin scrollbar-thumb-zinc-800 hover:scrollbar-thumb-zinc-700">
-          <div className="flex items-center justify-between px-1 mb-1">
-            <span className="text-[10px] uppercase font-bold text-muted-foreground font-mono tracking-wider flex items-center gap-1">
-              <Flame className="w-3 h-3 text-primary" />
-              Arenas ({OFFICIAL_GAMES.length})
-            </span>
-            <Link
-              href="/games"
-              className="text-[11px] text-primary hover:underline font-semibold"
-            >
-              All Games
-            </Link>
-          </div>
+          {/* Arenas Section: Scrolls naturally as part of the full sidebar */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between px-1 mb-1">
+              <span className="text-[10px] uppercase font-bold text-muted-foreground font-mono tracking-wider flex items-center gap-1">
+                <Flame className="w-3 h-3 text-primary" />
+                Arenas ({OFFICIAL_GAMES.length})
+              </span>
+              <Link
+                href="/games"
+                className="text-[11px] text-primary hover:underline font-semibold"
+              >
+                All Games
+              </Link>
+            </div>
 
-          {/* Games list: scrolls independently; last game sits cleanly right above the Settings section */}
-          <div className="space-y-1 pb-2">
-            {OFFICIAL_GAMES.map((game) => {
-              const isSelected = activeCatalogGame.id.toLowerCase() === game.id.toLowerCase();
-              return (
-                <button
-                  key={game.id}
-                  type="button"
-                  onClick={() => setActiveGame(game)}
-                  className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition border text-left w-full ${
-                    isSelected
-                      ? 'bg-secondary border-primary/40 text-foreground font-semibold shadow-sm'
-                      : 'bg-transparent hover:bg-muted/70 border-transparent text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 truncate">
-                    <GamePoster
-                      game={game}
-                      aspect="mini"
-                      className="w-4 h-5 rounded flex-shrink-0"
-                    />
-                    <span className="truncate text-xs">{game.displayName}</span>
-                  </div>
-                  {isSelected && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0 ml-1" />
-                  )}
-                </button>
-              );
-            })}
+            <div className="space-y-1 pb-2">
+              {OFFICIAL_GAMES.map((game) => {
+                const isSelected = activeCatalogGame.id.toLowerCase() === game.id.toLowerCase();
+                return (
+                  <button
+                    key={game.id}
+                    type="button"
+                    onClick={() => setActiveGame(game)}
+                    className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition border text-left w-full ${
+                      isSelected
+                        ? 'bg-secondary border-primary/40 text-foreground font-semibold shadow-sm'
+                        : 'bg-transparent hover:bg-muted/70 border-transparent text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <GamePoster
+                        game={game}
+                        aspect="mini"
+                        className="w-4 h-5 rounded flex-shrink-0"
+                      />
+                      <span className="truncate text-xs">{game.displayName}</span>
+                    </div>
+                    {isSelected && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0 ml-1" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
