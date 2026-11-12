@@ -60,6 +60,15 @@ export class MatchController {
     return this.matchService.startMatch(id);
   }
 
+  @Post(':id/ready')
+  async setReady(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+    @Body() body: { ready?: boolean },
+  ) {
+    return this.matchService.setPlayerReady(id, user.id, body.ready ?? true);
+  }
+
   @Post(':id/score')
   async score(
     @Param('id') id: string,

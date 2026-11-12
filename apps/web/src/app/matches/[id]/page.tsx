@@ -24,6 +24,9 @@ interface MatchDetails {
   playerBUsername?: string;
   playerBCountry?: string;
   playerBGamertag?: string;
+  readyA?: boolean;
+  readyB?: boolean;
+  allReady?: boolean;
 }
 
 function MatchDetailContent() {
@@ -79,6 +82,9 @@ function MatchDetailContent() {
       playerBUsername={match.playerBUsername || (isMeB ? me?.username : undefined)}
       playerBCountry={match.playerBCountry || (isMeB ? me?.country_code || me?.region : undefined)}
       playerBGamertag={match.playerBGamertag}
+      readyA={match.readyA}
+      readyB={match.readyB}
+      allReady={match.allReady}
     />
   );
 }

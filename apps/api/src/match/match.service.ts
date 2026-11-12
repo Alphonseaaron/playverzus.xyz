@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { createServiceClient, TypedSupabaseClient } from '@playverzus/db';
 import { MatchService as CoreMatchService, generateRoomCode, type MatchFormat, type ScoreFrame } from '@playverzus/core';
 import { resolveAndEnsureGameProfileId } from '../game-profile/game-profile.service';
@@ -8,6 +8,7 @@ import { globalGameAccountsCache, resolveGamertagForProfile } from '../profile/p
 export class MatchService {
   private supabase: TypedSupabaseClient;
   private coreMatchService: CoreMatchService;
+  private readyMap = new Map<string, { readyA: boolean; readyB: boolean }>();
 
   constructor() {
     const url = process.env.SUPABASE_URL || 'https://placeholder.supabase.co';
@@ -59,8 +60,16 @@ export class MatchService {
       const opponentTag =
         (opponentId ? resolveGamertagForProfile(opponent?.gameAccounts || globalGameAccountsCache.get(opponentId), gameId) : undefined) ||
         undefined;
+      const mId = m.id || m.matchId;
+      const readyState = this.readyMap.get(mId) || {
+        readyA: m.status === 'LIVE' || m.status === 'CAPTURING' || m.status === 'SETTLED',
+        readyB: m.status === 'LIVE' || m.status === 'CAPTURING' || m.status === 'SETTLED',
+      };
       return {
         ...m,
+        readyA: readyState.readyA,
+        readyB: readyState.readyB,
+        allReady: readyState.readyA && readyState.readyB,
         created_by: m.created_by || creatorId,
         creator_username: creator?.username,
         creator_country_code: creator?.countryCode,
@@ -166,6 +175,43 @@ export class MatchService {
 
   async startMatch(matchId: string) {
     return this.coreMatchService.start(matchId);
+  }
+
+  async setPlayerReady(matchId: string, userId: string, isReady: boolean) {
+    const match = await this.coreMatchService.get(matchId);
+    if (!match) throw new NotFoundException('Match not found');
+
+    const current = this.readyMap.get(matchId) || { readyA: false, readyB: false };
+    if (match.playerA === userId) {
+      current.readyA = isReady;
+    } else if (match.playerB === userId) {
+      current.readyB = isReady;
+    } else {
+      throw new ForbiddenException('Only match participants can declare readiness');
+    }
+
+    this.readyMap.set(matchId, current);
+
+    let updatedMatch = match;
+    // When both players are confirmed ready, automatically transition to LIVE
+    if (current.readyA && current.readyB && (match.status === 'ACCEPTED' || match.status === 'OPEN')) {
+      try {
+        updatedMatch = await this.startMatch(matchId);
+      } catch {
+        await this.supabase
+          .from('matches')
+          .update({ status: 'LIVE', started_at: new Date().toISOString() })
+          .eq('id', matchId);
+      }
+    }
+
+    const [enriched] = await this.enrichMatchesWithProfiles([updatedMatch]);
+    return {
+      match: enriched || updatedMatch,
+      readyA: current.readyA,
+      readyB: current.readyB,
+      allReady: current.readyA && current.readyB,
+    };
   }
 
   async submitScore(

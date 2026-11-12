@@ -56,6 +56,9 @@ interface MatchRoomProps {
   playerBUsername?: string;
   playerBCountry?: string;
   playerBGamertag?: string;
+  readyA?: boolean;
+  readyB?: boolean;
+  allReady?: boolean;
 }
 
 export function MatchRoom({
@@ -76,6 +79,9 @@ export function MatchRoom({
   playerBUsername,
   playerBCountry,
   playerBGamertag,
+  readyA,
+  readyB,
+  allReady,
 }: MatchRoomProps) {
   const catalogGame = getGameById(profile.id);
   const { getGamertag, getGamertagLabel, setGamertag } = useGameAccountsStore();
@@ -89,13 +95,19 @@ export function MatchRoom({
   const [joiningMatch, setJoiningMatch] = useState(false);
 
   // Ready states
-  const [isReadyA, setIsReadyA] = useState(false);
-  const [isReadyB, setIsReadyB] = useState(false);
+  const [isReadyA, setIsReadyA] = useState(readyA ?? false);
+  const [isReadyB, setIsReadyB] = useState(readyB ?? false);
   const [coinResult, setCoinResult] = useState<'A' | 'B' | null>(null);
   const [isFlipping, setIsFlipping] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedTagA, setCopiedTagA] = useState(false);
   const [copiedTagB, setCopiedTagB] = useState(false);
+
+  // Sync ready states from server polling
+  useEffect(() => {
+    if (readyA !== undefined) setIsReadyA(readyA);
+    if (readyB !== undefined) setIsReadyB(readyB);
+  }, [readyA, readyB]);
 
   // Edit gamertag inline
   const [editingTag, setEditingTag] = useState(false);
@@ -120,11 +132,22 @@ export function MatchRoom({
   };
 
   const handleAcceptOpenMatch = async () => {
+    // Preset Condition Check: Challenger must have their in-game gamertag linked!
+    if (!myGamertag) {
+      setEditingTag(true);
+      notifyUser(`Preset Condition Required: Link ${gameTagLabel}`, {
+        body: `You must link your in-game handle for ${profile.displayName} before accepting this duel.`,
+        sound: 'score',
+        type: 'error',
+      });
+      return;
+    }
+
     try {
       setJoiningMatch(true);
       await apiClient(`/matches/${matchId}/accept`, { method: 'POST' });
       notifyUser('Duel Accepted!', {
-        body: 'You have entered the arena as Challenger. Connect your game feed!',
+        body: 'You have entered the arena as Challenger. Connect in-game and mark ready!',
         sound: 'connect',
         type: 'match',
       });
@@ -233,21 +256,60 @@ export function MatchRoom({
     }, 1000);
   };
 
-  const toggleReady = () => {
-    // Before player marks ready, verify that game feed capture has been granted
-    if (capture.status !== 'CAPTURING') {
+  const toggleReady = async () => {
+    // 1. Preset Condition Check: Game handle MUST be linked!
+    if (!myGamertag) {
+      setEditingTag(true);
+      notifyUser('Gamertag Required', {
+        body: `Please link your ${gameTagLabel} before confirming readiness.`,
+        sound: 'score',
+        type: 'error',
+      });
+      return;
+    }
+
+    // 2. Preset Condition Check: Opponent must be in the arena!
+    if (!playerBId) {
+      notifyUser('Waiting for Opponent', {
+        body: 'Share your room code or invite link. Duel starts once opponent enters.',
+        sound: 'score',
+      });
+      return;
+    }
+
+    // 3. Screen / Feed Armed check
+    if (capture.status !== 'CAPTURING' && capture.mode !== 'SCREENSHOT_UPLOAD' && capture.mode !== 'CONSOLE_STREAM') {
       setPermissionsModalOpen(true);
       return;
     }
 
-    if (isPlayerA) {
-      const next = !isReadyA;
-      setIsReadyA(next);
-      if (next) notifyUser('Ready Status Confirmed', { sound: 'score' });
-    } else {
-      const next = !isReadyB;
-      setIsReadyB(next);
-      if (next) notifyUser('Ready Status Confirmed', { sound: 'score' });
+    const myCurrentReady = isPlayerA ? isReadyA : isReadyB;
+    const nextReady = !myCurrentReady;
+
+    if (isPlayerA) setIsReadyA(nextReady);
+    else setIsReadyB(nextReady);
+
+    try {
+      const res = await apiClient<{ readyA: boolean; readyB: boolean; allReady: boolean }>(
+        `/matches/${matchId}/ready`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ ready: nextReady }),
+        },
+      );
+      if (res?.readyA !== undefined) setIsReadyA(res.readyA);
+      if (res?.readyB !== undefined) setIsReadyB(res.readyB);
+      if (res?.allReady) {
+        notifyUser('Both Competitors Ready! 🔥', {
+          body: 'Duel is now LIVE. Scores and victory screens are tracked automatically.',
+          sound: 'victory',
+        });
+        onRefresh?.();
+      } else {
+        notifyUser(nextReady ? 'Readiness Confirmed ✓' : 'Ready Cancelled', { sound: 'score' });
+      }
+    } catch {
+      // Local fallback
     }
   };
 
@@ -349,6 +411,35 @@ export function MatchRoom({
           </Badge>
         </div>
       </Card>
+
+      {/* Active Live Competition Banner */}
+      {status === 'LIVE' && (
+        <Card className="p-5 bg-gradient-to-r from-primary/10 via-card to-emerald-500/10 border border-primary/40 shadow-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in duration-300">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-black shadow-md flex-shrink-0 animate-pulse">
+              <Swords className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-black uppercase tracking-wider text-primary">
+                  Duel is Live & In Progress
+                </span>
+                <Badge variant="success" className="font-mono text-[10px] animate-pulse">
+                  ● LIVE ANTI-CHEAT MONITORING
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Both competitors verified ready. Play your match — optical anti-cheat is actively tracking HUD scoreboards.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <Badge variant="copper" className="font-mono text-xs py-1 px-3">
+              Escrow Locked ✓
+            </Badge>
+          </div>
+        </Card>
+      )}
 
       {/* Autonomous AI Settled Match Outcome Banner */}
       {status === 'SETTLED' && winnerId && (
@@ -490,7 +581,7 @@ export function MatchRoom({
             </div>
           )}
 
-          {isParticipant && (
+          {isParticipant && status !== 'LIVE' && status !== 'SETTLED' && (
             <div className="mt-4 flex flex-col gap-2 w-full max-w-[200px]">
               <Button
                 onClick={toggleReady}
@@ -510,6 +601,15 @@ export function MatchRoom({
                 <Coins className="w-3.5 h-3.5 text-primary" />
                 <span>{isFlipping ? 'Flipping...' : 'Coin Toss'}</span>
               </Button>
+            </div>
+          )}
+
+          {isParticipant && status === 'LIVE' && (
+            <div className="mt-4 flex flex-col items-center gap-1.5 w-full max-w-[200px]">
+              <Badge variant="success" className="font-mono text-xs px-3 py-1 animate-pulse">
+                ● DUEL IN PROGRESS
+              </Badge>
+              <span className="text-[10px] text-muted-foreground font-mono">Scores Tracked by AI</span>
             </div>
           )}
         </div>

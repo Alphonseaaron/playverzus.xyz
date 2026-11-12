@@ -13,6 +13,8 @@ import {
   ArrowRight,
   Gamepad2,
   Sparkles,
+  CheckCircle2,
+  AlertCircle,
 } from 'lucide-react';
 import { apiClient } from '../../../lib/api';
 import { useGameStore } from '../../../lib/gameStore';
@@ -60,11 +62,47 @@ function NewMatchForm() {
     queryFn: () => apiClient<GameProfile[]>('/games').catch(() => []),
   });
 
+  const { data: balanceData, refetch: refetchBalance } = useQuery<{
+    balance: number;
+    cashEur?: number;
+    cashUsdc?: number;
+  }>({
+    queryKey: ['wallet-balance'],
+    queryFn: () => apiClient('/wallet/balance'),
+    staleTime: 10000,
+  });
+
   const officialIds = new Set(OFFICIAL_GAMES.map((g) => g.id.toLowerCase()));
   const customGames = (profiles || []).filter(
     (g) => !officialIds.has(g.id.toLowerCase())
   );
   const allAvailableGames = [...OFFICIAL_GAMES, ...customGames];
+
+  const selectedGame = allAvailableGames.find((g) => g.id.toLowerCase() === profileId.toLowerCase());
+  const gameDisplayName = selectedGame?.displayName || (selectedGame as any)?.display_name || 'Selected Game';
+  const currentGamertag = getGamertag(profileId);
+  const tagLabel = getGamertagLabel(profileId);
+  const hasLinkedTag = Boolean(currentGamertag?.trim());
+
+  const effectiveFee = customFee !== '' ? Math.max(0, parseFloat(customFee) || 0) : entryFee;
+  // Guaranteed prize pool with pre-disclosed 10% platform fee for peer-to-peer cash duels
+  const prizePool = effectiveFee > 0 ? (effectiveFee * 2) * 0.90 : 0;
+
+  const availableFunds = walletMode === 'REAL'
+    ? (balanceData?.cashUsdc ?? balanceData?.cashEur ?? 0)
+    : (balanceData?.balance ?? 0);
+  const hasSufficientFunds = effectiveFee === 0 || availableFunds >= effectiveFee;
+
+  const handleClaimFaucet = async () => {
+    try {
+      await apiClient('/wallet/claim-demo', { method: 'POST' });
+      await refetchBalance();
+      setError(null);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(msg);
+    }
+  };
 
   // Sync with activeGame or default
   useEffect(() => {
@@ -78,14 +116,20 @@ function NewMatchForm() {
     setActiveGameById(id, allAvailableGames);
   };
 
-  const effectiveFee = customFee !== '' ? Math.max(0, parseFloat(customFee) || 0) : entryFee;
-  // Guaranteed prize pool with pre-disclosed 10% platform fee for peer-to-peer cash duels
-  const prizePool = effectiveFee > 0 ? (effectiveFee * 2) * 0.90 : 0;
-
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!profileId) {
       setError('Please select a game');
+      return;
+    }
+
+    if (!hasLinkedTag) {
+      setError(`Preset Condition Required: You must connect your ${tagLabel} for ${gameDisplayName} before initiating this match.`);
+      return;
+    }
+
+    if (!hasSufficientFunds) {
+      setError(`Preset Condition Required: Insufficient balance. Entry fee is ${effectiveFee}, available is ${availableFunds}.`);
       return;
     }
 
@@ -157,6 +201,55 @@ function NewMatchForm() {
               );
             })}
           </select>
+
+          {/* Preset Condition Check: Linked In-Game Gamertag */}
+          <div className="mt-2.5">
+            {hasLinkedTag ? (
+              <div className="p-3 bg-secondary/50 border border-border rounded-xl flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2 min-w-0">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                  <span className="text-muted-foreground font-semibold">{tagLabel}:</span>
+                  <span className="font-mono font-bold text-foreground truncate">{currentGamertag}</span>
+                </div>
+                <Badge variant="success" className="font-mono text-[9px] py-0 px-2 flex-shrink-0">
+                  PRESET READY ✓
+                </Badge>
+              </div>
+            ) : (
+              <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-2.5">
+                <div className="flex items-center gap-2 text-amber-400 font-bold text-xs">
+                  <Gamepad2 className="w-4 h-4" />
+                  <span>Preset Condition: Connect Your {tagLabel}</span>
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Before initiating a duel in <strong>{gameDisplayName}</strong>, link your in-game handle so your opponent can invite you to the private lobby.
+                </p>
+                <div className="flex items-center gap-2 pt-1">
+                  <Input
+                    type="text"
+                    placeholder={`Enter your ${tagLabel}`}
+                    value={gamertagInput}
+                    onChange={(e) => setGamertagInput(e.target.value)}
+                    className="h-8 text-xs font-mono flex-1 bg-background"
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="default"
+                    onClick={() => {
+                      if (gamertagInput.trim()) {
+                        setGamertag(profileId, gamertagInput.trim());
+                        setError(null);
+                      }
+                    }}
+                    className="h-8 text-xs font-bold px-3"
+                  >
+                    Save Handle
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Match Mode */}
@@ -279,6 +372,40 @@ function NewMatchForm() {
               </Button>
             ))}
           </div>
+
+          {/* Preset Condition: Balance Check */}
+          {!hasSufficientFunds && effectiveFee > 0 && (
+            <div className="mt-2.5 p-3 bg-destructive/10 border border-destructive/30 rounded-xl flex items-center justify-between gap-3 text-xs text-destructive">
+              <span className="flex items-center gap-2 min-w-0">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span className="truncate">
+                  Insufficient {walletMode === 'REAL' ? 'cash' : 'practice points'} ({availableFunds} available, {effectiveFee} required)
+                </span>
+              </span>
+              {walletMode === 'DEMO' ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={handleClaimFaucet}
+                  className="h-7 text-xs font-bold gap-1 flex-shrink-0"
+                >
+                  <Sparkles className="w-3 h-3 text-primary" />
+                  <span>Claim +1,000 PTS</span>
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="default"
+                  onClick={() => router.push('/cashier?tab=deposit')}
+                  className="h-7 text-xs font-bold flex-shrink-0"
+                >
+                  Deposit
+                </Button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* FairPlay Guarantee Notice */}
@@ -293,11 +420,19 @@ function NewMatchForm() {
         {/* Submit Button */}
         <Button
           type="submit"
-          disabled={loading}
+          disabled={loading || !hasLinkedTag || !hasSufficientFunds}
           className="w-full h-11 font-bold text-sm uppercase tracking-wider shadow-md gap-2"
         >
           <Swords className="w-4 h-4" />
-          <span>{loading ? 'Creating Duel...' : 'Launch Matchroom'}</span>
+          <span>
+            {loading
+              ? 'Creating Duel...'
+              : !hasLinkedTag
+              ? `Link ${tagLabel} to Continue`
+              : !hasSufficientFunds
+              ? 'Insufficient Balance'
+              : 'Launch Matchroom'}
+          </span>
         </Button>
       </form>
     </Card>
