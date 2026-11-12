@@ -7,6 +7,7 @@ import { TopHeader } from './TopHeader';
 import { PartyBar } from './PartyBar';
 import { NotificationToastContainer } from './NotificationToastContainer';
 import { BackToTop } from './BackToTop';
+import { GamerQuestHub } from './onboarding/GamerQuestHub';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -101,6 +102,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </main>
       </div>
       <PartyBar />
+      <GamerQuestHub />
       <BackToTop />
       <NotificationToastContainer />
     </div>

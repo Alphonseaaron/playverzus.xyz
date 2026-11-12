@@ -98,15 +98,8 @@ function DashboardContent() {
   const [faucetLoading, setFaucetLoading] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
 
-  // Auto-launch onboarding wizard if user has not completed onboarding
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const completed = localStorage.getItem('playverzus_onboarding_completed') === 'true';
-      if (!completed) {
-        setOnboardingOpen(true);
-      }
-    }
-  }, []);
+  // Note: Uninvited auto-popup modal disabled in favor of non-intrusive GamerQuestHub drawer
+  // Users can still launch the full onboarding wizard intentionally via checklist or settings button
 
   const catalogGame = getGameById(activeGame?.id);
 
