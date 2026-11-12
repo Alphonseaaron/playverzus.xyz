@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -19,6 +19,7 @@ import {
   Wallet,
   Sparkles,
   TrendingUp,
+  Gamepad2,
 } from 'lucide-react';
 import { EloBadge } from '../../components/EloBadge';
 import { CountryFlag, resolveCountryInfo } from '../../components/CountryFlag';
@@ -30,6 +31,9 @@ import { formatEUR, formatPoints } from '../../lib/currency';
 import { getGameById, findCatalogGame, OFFICIAL_GAMES } from '../../lib/gamesCatalog';
 import { notifyUser } from '../../lib/notifications';
 import { toUserFriendlyWalletError } from '../../lib/walletErrors';
+import { FirstTimeOnboardingModal } from '../../components/onboarding/FirstTimeOnboardingModal';
+import { OnboardingChecklistCard } from '../../components/onboarding/OnboardingChecklistCard';
+import { LinkedGameAccountsCard } from '../../components/dashboard/LinkedGameAccountsCard';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '../../components/ui/card';
@@ -89,6 +93,17 @@ function DashboardContent() {
   const queryClient = useQueryClient();
   const { activeGame } = useGameStore();
   const [faucetLoading, setFaucetLoading] = useState(false);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
+
+  // Auto-launch onboarding wizard if user has not completed onboarding
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const completed = localStorage.getItem('playverzus_onboarding_completed') === 'true';
+      if (!completed) {
+        setOnboardingOpen(true);
+      }
+    }
+  }, []);
 
   const catalogGame = getGameById(activeGame?.id);
 
@@ -171,7 +186,27 @@ function DashboardContent() {
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto w-full min-w-0 pb-16">
-      {/* 1. MASTER INTRO CARD: Identity + Integrated Competitive Ledger */}
+      {/* 1. First-Time Onboarding Setup Modal */}
+      <FirstTimeOnboardingModal
+        open={onboardingOpen}
+        onOpenChange={setOnboardingOpen}
+        username={username}
+        initialCountry={countryInfo.code}
+        onComplete={() => {
+          refetchBalance();
+          refetchHistory();
+          queryClient.invalidateQueries({ queryKey: ['header-wallet'] });
+        }}
+      />
+
+      {/* 2. Onboarding Milestone Progress Card */}
+      <OnboardingChecklistCard
+        onOpenTour={() => setOnboardingOpen(true)}
+        matchesCount={totalMatches}
+        balancePoints={points}
+      />
+
+      {/* 3. MASTER INTRO CARD: Identity + Integrated Competitive Ledger */}
       <Card className="relative overflow-hidden border border-border bg-card shadow-xl">
         <div className="h-44 sm:h-52 bg-zinc-950 border-b border-border w-full relative overflow-hidden">
           {catalogGame.bannerUrl && (
@@ -358,6 +393,10 @@ function DashboardContent() {
             <Badge variant="secondary" className="text-[10px] ml-1 px-1 py-0">
               {historyData?.length ?? 0}
             </Badge>
+          </TabsTrigger>
+          <TabsTrigger value="handles" className="text-xs font-semibold gap-1.5">
+            <Gamepad2 className="w-3.5 h-3.5" />
+            <span>In-Game Handles</span>
           </TabsTrigger>
         </TabsList>
 
@@ -580,6 +619,11 @@ function DashboardContent() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Tab 4: In-Game Handles */}
+        <TabsContent value="handles">
+          <LinkedGameAccountsCard />
         </TabsContent>
       </Tabs>
     </div>

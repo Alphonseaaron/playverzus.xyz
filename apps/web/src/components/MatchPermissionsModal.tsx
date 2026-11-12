@@ -113,14 +113,14 @@ export function MatchPermissionsModal({
         return {
           label: 'Android Mobile / Tablet',
           icon: Smartphone,
-          screenTip: 'Allow screen cast / window sharing permission when prompted by Chrome/browser.',
+          screenTip: 'Mobile browsers protect background apps. Upload your game-over screenshot or use the Playverzus app for instant verification.',
           pushTip: 'System lockscreen & heads-up push notifications enabled.',
         };
       case 'ios':
         return {
           label: 'iOS / iPadOS (Safari & PWA)',
           icon: Smartphone,
-          screenTip: 'Allow screen broadcast / share in Safari to sync match score feed.',
+          screenTip: 'Mobile Safari protects background games. Upload your victory scoreboard screenshot for instant 2-second AI verification.',
           pushTip: 'Web push notifications enabled for match room pings.',
         };
       default:

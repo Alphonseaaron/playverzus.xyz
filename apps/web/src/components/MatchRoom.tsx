@@ -15,6 +15,11 @@ import {
   AlertCircle,
   Gamepad2,
   Share2,
+  Camera,
+  Upload,
+  Tv,
+  Smartphone,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { useCapturePipeline as useMatchCapture } from '../hooks/useCapturePipeline';
 import { LiveScore } from './LiveScore';
@@ -26,6 +31,7 @@ import { notifyUser, requestNotificationPermission } from '../lib/notifications'
 import { apiClient } from '../lib/api';
 import { useGameAccountsStore } from '../lib/gameAccountsStore';
 import { getGameById } from '../lib/gamesCatalog';
+import { MatchRoomSpotlight } from './onboarding/MatchRoomSpotlight';
 import type { GameProfile } from '@playverzus/core';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
@@ -100,6 +106,18 @@ export function MatchRoom({
   const [notificationsGranted, setNotificationsGranted] = useState(false);
   const [streamPlatform, setStreamPlatform] = useState<'TWITCH' | 'YOUTUBE'>('TWITCH');
   const [streamChannel, setStreamChannel] = useState(myGamertag || '');
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleScreenshotUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    notifyUser('Analyzing Match Screenshot...', {
+      body: 'Extracting victory HUD & score via optical anti-cheat.',
+      sound: 'connect',
+    });
+    await capture.uploadScoreboardScreenshot(file);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   const handleAcceptOpenMatch = async () => {
     try {
@@ -246,6 +264,9 @@ export function MatchRoom({
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto min-w-0 pb-16">
+      {/* Contextual Match Room Onboarding Spotlight */}
+      <MatchRoomSpotlight gameName={profile.displayName} />
+
       {/* Optional Notification Opt-In Banner */}
       {!notificationsGranted && (
         <Card className="p-4 bg-muted/50 border-border flex items-center justify-between text-xs">
@@ -594,9 +615,18 @@ export function MatchRoom({
       {/* Live Head-to-Head Scoreboard */}
       <LiveScore matchId={matchId} />
 
+      {/* Hidden File Input for Mobile / Screenshot Verification */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleScreenshotUpload}
+      />
+
       {/* Seamless Background Verification */}
       {isParticipant && (
-        <Card className="p-6 sm:p-8 space-y-4 border border-border bg-card shadow-xl">
+        <Card className="p-6 sm:p-8 space-y-5 border border-border bg-card shadow-xl">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2">
@@ -608,11 +638,11 @@ export function MatchRoom({
               <p className="text-xs text-muted-foreground mt-1">
                 {capture.status === 'CAPTURING'
                   ? 'All scores and victory conditions are automatically tracked in the background. Simply play your game.'
-                  : 'Select your game window once. Results are verified automatically without any manual score entry.'}
+                  : 'Select your game window on PC, link your console stream, or upload a match screenshot on mobile.'}
               </p>
             </div>
 
-            <div className="flex items-center gap-3 flex-shrink-0">
+            <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap flex-shrink-0">
               {capture.status === 'CAPTURING' ? (
                 <Button
                   onClick={capture.stopCapture}
@@ -624,18 +654,65 @@ export function MatchRoom({
                   <span>Conclude & Settle</span>
                 </Button>
               ) : (
-                <Button
-                  onClick={() => setPermissionsModalOpen(true)}
-                  variant="default"
-                  size="default"
-                  className="gap-2 font-bold shadow-sm"
-                >
-                  <Monitor className="w-4 h-4" />
-                  <span>Connect Game Window</span>
-                </Button>
+                <>
+                  <Button
+                    onClick={capture.startCapture}
+                    variant="default"
+                    size="default"
+                    className="gap-2 font-bold shadow-sm"
+                  >
+                    <Monitor className="w-4 h-4" />
+                    <span>Connect Game Window</span>
+                  </Button>
+                  <Button
+                    onClick={() => fileInputRef.current?.click()}
+                    variant="secondary"
+                    size="default"
+                    className="gap-2 font-bold"
+                    title="Upload end-of-game victory scoreboard screenshot (ideal for mobile)"
+                  >
+                    <Upload className="w-4 h-4" />
+                    <span>Upload Screenshot</span>
+                  </Button>
+                  <Button
+                    onClick={() => setPermissionsModalOpen(true)}
+                    variant="outline"
+                    size="default"
+                    className="gap-1.5 text-xs font-semibold"
+                  >
+                    <Tv className="w-3.5 h-3.5" />
+                    <span>Console / Setup</span>
+                  </Button>
+                </>
               )}
             </div>
           </div>
+
+          {/* Live Game Window / Companion Camera Stream Preview */}
+          {capture.status === 'CAPTURING' && capture.stream && (
+            <div className="relative rounded-xl overflow-hidden border border-emerald-500/40 bg-zinc-950 aspect-video max-w-sm mx-auto shadow-2xl">
+              <video
+                ref={(el) => {
+                  if (el && capture.stream && el.srcObject !== capture.stream) {
+                    el.srcObject = capture.stream;
+                  }
+                }}
+                autoPlay
+                muted
+                playsInline
+                className="w-full h-full object-contain"
+              />
+              <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-zinc-950/80 backdrop-blur px-2 py-0.5 rounded text-[10px] font-mono text-emerald-400 border border-emerald-500/30">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                <span>{capture.mode === 'CAMERA' ? 'COMPANION CAMERA' : 'GAME SCREEN ACTIVE'}</span>
+              </div>
+              {capture.lastScore && (
+                <div className="absolute bottom-2 right-2 bg-zinc-950/90 backdrop-blur px-2.5 py-1 rounded text-xs font-mono font-bold text-foreground border border-border">
+                  HUD: {capture.lastScore}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Background Running Status Banner */}
           {capture.status === 'CAPTURING' && (
@@ -645,14 +722,22 @@ export function MatchRoom({
                 Anti-Cheat Verification Active
               </span>
               <span className="text-muted-foreground text-xs font-mono">
-                {capture.lastScore ? `Live HUD: "${capture.lastScore}"` : 'Listening for match outcome...'}
+                {capture.lastScore ? `Live HUD: "${capture.lastScore}"` : 'Tracking match outcome...'}
               </span>
             </div>
           )}
 
           {capture.error && (
-            <div className="p-3 bg-destructive/10 border border-destructive/30 text-destructive text-xs rounded-xl">
-              {capture.error}
+            <div className="p-3 bg-destructive/10 border border-destructive/30 text-destructive text-xs rounded-xl flex items-center justify-between gap-3">
+              <span>{capture.error}</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPermissionsModalOpen(true)}
+                className="text-[10px] h-7 px-2.5 flex-shrink-0"
+              >
+                View Options
+              </Button>
             </div>
           )}
         </Card>
@@ -660,17 +745,17 @@ export function MatchRoom({
 
       {/* Pre-Match Cross-Platform Permissions Setup Card (Inline page section, NO modal popups!) */}
       {permissionsModalOpen && (
-        <Card className="p-6 bg-card border-primary/50 ring-1 ring-primary/30 space-y-5 animate-in fade-in duration-200">
+        <Card className="p-6 bg-card border-primary/50 ring-1 ring-primary/30 space-y-6 animate-in fade-in duration-200">
           <div className="flex items-center justify-between border-b border-border pb-4">
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
                 <h3 className="text-lg font-bold text-foreground tracking-tight">
-                  Pre-Match Permissions & Screen Verification
+                  Cross-Platform Verification & Permissions Setup
                 </h3>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Required for automated victory detection and instant winner verification in {profile.displayName}.
+                Configure your game feed for automated victory detection in {profile.displayName}.
               </p>
             </div>
             <Button
@@ -683,111 +768,163 @@ export function MatchRoom({
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Step 1: Video / Console Stream Capture */}
-            <div className="p-4 rounded-xl bg-secondary border border-border space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-foreground">
-                  1. {profile.platform === 'CONSOLE' ? 'Console Stream Feed' : 'Live Game Screen'}
-                </span>
-                <Badge variant={capture.status === 'CAPTURING' ? 'success' : 'outline'}>
-                  {capture.status === 'CAPTURING' ? 'Active ✓' : 'Required'}
-                </Badge>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Option 1: Desktop Web (Game Window) */}
+            <div className="p-4 rounded-xl bg-secondary border border-border space-y-3 flex flex-col justify-between">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                    <Monitor className="w-3.5 h-3.5 text-primary" />
+                    <span>PC Game Window</span>
+                  </span>
+                  <Badge variant={capture.mode === 'SCREEN' && capture.status === 'CAPTURING' ? 'success' : 'outline'}>
+                    {capture.mode === 'SCREEN' && capture.status === 'CAPTURING' ? 'Active ✓' : 'Desktop'}
+                  </Badge>
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Select your specific game window. Our optical engine isolates only the score HUD.
+                </p>
               </div>
-              <p className="text-[11px] text-muted-foreground">
-                {profile.platform === 'CONSOLE'
-                  ? 'Link your PS5/Xbox broadcast stream (Twitch/YouTube) or companion camera for instant auto-scoring.'
-                  : 'Select your game window for instant automatic round detection and scoring.'}
-              </p>
               <Button
-                variant={capture.status === 'CAPTURING' ? 'secondary' : 'default'}
+                variant={capture.mode === 'SCREEN' && capture.status === 'CAPTURING' ? 'secondary' : 'default'}
                 size="sm"
                 onClick={capture.startCapture}
                 disabled={capture.status === 'CAPTURING'}
                 className="w-full text-xs font-bold"
               >
-                {capture.status === 'CAPTURING'
-                  ? 'Live Verification Active ✓'
-                  : profile.platform === 'CONSOLE'
-                  ? 'Start Stream Feed'
+                {capture.mode === 'SCREEN' && capture.status === 'CAPTURING'
+                  ? 'Screen Active ✓'
                   : 'Select Game Window'}
               </Button>
-
-              {/* Console Broadcast Link (PS5 / Xbox Twitch & YouTube Ingest) */}
-              <div className="pt-2 border-t border-border/60 space-y-2">
-                <div className="flex items-center justify-between text-[10px] text-muted-foreground font-mono uppercase">
-                  <span>PS5 / Xbox Broadcast Ingest</span>
-                  <div className="flex gap-1">
-                    {(['TWITCH', 'YOUTUBE'] as const).map((plat) => (
-                      <button
-                        key={plat}
-                        type="button"
-                        onClick={() => setStreamPlatform(plat)}
-                        className={`px-1.5 py-0.5 rounded text-[9px] font-bold transition ${
-                          streamPlatform === plat
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-muted text-muted-foreground hover:text-foreground'
-                        }`}
-                      >
-                        {plat}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Input
-                    type="text"
-                    placeholder={`${streamPlatform === 'TWITCH' ? 'twitch_channel' : '@youtube_handle'}`}
-                    value={streamChannel}
-                    onChange={(e) => setStreamChannel(e.target.value)}
-                    className="h-8 text-xs font-mono flex-1"
-                  />
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="secondary"
-                    disabled={capture.status === 'CAPTURING'}
-                    onClick={() =>
-                      capture.connectConsoleStream(
-                        streamPlatform,
-                        streamChannel.trim() || myGamertag || playerAUsername || 'console_pro',
-                      )
-                    }
-                    className="h-8 text-[10px] font-bold px-2.5"
-                  >
-                    Link Stream
-                  </Button>
-                </div>
-              </div>
             </div>
 
-            {/* Step 2: Live Notifications */}
-            <div className="p-4 rounded-xl bg-secondary border border-border space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-foreground">2. Match Alerts</span>
-                <Badge variant={notificationsGranted ? 'success' : 'outline'}>
-                  {notificationsGranted ? 'Granted ✓' : 'Recommended'}
-                </Badge>
+            {/* Option 2: Mobile (Screenshot OCR Upload) */}
+            <div className="p-4 rounded-xl bg-secondary border border-border space-y-3 flex flex-col justify-between">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                    <Smartphone className="w-3.5 h-3.5 text-primary" />
+                    <span>Mobile Screenshot</span>
+                  </span>
+                  <Badge variant={capture.mode === 'SCREENSHOT_UPLOAD' ? 'success' : 'outline'}>
+                    {capture.mode === 'SCREENSHOT_UPLOAD' ? 'Verified ✓' : 'Mobile Web'}
+                  </Badge>
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Mobile web cannot record background apps. Snap a game-over screenshot and upload for instant 2-second AI verification.
+                </p>
               </div>
-              <p className="text-[11px] text-muted-foreground">
-                Receive browser audio and push alerts when rounds conclude or opponent submits.
-              </p>
               <Button
-                variant={notificationsGranted ? 'secondary' : 'default'}
+                variant="secondary"
                 size="sm"
-                onClick={async () => {
-                  const granted = await requestNotificationPermission();
-                  setNotificationsGranted(granted);
-                }}
-                disabled={notificationsGranted}
-                className="w-full text-xs font-bold"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full text-xs font-bold gap-1.5"
               >
-                {notificationsGranted ? 'Notifications Active ✓' : 'Enable Alerts'}
+                <Upload className="w-3.5 h-3.5" />
+                <span>Upload Screenshot</span>
+              </Button>
+            </div>
+
+            {/* Option 3: Console (PS5 / Xbox Twitch or Companion Camera) */}
+            <div className="p-4 rounded-xl bg-secondary border border-border space-y-3 flex flex-col justify-between">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                    <Tv className="w-3.5 h-3.5 text-primary" />
+                    <span>Console Ingest</span>
+                  </span>
+                  <Badge variant={capture.mode === 'CONSOLE_STREAM' || capture.mode === 'CAMERA' ? 'success' : 'outline'}>
+                    {capture.mode === 'CONSOLE_STREAM' || capture.mode === 'CAMERA' ? 'Linked ✓' : 'PS5 / Xbox'}
+                  </Badge>
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Broadcast via built-in PS5/Xbox Share button to Twitch/YouTube, or use a companion camera facing your TV.
+                </p>
+
+                {/* Broadcast Handle Link */}
+                <div className="space-y-1.5 pt-1">
+                  <div className="flex items-center justify-between text-[10px] text-muted-foreground font-mono">
+                    <span>BROADCAST STREAM</span>
+                    <div className="flex gap-1">
+                      {(['TWITCH', 'YOUTUBE'] as const).map((plat) => (
+                        <button
+                          key={plat}
+                          type="button"
+                          onClick={() => setStreamPlatform(plat)}
+                          className={`px-1.5 py-0.5 rounded text-[9px] font-bold transition ${
+                            streamPlatform === plat
+                              ? 'bg-primary text-primary-foreground'
+                              : 'bg-muted text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          {plat}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Input
+                      type="text"
+                      placeholder={streamPlatform === 'TWITCH' ? 'twitch_channel' : '@youtube_handle'}
+                      value={streamChannel}
+                      onChange={(e) => setStreamChannel(e.target.value)}
+                      className="h-8 text-xs font-mono flex-1"
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="default"
+                      disabled={capture.status === 'CAPTURING'}
+                      onClick={() =>
+                        capture.connectConsoleStream(
+                          streamPlatform,
+                          streamChannel.trim() || myGamertag || playerAUsername || 'console_pro',
+                        )
+                      }
+                      className="h-8 text-[10px] font-bold px-2.5"
+                    >
+                      Link
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Or Companion Camera */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={capture.startCompanionCamera}
+                disabled={capture.status === 'CAPTURING'}
+                className="w-full text-[11px] font-medium gap-1.5 h-8 mt-2"
+              >
+                <Camera className="w-3.5 h-3.5" />
+                <span>Companion Camera (TV Facing)</span>
               </Button>
             </div>
           </div>
 
-          <div className="pt-2 flex justify-end">
+          {/* Alerts & Ready Confirmation */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2 border-t border-border">
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <Bell className="w-4 h-4 text-primary flex-shrink-0" />
+              <span>
+                Alerts: <strong>{notificationsGranted ? 'Enabled ✓' : 'Disabled'}</strong>
+              </span>
+              {!notificationsGranted && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={async () => {
+                    const granted = await requestNotificationPermission();
+                    setNotificationsGranted(granted);
+                  }}
+                  className="h-6 text-[10px] text-primary underline px-1"
+                >
+                  Enable Alerts
+                </Button>
+              )}
+            </div>
+
             <Button
               variant="default"
               size="default"
@@ -795,7 +932,7 @@ export function MatchRoom({
                 if (isPlayerA) setIsReadyA(true);
                 else setIsReadyB(true);
                 setPermissionsModalOpen(false);
-                notifyUser('Permissions Verified & Ready!', { sound: 'score' });
+                notifyUser('Setup Confirmed & Ready!', { sound: 'score' });
               }}
               className="text-xs font-bold uppercase tracking-wider px-6"
             >
