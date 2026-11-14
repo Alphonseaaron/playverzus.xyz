@@ -273,22 +273,54 @@ function LoginForm() {
               <Sparkles className="w-3.5 h-3.5 text-primary" />
               <span className="text-[11px] font-bold text-foreground">Quick Test Credentials</span>
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               <button
                 type="button"
                 onClick={() => handleDemoFill('admin@playverzus.xyz', 'PlayVerzus2026!')}
                 className="text-left px-2.5 py-1.5 bg-background hover:bg-primary/10 border border-border rounded-lg text-[10px] text-muted-foreground hover:text-foreground transition"
               >
-                <div className="font-bold text-foreground">Admin</div>
+                <div className="font-bold text-foreground">Admin Console</div>
                 <div className="truncate">admin@playverzus.xyz</div>
               </button>
               <button
                 type="button"
-                onClick={() => handleDemoFill('player1@playverzus.xyz', 'PlayVerzus2026!')}
+                onClick={() => handleDemoFill('cyberknight@playverzus.xyz', 'PlayVerzus2026!')}
                 className="text-left px-2.5 py-1.5 bg-background hover:bg-primary/10 border border-border rounded-lg text-[10px] text-muted-foreground hover:text-foreground transition"
               >
-                <div className="font-bold text-foreground">Player 1</div>
-                <div className="truncate">player1@playverzus.xyz</div>
+                <div className="font-bold text-foreground">CyberKnight (US)</div>
+                <div className="truncate">cyberknight@playverzus.xyz</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDemoFill('alphasniper@playverzus.xyz', 'PlayVerzus2026!')}
+                className="text-left px-2.5 py-1.5 bg-background hover:bg-primary/10 border border-border rounded-lg text-[10px] text-muted-foreground hover:text-foreground transition"
+              >
+                <div className="font-bold text-foreground">AlphaSniper (DE)</div>
+                <div className="truncate">alphasniper@playverzus.xyz</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDemoFill('vortexstriker@playverzus.xyz', 'PlayVerzus2026!')}
+                className="text-left px-2.5 py-1.5 bg-background hover:bg-primary/10 border border-border rounded-lg text-[10px] text-muted-foreground hover:text-foreground transition"
+              >
+                <div className="font-bold text-foreground">VortexStriker (GB)</div>
+                <div className="truncate">vortexstriker@playverzus.xyz</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDemoFill('apexrival@playverzus.xyz', 'PlayVerzus2026!')}
+                className="text-left px-2.5 py-1.5 bg-background hover:bg-primary/10 border border-border rounded-lg text-[10px] text-muted-foreground hover:text-foreground transition"
+              >
+                <div className="font-bold text-foreground">ApexRival (FR)</div>
+                <div className="truncate">apexrival@playverzus.xyz</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDemoFill('novagamer@playverzus.xyz', 'PlayVerzus2026!')}
+                className="text-left px-2.5 py-1.5 bg-background hover:bg-primary/10 border border-border rounded-lg text-[10px] text-muted-foreground hover:text-foreground transition"
+              >
+                <div className="font-bold text-foreground">NovaGamer (CA)</div>
+                <div className="truncate">novagamer@playverzus.xyz</div>
               </button>
             </div>
           </div>
