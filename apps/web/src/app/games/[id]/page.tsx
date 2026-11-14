@@ -17,6 +17,8 @@ import {
   CheckCircle2,
   AlertCircle,
   ArrowRight,
+  Edit3,
+  X,
 } from 'lucide-react';
 import { apiClient } from '../../../lib/api';
 import { getGameById, findCatalogGame, OFFICIAL_GAMES, type CatalogGame } from '../../../lib/gamesCatalog';
@@ -28,6 +30,7 @@ import { GamePoster } from '../../../components/GamePoster';
 import { TournamentCard } from '../../../components/TournamentCard';
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
+import { Input } from '../../../components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '../../../components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../../components/ui/tabs';
 import {
@@ -96,9 +99,18 @@ export default function GameHubPage() {
   const tagline = catalogItem?.tagline || 'Competitive Matchmaking Arena';
 
   // Gamertag handle integration
-  const { getGamertag, getGamertagLabel } = useGameAccountsStore();
+  const { getGamertag, getGamertagLabel, setGamertag } = useGameAccountsStore();
   const gamertagLabel = getGamertagLabel(resolvedProfile.id);
   const myGamertag = getGamertag(resolvedProfile.id);
+  const [isEditingTag, setIsEditingTag] = useState(false);
+  const [tagInput, setTagInput] = useState('');
+
+  const handleSaveTag = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!tagInput.trim()) return;
+    setGamertag(resolvedProfile.id, tagInput.trim());
+    setIsEditingTag(false);
+  };
 
   // 1. Fetch live open challenges for this game
   const { data: challenges, isLoading: loadingChallenges } = useQuery<ChallengeItem[]>({
@@ -176,15 +188,56 @@ export default function GameHubPage() {
                   {resolvedProfile.platform || 'UNIVERSAL'}
                 </Badge>
                 {myGamertag ? (
-                  <Badge variant="success" className="font-mono text-[10px] gap-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTagInput(myGamertag);
+                      setIsEditingTag(true);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 transition cursor-pointer"
+                    title="Click to edit linked in-game handle"
+                  >
                     <CheckCircle2 className="w-3 h-3" />
                     <span>{gamertagLabel}: {myGamertag}</span>
-                  </Badge>
+                    <Edit3 className="w-2.5 h-2.5 ml-0.5 opacity-70" />
+                  </button>
                 ) : (
-                  <Badge variant="warning" className="font-mono text-[10px] gap-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTagInput('');
+                      setIsEditingTag(true);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-medium bg-amber-500/10 text-amber-400 border border-amber-500/30 hover:bg-amber-500/20 transition cursor-pointer"
+                    title="Click to connect in-game handle"
+                  >
                     <AlertCircle className="w-3 h-3" />
-                    <span>{gamertagLabel} Not Linked</span>
-                  </Badge>
+                    <span>+ Connect {gamertagLabel}</span>
+                  </button>
+                )}
+                {isEditingTag && (
+                  <form onSubmit={handleSaveTag} className="flex items-center gap-1.5 bg-background border border-border p-1 rounded-lg shadow-lg">
+                    <Input
+                      type="text"
+                      placeholder={`Enter ${gamertagLabel}...`}
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                      className="h-7 text-xs font-mono w-44"
+                      autoFocus
+                    />
+                    <Button type="submit" size="sm" variant="default" className="h-7 px-2 text-[10px]">
+                      Save
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setIsEditingTag(false)}
+                      className="h-7 px-1.5 text-[10px]"
+                    >
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </form>
                 )}
               </div>
 

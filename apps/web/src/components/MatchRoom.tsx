@@ -536,19 +536,35 @@ export function MatchRoom({
 
           {/* Verified In-Game Gamertag */}
           <div className="mt-3 p-2.5 bg-muted/60 border border-border rounded-lg w-full flex items-center justify-between text-xs">
-            <div className="flex flex-col min-w-0">
+            <div className="flex flex-col min-w-0 pr-2">
               <span className="text-[9px] text-muted-foreground font-bold uppercase">{gameTagLabel}</span>
-              <span className="font-mono font-bold text-foreground truncate max-w-[120px]">{playerATag}</span>
+              <span className="font-mono font-bold text-foreground truncate max-w-[180px] sm:max-w-[240px]">{playerATag}</span>
             </div>
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => handleCopyTag(playerATag, 'A')}
-              className="h-7 px-2 text-[10px] gap-1"
-            >
-              {copiedTagA ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-              <span>{copiedTagA ? 'Copied' : 'Copy'}</span>
-            </Button>
+            <div className="flex items-center gap-1 flex-shrink-0">
+              {isPlayerA && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    setTagInput(myGamertag || '');
+                    setEditingTag(true);
+                  }}
+                  className="h-7 px-2 text-[10px]"
+                  title="Edit my handle"
+                >
+                  Edit
+                </Button>
+              )}
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => handleCopyTag(playerATag, 'A')}
+                className="h-7 px-2 text-[10px] gap-1"
+              >
+                {copiedTagA ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                <span>{copiedTagA ? 'Copied' : 'Copy'}</span>
+              </Button>
+            </div>
           </div>
 
           <div className="mt-4 flex items-center gap-2">
@@ -646,18 +662,34 @@ export function MatchRoom({
 
           {/* Opponent In-Game Gamertag */}
           <div className="mt-3 p-2.5 bg-muted/60 border border-border rounded-lg w-full flex items-center justify-between text-xs text-left">
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => handleCopyTag(playerBTag, 'B')}
-              className="h-7 px-2 text-[10px] gap-1"
-            >
-              {copiedTagB ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-              <span>{copiedTagB ? 'Copied' : 'Copy'}</span>
-            </Button>
-            <div className="flex flex-col text-right min-w-0">
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => handleCopyTag(playerBTag, 'B')}
+                className="h-7 px-2 text-[10px] gap-1"
+              >
+                {copiedTagB ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                <span>{copiedTagB ? 'Copied' : 'Copy'}</span>
+              </Button>
+              {isPlayerB && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    setTagInput(myGamertag || '');
+                    setEditingTag(true);
+                  }}
+                  className="h-7 px-2 text-[10px]"
+                  title="Edit my handle"
+                >
+                  Edit
+                </Button>
+              )}
+            </div>
+            <div className="flex flex-col text-right min-w-0 pl-2">
               <span className="text-[9px] text-muted-foreground font-bold uppercase">{gameTagLabel}</span>
-              <span className="font-mono font-bold text-foreground truncate max-w-[120px]">{playerBTag}</span>
+              <span className="font-mono font-bold text-foreground truncate max-w-[180px] sm:max-w-[240px]">{playerBTag}</span>
             </div>
           </div>
 

@@ -78,7 +78,9 @@ function NewMatchForm() {
   );
   const allAvailableGames = [...OFFICIAL_GAMES, ...customGames];
 
-  const selectedGame = allAvailableGames.find((g) => g.id.toLowerCase() === profileId.toLowerCase());
+  const selectedGame =
+    findCatalogGame(profileId) ||
+    allAvailableGames.find((g) => g.id.toLowerCase() === profileId.toLowerCase());
   const gameDisplayName = selectedGame?.displayName || (selectedGame as any)?.display_name || 'Selected Game';
   const currentGamertag = getGamertag(profileId);
   const tagLabel = getGamertagLabel(profileId);

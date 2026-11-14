@@ -764,7 +764,7 @@ export const OFFICIAL_GAMES: CatalogGame[] = [
   },
 ];
 
-const UUID_TO_CATALOG_SLUG: Record<string, string> = {
+export const UUID_TO_CATALOG_SLUG: Record<string, string> = {
   '00000000-0000-0000-0000-000000000001': 'cs2',
   'counter-strike-2': 'cs2',
   '00000000-0000-0000-0000-000000000002': 'eafc',

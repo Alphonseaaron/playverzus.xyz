@@ -2,6 +2,7 @@
 
 import { create } from 'zustand';
 import { apiClient } from './api';
+import { findCatalogGame, UUID_TO_CATALOG_SLUG } from './gamesCatalog';
 
 export interface GameAccount {
   gameId: string;
@@ -20,6 +21,51 @@ interface GameAccountsState {
 }
 
 const STORAGE_KEY = 'playverzus_game_accounts';
+
+export function getAllGameAliases(gameIdOrSlug: string): string[] {
+  if (!gameIdOrSlug) return [];
+  const clean = gameIdOrSlug.toLowerCase().trim();
+  const aliases = new Set<string>([clean]);
+
+  // If this ID is in UUID_TO_CATALOG_SLUG, add the mapped slug
+  const mappedSlug = UUID_TO_CATALOG_SLUG[clean];
+  if (mappedSlug) {
+    aliases.add(mappedSlug.toLowerCase());
+  }
+
+  // Find in official games catalog
+  const catalog = findCatalogGame(clean);
+  if (catalog) {
+    aliases.add(catalog.id.toLowerCase());
+    if (catalog.shortName) {
+      aliases.add(catalog.shortName.toLowerCase());
+    }
+  }
+
+  // Check all UUID_TO_CATALOG_SLUG entries that map to any known alias
+  for (const [uuidOrAlias, targetSlug] of Object.entries(UUID_TO_CATALOG_SLUG)) {
+    if (aliases.has(targetSlug.toLowerCase()) || aliases.has(uuidOrAlias.toLowerCase())) {
+      aliases.add(uuidOrAlias.toLowerCase());
+      aliases.add(targetSlug.toLowerCase());
+    }
+  }
+
+  return Array.from(aliases);
+}
+
+function expandAccountsWithAliases(raw: Record<string, string>): Record<string, string> {
+  const result: Record<string, string> = { ...raw };
+  for (const [key, val] of Object.entries(raw)) {
+    if (!val) continue;
+    const aliases = getAllGameAliases(key);
+    for (const alias of aliases) {
+      if (!result[alias]) {
+        result[alias] = val;
+      }
+    }
+  }
+  return result;
+}
 
 const PLATFORM_LABELS: Record<string, string> = {
   cs2: 'Steam ID / Gamertag',
@@ -117,9 +163,16 @@ export const useGameAccountsStore = create<GameAccountsState>((set, get) => ({
   hasHydrated: false,
 
   setGamertag: (gameId: string, gamertag: string) => {
-    const cleanId = gameId.toLowerCase();
+    const cleanId = gameId.toLowerCase().trim();
     const cleanTag = gamertag.trim();
-    const updated = { ...get().accounts, [cleanId]: cleanTag };
+    const aliases = getAllGameAliases(cleanId);
+
+    const updated = { ...get().accounts };
+    for (const alias of aliases) {
+      updated[alias] = cleanTag;
+    }
+    updated[cleanId] = cleanTag;
+
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
@@ -133,7 +186,8 @@ export const useGameAccountsStore = create<GameAccountsState>((set, get) => ({
       })
         .then((res) => {
           if (res?.game_accounts) {
-            const merged = { ...get().accounts, ...res.game_accounts };
+            const expandedServer = expandAccountsWithAliases(res.game_accounts);
+            const merged = { ...get().accounts, ...expandedServer };
             set({ accounts: merged });
             try {
               localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
@@ -149,12 +203,25 @@ export const useGameAccountsStore = create<GameAccountsState>((set, get) => ({
 
   getGamertag: (gameId: string) => {
     if (!gameId) return null;
-    return get().accounts[gameId.toLowerCase()] || null;
+    const accounts = get().accounts;
+    const cleanId = gameId.toLowerCase().trim();
+    if (accounts[cleanId]) return accounts[cleanId];
+    const aliases = getAllGameAliases(cleanId);
+    for (const alias of aliases) {
+      if (accounts[alias]) return accounts[alias];
+    }
+    return null;
   },
 
   getGamertagLabel: (gameId: string) => {
     if (!gameId) return 'In-Game Gamertag';
-    return PLATFORM_LABELS[gameId.toLowerCase()] || 'In-Game Gamertag / ID';
+    const cleanId = gameId.toLowerCase().trim();
+    if (PLATFORM_LABELS[cleanId]) return PLATFORM_LABELS[cleanId];
+    const aliases = getAllGameAliases(cleanId);
+    for (const alias of aliases) {
+      if (PLATFORM_LABELS[alias]) return PLATFORM_LABELS[alias];
+    }
+    return 'In-Game Gamertag / ID';
   },
 
   hydrate: () => {
@@ -163,7 +230,7 @@ export const useGameAccountsStore = create<GameAccountsState>((set, get) => ({
       try {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
-          localParsed = JSON.parse(saved);
+          localParsed = expandAccountsWithAliases(JSON.parse(saved));
           set({ accounts: localParsed, hasHydrated: true });
         }
       } catch {
@@ -175,7 +242,8 @@ export const useGameAccountsStore = create<GameAccountsState>((set, get) => ({
       apiClient<{ game_accounts?: Record<string, string> }>('/profile/me')
         .then((me) => {
           if (me?.game_accounts && Object.keys(me.game_accounts).length > 0) {
-            const merged = { ...localParsed, ...get().accounts, ...me.game_accounts };
+            const expandedServer = expandAccountsWithAliases(me.game_accounts);
+            const merged = { ...localParsed, ...get().accounts, ...expandedServer };
             set({ accounts: merged });
             try {
               localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
