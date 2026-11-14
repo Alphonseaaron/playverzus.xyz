@@ -179,16 +179,52 @@ export class TournamentEngine {
         .maybeSingle();
 
       if (nextMatch) {
+        let updatedA = nextMatch.player_a;
+        let updatedB = nextMatch.player_b;
+
         if (!nextMatch.player_a) {
+          updatedA = winnerId;
           await this.deps.client
             .from('matches')
             .update({ player_a: winnerId, status: nextMatch.player_b ? 'LIVE' : 'DRAFT' })
             .eq('id', targetNextMatchId);
         } else if (!nextMatch.player_b && nextMatch.player_a !== winnerId) {
+          updatedB = winnerId;
           await this.deps.client
             .from('matches')
             .update({ player_b: winnerId, status: 'LIVE', started_at: new Date().toISOString() })
             .eq('id', targetNextMatchId);
+        }
+
+        // If next match now has only one player and the other feeder branch has no participants (bye pathway), auto-advance
+        if ((updatedA && !updatedB) || (!updatedA && updatedB)) {
+          const solePlayer = (updatedA || updatedB) as string;
+          const { data: siblingFeeders } = await this.deps.client
+            .from('matches')
+            .select('id, status, player_a, player_b')
+            .eq('tournament_id', m.tournament_id)
+            .eq('next_match_id', targetNextMatchId)
+            .neq('id', matchId);
+
+          const hasActiveFeeder =
+            siblingFeeders &&
+            siblingFeeders.some(
+              (f) => (f.status === 'LIVE' || f.status === 'DRAFT') && Boolean(f.player_a || f.player_b),
+            );
+
+          if (!hasActiveFeeder) {
+            await this.deps.client
+              .from('matches')
+              .update({
+                winner: solePlayer,
+                status: 'SETTLED',
+                verified_by: 'AI_BYE',
+                settled_at: new Date().toISOString(),
+              })
+              .eq('id', targetNextMatchId);
+
+            await this.advanceWinner(targetNextMatchId, solePlayer);
+          }
         }
       }
     } else {
