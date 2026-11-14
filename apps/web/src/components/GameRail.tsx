@@ -141,7 +141,7 @@ export function GameRail() {
         <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-zinc-800 hover:scrollbar-thumb-zinc-700">
           {/* Brand Logo & Name */}
           <Link
-            href={me ? '/dashboard' : '/'}
+            href={isStaff ? staffTargetHref : me ? '/dashboard' : '/'}
             className="flex items-center gap-2 px-1 py-1 text-foreground hover:opacity-90 transition group"
           >
             <Image

@@ -149,9 +149,10 @@ export const formatEUR = (amount: number | null | undefined) => formatUSDC(amoun
 /**
  * Format practice points
  */
-export function formatPoints(points: number | null | undefined): string {
-  if (!points || isNaN(points)) return '0 PTS';
-  return `${new Intl.NumberFormat('en-US').format(Math.floor(points))} PTS`;
+export function formatPoints(points: number | null | undefined, includeUnit = true): string {
+  if (!points || isNaN(points)) return includeUnit ? '0 PTS' : '0';
+  const numStr = new Intl.NumberFormat('en-US').format(Math.floor(points));
+  return includeUnit ? `${numStr} PTS` : numStr;
 }
 
 /**

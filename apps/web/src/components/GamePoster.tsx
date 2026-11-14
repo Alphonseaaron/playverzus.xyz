@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export interface GamePosterData {
   displayName: string;
@@ -30,6 +30,10 @@ export function GamePoster({
 
   const posterSrc = aspect === 'banner' ? (game.bannerUrl || game.posterUrl) : (game.posterUrl || game.bannerUrl);
 
+  useEffect(() => {
+    setImageError(false);
+  }, [posterSrc]);
+
   const aspectClasses = {
     poster: 'aspect-[3/4] w-full',
     banner: 'aspect-[16/9] w-full',
@@ -39,10 +43,12 @@ export function GamePoster({
 
   return (
     <div
+      key={posterSrc}
       className={`relative overflow-hidden bg-secondary select-none flex-shrink-0 ${aspectClasses[aspect]} ${className}`}
     >
       {posterSrc && !imageError ? (
         <img
+          key={posterSrc}
           src={posterSrc}
           alt={game.displayName}
           loading="lazy"

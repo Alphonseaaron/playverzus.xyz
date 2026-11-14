@@ -188,7 +188,7 @@ export default function GameHubPage() {
                 )}
               </div>
 
-              <h1 className="text-2xl sm:text-4xl font-extrabold text-foreground tracking-tight truncate leading-tight uppercase">
+              <h1 className="text-2xl sm:text-4xl font-extrabold text-foreground tracking-tight leading-tight uppercase">
                 {resolvedProfile.displayName} Arena
               </h1>
               <p className="text-xs sm:text-sm text-muted-foreground max-w-xl">

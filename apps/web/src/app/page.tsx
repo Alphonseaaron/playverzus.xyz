@@ -46,6 +46,7 @@ interface UserProfile {
   rating?: number;
   region?: string;
   country_code?: string;
+  role?: string;
 }
 
 interface HomeTournament {
@@ -87,12 +88,29 @@ function HomeContent() {
 
   const isAuthenticated = !!userProfile?.id;
 
-  // When a user is logged in, automatically forward to dashboard unless they explicitly requested the public landing page (?view=landing)
+  // When a user is logged in, automatically forward to their role console unless they explicitly requested the public landing page (?view=landing)
   useEffect(() => {
     if (!loadingProfile && isAuthenticated && !wantsLanding) {
-      router.replace('/dashboard');
+      const role = userProfile?.role;
+      if (role && role !== 'PLAYER') {
+        const dest =
+          role === 'REVIEWER'
+            ? '/admin/review'
+            : role === 'SUPPORT'
+            ? '/admin/support'
+            : role === 'TOURNAMENT_ADMIN'
+            ? '/admin/seasons'
+            : role === 'FINANCE_AUDITOR'
+            ? '/admin/treasury'
+            : role === 'COMMUNITY_MANAGER'
+            ? '/admin/polls'
+            : '/admin';
+        router.replace(dest);
+      } else {
+        router.replace('/dashboard');
+      }
     }
-  }, [loadingProfile, isAuthenticated, wantsLanding, router]);
+  }, [loadingProfile, isAuthenticated, wantsLanding, userProfile?.role, router]);
 
   // Query real tournaments from API
   const { data: tournaments = [], isLoading: loadingTournaments } = useQuery<HomeTournament[]>({

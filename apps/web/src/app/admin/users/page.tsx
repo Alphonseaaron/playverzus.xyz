@@ -203,7 +203,7 @@ export default function AdminUsersPage() {
               {staffMembers.length} ACTIVE STAFF · {users.length} TOTAL ACCOUNTS
             </Badge>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground truncate">
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground">
             Staff Clearances & User Management
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground mt-1">

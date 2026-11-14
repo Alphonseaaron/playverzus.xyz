@@ -411,24 +411,36 @@ export default function AdminLayout({
               Admin Console
             </span>
           </div>
-          <Badge
-            variant={
-              isReviewer
-                ? 'default'
-                : isSupport
-                ? 'secondary'
-                : isTournamentAdmin
-                ? 'copper'
-                : isFinanceAuditor
-                ? 'outline'
-                : isCommunityManager
-                ? 'default'
-                : 'copper'
-            }
-            className="text-[9px] font-mono uppercase"
-          >
-            {role.replace(/_/g, ' ')}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Link href="/dashboard">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-[11px] font-bold gap-1 text-muted-foreground hover:text-foreground"
+              >
+                <ArrowLeft className="w-3 h-3" />
+                <span>Arena</span>
+              </Button>
+            </Link>
+            <Badge
+              variant={
+                isReviewer
+                  ? 'default'
+                  : isSupport
+                  ? 'secondary'
+                  : isTournamentAdmin
+                  ? 'copper'
+                  : isFinanceAuditor
+                  ? 'outline'
+                  : isCommunityManager
+                  ? 'default'
+                  : 'copper'
+              }
+              className="text-[9px] font-mono uppercase"
+            >
+              {role.replace(/_/g, ' ')}
+            </Badge>
+          </div>
         </div>
 
         <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-0.5">

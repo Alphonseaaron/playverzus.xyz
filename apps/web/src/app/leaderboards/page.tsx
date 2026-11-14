@@ -117,7 +117,7 @@ export default function LeaderboardsPage() {
                 {selectedGame.platform}
               </Badge>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground truncate">
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
               {selectedGame.displayName} Standings
             </h1>
             <p className="text-xs sm:text-sm text-muted-foreground mt-1">

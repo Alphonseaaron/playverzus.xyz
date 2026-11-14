@@ -20,6 +20,7 @@ interface TournamentDetails {
   size: number;
   entry_fee: number;
   prize_pool: number;
+  prize_distribution?: Record<string, number>;
   status: string;
   starts_at?: string;
   game_profiles?: { display_name: string; platform: string; game_type: string };
@@ -204,12 +205,14 @@ export default function TournamentDetailPage() {
           <CardHeader className="p-0 pb-1">
             <CardDescription className="text-[10px] font-bold uppercase tracking-wider font-mono flex items-center justify-center gap-1">
               <Trophy className="w-3.5 h-3.5 text-amber-400" />
-              1st Place (50%)
+              1st Place ({Math.round((tournament.prize_distribution?.['1'] ?? 0.70) * 100)}%)
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
             <div className="text-2xl font-black font-mono text-foreground mt-1">
-              {tournament.prize_pool > 0 ? formatEUR(tournament.prize_pool * 0.5) : 'Gold Trophy'}
+              {tournament.prize_pool > 0
+                ? formatEUR(tournament.prize_pool * (tournament.prize_distribution?.['1'] ?? 0.70))
+                : 'Gold Trophy'}
             </div>
           </CardContent>
         </Card>
@@ -218,12 +221,14 @@ export default function TournamentDetailPage() {
           <CardHeader className="p-0 pb-1">
             <CardDescription className="text-[10px] font-bold uppercase tracking-wider font-mono flex items-center justify-center gap-1">
               <Medal className="w-3.5 h-3.5 text-gray-300" />
-              2nd Place (30%)
+              2nd Place ({Math.round((tournament.prize_distribution?.['2'] ?? 0.30) * 100)}%)
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
             <div className="text-2xl font-black font-mono text-foreground mt-1">
-              {tournament.prize_pool > 0 ? formatEUR(tournament.prize_pool * 0.3) : 'Silver Trophy'}
+              {tournament.prize_pool > 0
+                ? formatEUR(tournament.prize_pool * (tournament.prize_distribution?.['2'] ?? 0.30))
+                : 'Silver Trophy'}
             </div>
           </CardContent>
         </Card>

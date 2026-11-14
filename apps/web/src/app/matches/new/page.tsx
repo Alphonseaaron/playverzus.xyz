@@ -345,7 +345,7 @@ function NewMatchForm() {
                 {prizePool > 0
                   ? walletMode === 'REAL'
                     ? formatEUR(prizePool)
-                    : `${formatPoints(prizePool)} PTS`
+                    : formatPoints(prizePool)
                   : 'Free Glory'}
               </strong>
             </span>

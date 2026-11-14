@@ -198,7 +198,7 @@ export function GamerQuestHub() {
   if (isDismissed) {
     if (isAllComplete) return null;
     return (
-      <div className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-40">
+      <div className="fixed bottom-20 right-4 sm:bottom-20 sm:right-6 z-40">
         <button
           type="button"
           onClick={handleReopen}
@@ -216,7 +216,7 @@ export function GamerQuestHub() {
   }
 
   return (
-    <div className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-40 flex flex-col items-end">
+    <div className="fixed bottom-20 right-4 sm:bottom-20 sm:right-6 z-40 flex flex-col items-end">
       {/* 1. COLLAPSED PILL DOCK (Always visible when not dismissed) */}
       {!isExpanded && (
         <button

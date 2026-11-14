@@ -10,6 +10,7 @@ import {
   Menu,
   X,
   Plus,
+  ArrowLeft,
   ArrowLeftRight,
   LayoutDashboard,
   Swords,
@@ -88,6 +89,17 @@ export function TopHeader() {
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  // Auto-close mobile menu when resizing to desktop (>= 1024px)
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setMobileMenuOpen(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   // Lock background scroll when mobile top dropdown is open
@@ -187,7 +199,11 @@ export function TopHeader() {
       : 'Operations Admin';
 
   const mobileNavLinks = [
-    { href: me ? '/dashboard' : '/', label: me ? 'Dashboard' : 'Overview', icon: LayoutDashboard },
+    {
+      href: isStaff ? staffTargetHref : me ? '/dashboard' : '/',
+      label: isStaff ? 'Admin Console' : me ? 'Dashboard' : 'Overview',
+      icon: isStaff ? Shield : LayoutDashboard,
+    },
     { href: '/challenges', label: 'Play Duels', icon: Swords },
     { href: '/tournaments', label: 'Tournaments', icon: Trophy },
     { href: '/leaderboards', label: 'Ladders & Rank', icon: BarChart3 },
@@ -226,7 +242,7 @@ export function TopHeader() {
       <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border h-16 w-full">
         <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 flex items-center justify-between h-full">
           {/* Left: Clean Brand Logo */}
-          <Link href={me ? '/dashboard' : '/'} className="flex items-center group flex-shrink-0">
+          <Link href={isStaff ? staffTargetHref : me ? '/dashboard' : '/'} className="flex items-center group flex-shrink-0">
             <Image
               src="/images/logo.png"
               alt="playverzus.xyz"
@@ -257,10 +273,10 @@ export function TopHeader() {
               </>
             ) : (
               <>
-                <Link href="/dashboard">
+                <Link href={isStaff ? staffTargetHref : '/dashboard'}>
                   <Button size="sm" className="font-bold text-xs uppercase tracking-wider gap-1.5 h-9 px-4 rounded-xl">
-                    <LayoutDashboard className="w-3.5 h-3.5" />
-                    <span>Dashboard</span>
+                    {isStaff ? <Shield className="w-3.5 h-3.5" /> : <LayoutDashboard className="w-3.5 h-3.5" />}
+                    <span>{isStaff ? 'Admin Console' : 'Dashboard'}</span>
                   </Button>
                 </Link>
                 <Link
@@ -488,6 +504,22 @@ export function TopHeader() {
 
       {/* Right: Decongested Clean Wallet + Bell + Avatar */}
       <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+        {/* On Admin pages: Prominent Return to Player Arena */}
+        {pathname.startsWith('/admin') && (
+          <Link href="/dashboard">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-xs font-bold border-primary/40 hover:bg-primary/10 text-foreground shadow-sm"
+              title="Return to Player Arena & Dashboard"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 text-primary" />
+              <span className="hidden sm:inline">Return to Arena</span>
+              <span className="sm:hidden">Arena</span>
+            </Button>
+          </Link>
+        )}
+
         {/* Sleek Wallet Balance Pill */}
         <Link
           href="/cashier"
@@ -503,7 +535,7 @@ export function TopHeader() {
             <span className="text-emerald-400 font-mono font-bold text-xs">{formatUSDC(cashAmount)}</span>
           ) : (
             <span className="text-purple-300 font-mono font-bold text-xs">
-              {formatPoints(pointsAmount)} <span className="text-[10px] text-muted-foreground font-sans">PTS</span>
+              {formatPoints(pointsAmount, false)} <span className="text-[10px] text-muted-foreground font-sans">PTS</span>
             </span>
           )}
         </Link>

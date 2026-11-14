@@ -377,10 +377,10 @@ function DashboardContent() {
                     </Badge>
                   </div>
                   <div className="text-3xl font-bold font-mono text-primary">
-                    {loadingBalance ? '...' : formatPoints(points)} <span className="text-xs text-muted-foreground font-sans">PTS</span>
+                    {loadingBalance ? '...' : formatPoints(points, false)} <span className="text-xs text-muted-foreground font-sans">PTS</span>
                   </div>
                   <p className="text-[11px] text-muted-foreground font-mono">
-                    Tournaments Locked: <strong className="text-foreground">{formatPoints(lockedPoints)} PTS</strong>
+                    Tournaments Locked: <strong className="text-foreground">{formatPoints(lockedPoints)}</strong>
                   </p>
                 </div>
 
