@@ -6,3 +6,5 @@ export * from './OCRClient';
 export * from './OCRServer';
 export * from './VotingOCR';
 export * from './TelemetrySigner';
+export * from './DigitTemplateMatcher';
+export * from './DualConsensusOracle';

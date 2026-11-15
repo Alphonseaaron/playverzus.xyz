@@ -23,7 +23,8 @@ export class ImagePreprocessor {
   constructor(private readonly roi: ROI) {}
 
   /**
-   * Computes the exact pixel crop box based on viewport aspect ratio constraints and anchor points.
+   * Computes the exact pixel crop box based on viewport aspect ratio constraints,
+   * non-standard stretched resolutions (4:3 stretched, 16:10), and anchor points.
    */
   calculateCropBox(metaWidth: number, metaHeight: number): CropBox {
     let gameX = 0;
@@ -31,9 +32,10 @@ export class ImagePreprocessor {
     let gameW = metaWidth;
     let gameH = metaHeight;
 
+    const currentRatio = metaWidth / metaHeight;
+
     // Adjust for 16:9 pillarboxing on Ultrawide (e.g. 21:9 or 32:9)
     if (this.roi.aspectRatioConstraint === '16:9') {
-      const currentRatio = metaWidth / metaHeight;
       const targetRatio = 16 / 9;
       if (currentRatio > targetRatio) {
         // Ultrawide: game rendered in centered 16:9 box
@@ -46,11 +48,21 @@ export class ImagePreprocessor {
       }
     }
 
-    const roiW = Math.max(1, Math.round(this.roi.w * gameW));
+    // Adapt for 4:3 stretched competitive esports resolutions (e.g. 1280x960, 1024x768 in CS2/Valorant)
+    // In 4:3 stretched mode, HUD elements widen horizontally across the screen
+    const is4by3Stretched = currentRatio >= 1.25 && currentRatio <= 1.40;
+    const horizontalScaleModifier = is4by3Stretched ? 1.20 : 1.0;
+
+    const roiW = Math.max(1, Math.round(this.roi.w * gameW * horizontalScaleModifier));
     const roiH = Math.max(1, Math.round(this.roi.h * gameH));
 
     let left = Math.round(gameX + this.roi.x * gameW);
     let top = Math.round(gameY + this.roi.y * gameH);
+
+    // If 4:3 stretched and anchor is centered, offset left slightly to accommodate wider digits
+    if (is4by3Stretched && (this.roi.anchor === 'TOP_CENTER' || !this.roi.anchor)) {
+      left = Math.round(left - (roiW * 0.1));
+    }
 
     // Anchor-based alignment
     const anchor = this.roi.anchor ?? 'TOP_LEFT';
@@ -96,9 +108,10 @@ export class ImagePreprocessor {
     const mean = stats.channels[0]?.mean ?? 128;
     const dynamicThreshold = Math.max(45, Math.min(210, Math.round(mean)));
 
-    // Step 3: Noise reduction, normalization, upscaling, and dynamic binarization
+    // Step 3: Noise reduction, contrast amplification, normalization, upscaling, and dynamic binarization
     return cropped
       .median(3)
+      .linear(1.3, -15)
       .normalize()
       .sharpen({ sigma: 1 })
       .resize({ width: width * 2, kernel: 'lanczos3' })

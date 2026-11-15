@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { createServiceClient, TypedSupabaseClient } from '@playverzus/db';
 import { MatchService as CoreMatchService, generateRoomCode, type MatchFormat, type ScoreFrame } from '@playverzus/core';
 import { resolveAndEnsureGameProfileId } from '../game-profile/game-profile.service';
@@ -255,6 +255,29 @@ export class MatchService {
       source,
       gamertag: effectiveGamertag,
     });
+  }
+
+  async handleCs2Gsi(matchId: string, playerId: string, payload: any) {
+    if (!payload || typeof payload !== 'object') {
+      throw new BadRequestException('Invalid CS2 GSI payload');
+    }
+
+    // Extract CS2 team scores and map phase from native Valve GSI schema
+    const ctScore = payload.map?.team_ct?.score ?? payload.round?.team_ct_score ?? 0;
+    const tScore = payload.map?.team_t?.score ?? payload.round?.team_t_score ?? 0;
+    const isGameOver = payload.map?.phase === 'gameover' || payload.round?.phase === 'over';
+
+    const rawScoreText = `${ctScore} - ${tScore}`;
+
+    return this.submitScore(
+      matchId,
+      playerId,
+      rawScoreText,
+      1.0, // GSI provides 100% native telemetry confidence
+      Boolean(isGameOver),
+      undefined,
+      'CLIENT_OCR',
+    );
   }
 
   async settleMatch(matchId: string) {

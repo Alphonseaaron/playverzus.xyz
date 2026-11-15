@@ -99,6 +99,15 @@ export class MatchController {
     );
   }
 
+  @Post(':id/gsi')
+  async handleCs2Gsi(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+    @Body() payload: any,
+  ) {
+    return this.matchService.handleCs2Gsi(id, user.id, payload);
+  }
+
   @Post(':id/settle')
   async settle(@Param('id') id: string, @CurrentUser() user: AuthUser) {
     const match = await this.matchService.getMatch(id);

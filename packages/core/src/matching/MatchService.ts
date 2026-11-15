@@ -6,6 +6,8 @@ import { getEngine } from '../types/TypeRegistry';
 import { validateParsed } from '../ocr/Validator';
 import { analyzeScoreStream } from '../ocr/AntiCheat';
 import { computeTemporalConfidence } from '../ocr/VotingOCR';
+import { DualConsensusOracle } from '../ocr/DualConsensusOracle';
+import { matchHeadToHeadScore } from '../ocr/DigitTemplateMatcher';
 import { getWallet } from '../wallet';
 import { RatingService } from '../rating/RatingService';
 import { TournamentEngine } from './TournamentEngine';
@@ -103,10 +105,21 @@ export class MatchService {
     if (!profile) throw new NotFoundError('GameProfile', match.profileId);
 
     const engine = getEngine(profile.gameType);
-    const parsed = engine.parse(input.rawText, profile);
+    let parsed = engine.parse(input.rawText, profile);
     if (!parsed) {
-      log.info({ matchId: input.matchId, rawText: input.rawText }, 'parse failed');
-      throw new ValidationError('Could not parse score from OCR text', ['parse_failed']);
+      // Deterministic digit template matcher fallback for noisy OCR frames
+      const matched = matchHeadToHeadScore(input.rawText, profile.regexPattern);
+      if (matched && matched.isMatch) {
+        parsed = {
+          primary: matched.scoreA,
+          fields: { a: matched.scoreA, b: matched.scoreB },
+          raw: input.rawText,
+          confidence: matched.confidence,
+        };
+      } else {
+        log.info({ matchId: input.matchId, rawText: input.rawText }, 'parse failed');
+        throw new ValidationError('Could not parse score from OCR text', ['parse_failed']);
+      }
     }
 
     // If match was already settled by an earlier final/anti-cheat frame, return gracefully
@@ -255,51 +268,35 @@ export class MatchService {
       winnerId = match.playerA;
       verifiedBy = 'AI_ANTICHEAT';
       confidence = 0.99;
-    } else if (a?.parsed && b?.parsed) {
-      // Both players have parsed score frames
-      const decision = engine.compare(a.parsed, b.parsed, match.format);
-      confidence = Number(Math.max(a.confidence, b.confidence).toFixed(4));
-      if (decision.winnerId === 'A') winnerId = match.playerA;
-      else if (decision.winnerId === 'B') winnerId = match.playerB;
-      else {
-        // Conflicting claims (e.g. both claim WIN in BINARY_RESULT) -> Autonomous AI Arbiter
-        // Resolves via multi-frame temporal persistence & OCR confidence
-        const tempA = computeTemporalConfidence(
-          a.rawText,
-          a.confidence,
-          framesA.slice(0, -1).map((f) => ({ rawText: f.rawText })),
-        );
-        const tempB = computeTemporalConfidence(
-          b.rawText,
-          b.confidence,
-          framesB.slice(0, -1).map((f) => ({ rawText: f.rawText })),
-        );
-        winnerId = tempA.effectiveConfidence >= tempB.effectiveConfidence ? match.playerA : match.playerB;
-        confidence = Math.max(tempA.effectiveConfidence, tempB.effectiveConfidence, 0.85);
-        verifiedBy = 'AI_ARBITER';
-      }
-      if (a.source === 'STREAM_INGEST' || b.source === 'STREAM_INGEST') {
-        if (verifiedBy === 'AI') verifiedBy = 'AI_CONSOLE_STREAM';
-      }
-    } else if ((a?.parsed || b?.parsed) && finals.length >= 1) {
-      // Single-stream final scoreboard verification (e.g. Console Twitch/YouTube stream or 1v1 Head-to-Head HUD)
-      const single = (a?.parsed ? a : b)!;
-      const isFromA = single.playerId === match.playerA;
+    } else {
+      // 2. Evaluate via Dual-Player Consensus Oracle (Direct, Inverted, & Single-Stream Fallbacks)
+      const consensus = DualConsensusOracle.evaluate({
+        frameA: a,
+        frameB: b,
+        playerAId: match.playerA,
+        playerBId: match.playerB ?? '',
+        gameType: profile.gameType,
+        format: match.format,
+      });
 
-      if (profile.gameType === 'HEAD_TO_HEAD' && single.parsed) {
-        const decision = engine.compare(single.parsed, single.parsed, match.format);
-        if (decision.winnerId === 'A') winnerId = match.playerA;
-        else if (decision.winnerId === 'B') winnerId = match.playerB;
-        confidence = Math.max(single.confidence, 0.9);
-        verifiedBy = single.source === 'STREAM_INGEST' ? 'AI_CONSOLE_STREAM' : 'AI';
-      } else if (profile.gameType === 'BINARY_RESULT' && single.parsed) {
-        if (single.parsed.primary === 'WIN') {
-          winnerId = isFromA ? match.playerA : match.playerB;
-        } else if (single.parsed.primary === 'LOSS') {
-          winnerId = isFromA ? match.playerB : match.playerA;
-        }
-        confidence = Math.max(single.confidence, 0.9);
-        verifiedBy = single.source === 'STREAM_INGEST' ? 'AI_CONSOLE_STREAM' : 'AI';
+      if (consensus.hasConsensus && consensus.winnerId) {
+        winnerId = consensus.winnerId;
+        confidence = consensus.confidence;
+        verifiedBy =
+          consensus.method === 'DUAL_DIRECT' || consensus.method === 'DUAL_INVERTED'
+            ? 'AI_DUAL_CONSENSUS'
+            : a?.source === 'STREAM_INGEST' || b?.source === 'STREAM_INGEST'
+            ? 'AI_CONSOLE_STREAM'
+            : 'AI';
+        log.info({ matchId, method: consensus.method, reason: consensus.reason }, 'Dual consensus reached');
+      } else if (consensus.method === 'CONFLICT_REVIEW') {
+        // Discrepancy between competitors: smoothly flag for review without crashing or blocking players
+        log.warn({ matchId, reason: consensus.reason }, 'Discrepancy detected between competitors, routing to review');
+        await this.deps.client
+          .from('matches')
+          .update({ status: 'REVIEW', verified_by: 'NEEDS_REVIEW' })
+          .eq('id', matchId);
+        return { ...match, status: 'REVIEW', verifiedBy: 'NEEDS_REVIEW' };
       }
     }
 

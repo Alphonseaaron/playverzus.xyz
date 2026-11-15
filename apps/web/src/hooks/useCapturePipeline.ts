@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import Tesseract from 'tesseract.js';
 import type { GameProfile } from '@playverzus/core';
+import { normalizeScoreboardOcrText, matchHeadToHeadScore } from '@playverzus/core';
 import { apiClient } from '../lib/api';
 
 export interface CaptureState {
@@ -110,18 +111,26 @@ export function useCapturePipeline(
         let recognizedText = '';
         let recognizedConfidence = 0;
 
+        // Aspect ratio adaptation for competitive resolutions (e.g. 4:3 stretched 1280x960, ultrawide 21:9)
+        const videoRatio = v.videoWidth / Math.max(1, v.videoHeight);
+        const is4by3 = videoRatio >= 1.25 && videoRatio <= 1.40;
+        const widthMultiplier = is4by3 ? 1.20 : 1.0;
+
         for (let i = 0; i < candidateRois.length; i++) {
           const roi = candidateRois[i]!;
-          const sx = Math.max(0, Math.floor(roi.x * v.videoWidth));
-          const sy = Math.max(0, Math.floor(roi.y * v.videoHeight));
-          const sw = Math.max(10, Math.floor(roi.w * v.videoWidth));
+          const sw = Math.max(10, Math.floor(roi.w * v.videoWidth * widthMultiplier));
           const sh = Math.max(10, Math.floor(roi.h * v.videoHeight));
+          let sx = Math.max(0, Math.floor(roi.x * v.videoWidth));
+          if (is4by3 && (roi.anchor === 'TOP_CENTER' || !roi.anchor)) {
+            sx = Math.max(0, Math.floor(sx - (sw * 0.1)));
+          }
+          const sy = Math.max(0, Math.floor(roi.y * v.videoHeight));
 
           canvas.width = sw;
           canvas.height = sh;
 
-          // Apply grayscale and contrast enhancement via canvas filter
-          ctx.filter = 'grayscale(100%) contrast(160%) brightness(95%)';
+          // Apply grayscale and high-contrast enhancement via canvas filter
+          ctx.filter = 'grayscale(100%) contrast(175%) brightness(105%)';
           ctx.drawImage(v, sx, sy, sw, sh, 0, 0, sw, sh);
 
           try {
@@ -143,19 +152,28 @@ export function useCapturePipeline(
             const conf = (data.confidence ?? 0) / 100;
 
             if (rawText.length > 0) {
+              // Apply DigitTemplateMatcher cleaning if Head-to-Head
+              let cleanedText = rawText;
+              if (profile.gameType === 'HEAD_TO_HEAD') {
+                const matched = matchHeadToHeadScore(rawText, profile.regexPattern);
+                if (matched && matched.isMatch) {
+                  cleanedText = matched.rawCleaned;
+                }
+              }
+
               const matchesPattern = profile.regexPattern
-                ? new RegExp(profile.regexPattern, 'i').test(rawText)
+                ? new RegExp(profile.regexPattern, 'i').test(cleanedText)
                 : false;
               const matchesEnd = profile.endKeywords.some((kw) =>
-                rawText.toLowerCase().includes(kw.toLowerCase()),
+                cleanedText.toLowerCase().includes(kw.toLowerCase()),
               );
 
               if (matchesPattern || matchesEnd || conf > 0.65) {
-                recognizedText = rawText;
-                recognizedConfidence = conf;
+                recognizedText = cleanedText;
+                recognizedConfidence = Math.max(conf, matchesPattern ? 0.95 : 0.7);
                 break; // Found strong anchor in this zone
               } else if (!recognizedText) {
-                recognizedText = rawText;
+                recognizedText = cleanedText;
                 recognizedConfidence = conf;
               }
             }
