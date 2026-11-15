@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -18,6 +18,9 @@ import {
   Wallet,
   Globe,
   LogOut,
+  ChevronDown,
+  ChevronUp,
+  Sparkles,
 } from 'lucide-react';
 import { useGameStore } from '../lib/gameStore';
 import { apiClient } from '../lib/api';
@@ -120,6 +123,14 @@ export function GameRail() {
   }
 
   const activeCatalogGame = getGameById(activeGame?.id);
+  const [arenasExpanded, setArenasExpanded] = useState(false);
+
+  const FEATURED_ARENA_IDS = ['cs2', 'eafc', 'rl'];
+  const featuredGames = OFFICIAL_GAMES.filter((g) => FEATURED_ARENA_IDS.includes(g.id.toLowerCase()));
+  const isActiveInFeatured = FEATURED_ARENA_IDS.includes(activeCatalogGame.id.toLowerCase());
+  const remainingGames = OFFICIAL_GAMES.filter(
+    (g) => !FEATURED_ARENA_IDS.includes(g.id.toLowerCase()) && g.id.toLowerCase() !== activeCatalogGame.id.toLowerCase()
+  );
 
   const navItems = [
     { href: me ? '/dashboard' : '/', label: me ? 'Dashboard' : 'Overview', icon: LayoutDashboard, exact: true },
@@ -213,49 +224,138 @@ export function GameRail() {
 
           <Separator className="w-auto my-2" />
 
-          {/* Arenas Section: Scrolls naturally as part of the full sidebar */}
-          <div className="space-y-1.5">
+          {/* Arenas Section: Focus Wedge (Top 3 Featured Arenas + Collapsible Drawer) */}
+          <div className="space-y-2">
             <div className="flex items-center justify-between px-1 mb-1">
-              <span className="text-[10px] uppercase font-bold text-muted-foreground font-mono tracking-wider flex items-center gap-1">
-                <Flame className="w-3 h-3 text-primary" />
-                Arenas ({OFFICIAL_GAMES.length})
+              <span className="text-[10px] uppercase font-bold text-muted-foreground font-mono tracking-wider flex items-center gap-1.5">
+                <Flame className="w-3 h-3 text-primary animate-pulse" />
+                Featured Arenas
               </span>
-              <Link
-                href="/games"
-                className="text-[11px] text-primary hover:underline font-semibold"
-              >
-                All Games
-              </Link>
+              <span className="text-[10px] font-mono text-emerald-400 font-bold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                LIVE
+              </span>
             </div>
 
-            <div className="space-y-1 pb-2">
-              {OFFICIAL_GAMES.map((game) => {
+            {/* Top 3 Featured Games */}
+            <div className="space-y-1">
+              {featuredGames.map((game) => {
                 const isSelected = activeCatalogGame.id.toLowerCase() === game.id.toLowerCase();
+                const activityCount = game.id === 'cs2' ? '14 Duels' : game.id === 'eafc' ? '8 Duels' : '6 Duels';
+
                 return (
                   <button
                     key={game.id}
                     type="button"
                     onClick={() => setActiveGame(game)}
-                    className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition border text-left w-full ${
+                    className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition border text-left w-full group ${
                       isSelected
                         ? 'bg-secondary border-primary/40 text-foreground font-semibold shadow-sm'
                         : 'bg-transparent hover:bg-muted/70 border-transparent text-muted-foreground hover:text-foreground'
                     }`}
                   >
-                    <div className="flex items-center gap-2 truncate">
+                    <div className="flex items-center gap-2 truncate min-w-0">
                       <GamePoster
                         game={game}
                         aspect="mini"
                         className="w-4 h-5 rounded flex-shrink-0"
                       />
-                      <span className="truncate text-xs">{game.displayName}</span>
+                      <span className="truncate text-xs group-hover:text-foreground">{game.displayName}</span>
                     </div>
-                    {isSelected && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0 ml-1" />
-                    )}
+                    <div className="flex items-center gap-1.5 flex-shrink-0 ml-1">
+                      <span className="text-[9px] font-mono text-muted-foreground group-hover:text-emerald-400">
+                        {activityCount}
+                      </span>
+                      {isSelected ? (
+                        <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
+                      ) : (
+                        <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/30 flex-shrink-0" />
+                      )}
+                    </div>
                   </button>
                 );
               })}
+
+              {/* If active arena is outside the top 3, show it here as active */}
+              {!isActiveInFeatured && (
+                <button
+                  type="button"
+                  onClick={() => setActiveGame(activeCatalogGame)}
+                  className="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition border text-left w-full bg-secondary border-primary/40 text-foreground font-semibold shadow-sm"
+                >
+                  <div className="flex items-center gap-2 truncate min-w-0">
+                    <GamePoster
+                      game={activeCatalogGame}
+                      aspect="mini"
+                      className="w-4 h-5 rounded flex-shrink-0"
+                    />
+                    <span className="truncate text-xs">{activeCatalogGame.displayName}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-shrink-0 ml-1">
+                    <span className="text-[9px] font-mono text-primary font-bold">SELECTED</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
+                  </div>
+                </button>
+              )}
+            </div>
+
+            {/* Expand / Collapse All 21 Arenas Toggle */}
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={() => setArenasExpanded(!arenasExpanded)}
+                className="flex items-center justify-between w-full px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-muted-foreground hover:text-foreground bg-muted/40 hover:bg-muted/80 border border-border/50 transition group"
+              >
+                <span className="flex items-center gap-1.5">
+                  <Gamepad2 className="w-3.5 h-3.5 text-primary" />
+                  {arenasExpanded ? 'Collapse Arenas' : `Browse All ${OFFICIAL_GAMES.length} Arenas`}
+                </span>
+                {arenasExpanded ? (
+                  <ChevronUp className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground transition-transform" />
+                ) : (
+                  <ChevronDown className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground transition-transform" />
+                )}
+              </button>
+
+              {arenasExpanded && (
+                <div className="mt-1.5 space-y-1 pl-1 border-l-2 border-border/60 ml-2 animate-in fade-in duration-200">
+                  {remainingGames.map((game) => {
+                    const isSelected = activeCatalogGame.id.toLowerCase() === game.id.toLowerCase();
+                    return (
+                      <button
+                        key={game.id}
+                        type="button"
+                        onClick={() => setActiveGame(game)}
+                        className={`flex items-center justify-between px-2 py-1 rounded-md text-[11px] transition text-left w-full ${
+                          isSelected
+                            ? 'bg-secondary text-foreground font-semibold'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5 truncate">
+                          <GamePoster
+                            game={game}
+                            aspect="mini"
+                            className="w-3.5 h-4 rounded flex-shrink-0"
+                          />
+                          <span className="truncate">{game.displayName}</span>
+                        </div>
+                        {isSelected && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0 ml-1" />
+                        )}
+                      </button>
+                    );
+                  })}
+                  <div className="pt-1.5">
+                    <Link
+                      href="/games"
+                      className="text-[11px] text-primary hover:underline font-semibold flex items-center gap-1 px-2 py-0.5"
+                    >
+                      <span>Explore Full Games Catalog →</span>
+                    </Link>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -97,7 +97,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <GameRail />
       <div className="flex-1 flex flex-col min-w-0 bg-background overflow-x-hidden">
         <TopHeader />
-        <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pb-32 pb-safe min-w-0">
+        <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pb-20 sm:pb-24 pb-safe min-w-0">
           {children}
         </main>
       </div>

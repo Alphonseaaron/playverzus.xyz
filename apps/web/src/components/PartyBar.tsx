@@ -52,7 +52,21 @@ export function PartyBar() {
 
   const [chatInput, setChatInput] = useState('');
   const [copied, setCopied] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('playverzus_partydock_minimized');
+      if (saved !== null) return saved === 'true';
+    }
+    // Default minimized for solo players to keep the viewport clean and focused
+    return true;
+  });
+
+  const handleSetMinimized = (val: boolean) => {
+    setIsMinimized(val);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('playverzus_partydock_minimized', val.toString());
+    }
+  };
 
   // Sync real profile into party member state
   useEffect(() => {
@@ -174,7 +188,7 @@ export function PartyBar() {
         <div className="fixed bottom-4 right-4 z-40">
           <Button
             variant="secondary"
-            onClick={() => setIsMinimized(false)}
+            onClick={() => handleSetMinimized(false)}
             className="flex items-center gap-2.5 px-4 py-2 rounded-full shadow-2xl border border-border hover:border-primary/50 text-xs font-bold"
           >
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -300,7 +314,7 @@ export function PartyBar() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setIsMinimized(true)}
+              onClick={() => handleSetMinimized(true)}
               className="w-8 h-8 text-muted-foreground hover:text-foreground"
               title="Minimize squad dock"
             >

@@ -20,6 +20,9 @@ import {
   Sparkles,
   TrendingUp,
   Gamepad2,
+  Zap,
+  Flame,
+  Users,
 } from 'lucide-react';
 import { EloBadge } from '../../components/EloBadge';
 import { CountryFlag, resolveCountryInfo } from '../../components/CountryFlag';
@@ -94,9 +97,10 @@ function DashboardContent() {
   const searchParams = useSearchParams();
   const viewParam = searchParams.get('view');
   const queryClient = useQueryClient();
-  const { activeGame } = useGameStore();
+  const { activeGame, setActiveGame } = useGameStore();
   const [faucetLoading, setFaucetLoading] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [selectedStake, setSelectedStake] = useState<number>(5);
 
   // Note: Uninvited auto-popup modal disabled in favor of non-intrusive GamerQuestHub drawer
   // Users can still launch the full onboarding wizard intentionally via checklist or settings button
@@ -129,6 +133,34 @@ function DashboardContent() {
     queryKey: ['wallet-history'],
     queryFn: () => apiClient<TransactionItem[]>('/wallet/history?limit=10'),
     staleTime: 15000,
+  });
+
+  // 5. Live 5-Player Blitz Sit & Go Pools
+  const { data: blitzPools } = useQuery<any[]>({
+    queryKey: ['dashboard-blitz-pools'],
+    queryFn: async () => {
+      try {
+        const res = await apiClient<any[]>('/tournaments/blitz-pools');
+        return res || [];
+      } catch {
+        return [];
+      }
+    },
+    refetchInterval: 10000,
+  });
+
+  // 6. Open Challenges in Arena
+  const { data: openChallenges } = useQuery<any[]>({
+    queryKey: ['dashboard-open-challenges'],
+    queryFn: async () => {
+      try {
+        const res = await apiClient<any[]>('/matches/open');
+        return res || [];
+      } catch {
+        return [];
+      }
+    },
+    refetchInterval: 15000,
   });
 
   const cashEur = balanceData?.cashEur ?? 0.0;
@@ -202,6 +234,29 @@ function DashboardContent() {
     router.push('/cashier?tab=withdraw');
   };
 
+  const STAKE_OPTIONS = [
+    { label: '0 PTS', value: 0, isCash: false },
+    { label: '$2.50', value: 2.5, isCash: true },
+    { label: '$5.00', value: 5, isCash: true },
+    { label: '$10.00', value: 10, isCash: true },
+    { label: '$25.00', value: 25, isCash: true },
+  ];
+
+  const QUICK_ARENAS = [
+    { id: 'cs2', label: 'Counter-Strike 2', icon: '🎯' },
+    { id: 'eafc', label: 'EA FC 27', icon: '⚽' },
+    { id: 'rl', label: 'Rocket League', icon: '🚗' },
+    { id: 'apex', label: 'Apex Legends', icon: '🔥' },
+  ];
+
+  const activeBlitzPool =
+    blitzPools?.find((p: any) => p.profile_id === catalogGame.id || p.game_profiles?.id === catalogGame.id) ||
+    blitzPools?.[0];
+  const blitzEntrants = activeBlitzPool?.enrolled_count ?? 0;
+  const blitzFee = activeBlitzPool?.entry_fee ?? 10;
+  const blitzFirstPlace = Math.round(blitzFee * 5 * 0.7);
+  const blitzSecondPlace = Math.round(blitzFee * 5 * 0.2);
+
   if (isStaff && viewParam !== 'player') {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] py-20 px-4 text-center">
@@ -228,179 +283,339 @@ function DashboardContent() {
         }}
       />
 
-      {/* 2. Onboarding Milestone Progress Card */}
-      <OnboardingChecklistCard
-        onOpenTour={() => setOnboardingOpen(true)}
-        matchesCount={totalMatches}
-        balancePoints={points}
-      />
-
-      {/* 3. MASTER INTRO CARD: Identity + Integrated Competitive Ledger */}
-      <Card className="relative overflow-hidden border border-border bg-card shadow-xl">
-        <div className="h-44 sm:h-52 bg-zinc-950 border-b border-border w-full relative overflow-hidden">
+      {/* 2. THE PLAY-FIRST ARCADE HERO CENTERPIECE */}
+      <section className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
+        {/* Arena Banner Backdrop */}
+        <div className="relative h-28 sm:h-36 bg-zinc-950 border-b border-border w-full overflow-hidden">
           {catalogGame.bannerUrl && (
             <div
-              className="absolute inset-0 bg-cover bg-center opacity-25"
+              className="absolute inset-0 bg-cover bg-center opacity-30"
               style={{ backgroundImage: `url(${catalogGame.bannerUrl})` }}
             />
           )}
-          <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
-            <Badge variant="copper" className="font-mono text-[10px]">
-              OFFICIAL ARENA: {catalogGame.shortName}
-            </Badge>
+          <div className="absolute inset-0 bg-gradient-to-t from-card via-card/60 to-transparent" />
+
+          {/* Quick 1-Click Arena Switcher Bar */}
+          <div className="absolute top-3 left-3 sm:left-6 right-3 sm:right-6 flex items-center justify-between gap-2 z-10 flex-wrap">
+            <div className="flex items-center gap-1.5 bg-background/80 backdrop-blur-md border border-border/80 px-2.5 py-1 rounded-xl shadow-sm">
+              <span className="text-[10px] uppercase font-bold text-muted-foreground font-mono">
+                Active Arena:
+              </span>
+              <span className="text-xs font-bold text-foreground">
+                {catalogGame.displayName}
+              </span>
+              <Badge variant="copper" className="text-[9px] px-1 py-0 ml-1">
+                {catalogGame.platform}
+              </Badge>
+            </div>
+
+            <div className="hidden sm:flex items-center gap-1 bg-background/80 backdrop-blur-md border border-border/80 p-1 rounded-xl shadow-sm">
+              {QUICK_ARENAS.map((qa) => {
+                const isCurrent = catalogGame.id.toLowerCase() === qa.id.toLowerCase();
+                const matchedGame = OFFICIAL_GAMES.find((g) => g.id.toLowerCase() === qa.id.toLowerCase());
+                return (
+                  <button
+                    key={qa.id}
+                    type="button"
+                    onClick={() => matchedGame && setActiveGame(matchedGame)}
+                    className={`px-2.5 py-0.5 rounded-lg text-[11px] font-bold transition flex items-center gap-1 ${
+                      isCurrent
+                        ? 'bg-primary text-primary-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/70'
+                    }`}
+                  >
+                    <span>{qa.icon}</span>
+                    <span>{qa.label}</span>
+                  </button>
+                );
+              })}
+              <Link
+                href="/games"
+                className="px-2 py-0.5 rounded-lg text-[11px] font-semibold text-primary hover:underline"
+              >
+                + All (21)
+              </Link>
+            </div>
           </div>
         </div>
 
-        <div className="px-6 sm:px-8 pb-8 relative z-10 space-y-6">
-          {/* Identity Header Row */}
-          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 -mt-16 sm:-mt-20">
-            {/* Player Avatar & Handle */}
-            <div className="flex flex-col sm:flex-row sm:items-end gap-5 min-w-0">
-              <div className="relative flex-shrink-0">
-                <Avatar className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl border-4 border-card bg-primary text-primary-foreground text-3xl font-extrabold shadow-2xl">
-                  <AvatarFallback className="rounded-2xl bg-zinc-900 text-primary border border-zinc-800">
-                    {username.slice(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="absolute -bottom-2 -right-2">
-                  <EloBadge elo={elo} size="md" />
-                </div>
-              </div>
-
-              <div className="space-y-1.5 min-w-0 pb-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Badge variant="copper">VERIFIED COMPETITOR</Badge>
-                  <Badge variant="secondary" className="font-mono text-[10px]">
-                    LEVEL {Math.min(10, Math.max(1, Math.floor(elo / 150)))} ELO
+        {/* The 2 Primary Action Cards */}
+        <div className="p-4 sm:p-6 space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            {/* Action Card 1: ⚡ Quick 1v1 Duel */}
+            <div className="relative overflow-hidden rounded-2xl border-2 border-primary/40 bg-gradient-to-br from-card via-card to-primary/5 shadow-lg hover:border-primary/70 transition-all p-5 flex flex-col justify-between space-y-5 group">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <Badge variant="default" className="text-[10px] font-mono uppercase tracking-wider font-bold gap-1 px-2 py-0.5 shadow-sm">
+                    <Zap className="w-3 h-3 text-amber-300" />
+                    <span>Quick 1v1 Duel</span>
                   </Badge>
-                  <Badge variant="outline" className="font-mono text-[10px] flex items-center gap-1.5">
-                    <CountryFlag code={countryInfo.code} size="xs" />
-                    <span>{countryInfo.name} ({countryInfo.code}) · ZERO DISPUTES</span>
-                  </Badge>
-                </div>
-
-                <div className="flex items-center gap-2.5 flex-wrap">
-                  <CountryFlag code={countryInfo.code} size="lg" />
-                  <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight truncate">
-                    @{username}
-                  </h1>
-                  <span className="font-mono text-sm text-primary font-bold">
-                    {elo} ELO
+                  <span className="text-[10px] font-mono text-emerald-400 font-bold flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                    Instant Adjudication
                   </span>
                 </div>
-              </div>
-            </div>
 
-            {/* Quick Match Launchers */}
-            <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap flex-shrink-0">
-              <Link href={`/matches/new?profileId=${catalogGame.id}`}>
-                <Button variant="default" size="default" className="font-bold text-xs gap-1.5 shadow-sm">
-                  <Swords className="w-4 h-4" />
-                  <span>Host 1v1 Duel</span>
-                </Button>
-              </Link>
-              <Link href="/challenges">
-                <Button variant="secondary" size="default" className="font-bold text-xs gap-1.5">
-                  <span>Find Duels</span>
-                </Button>
-              </Link>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* COMPETITIVE LEDGER (Full Width, Part of Intro Card) */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-                <h3 className="text-xs uppercase font-bold tracking-wider text-muted-foreground font-mono">
-                  Competitive Ledger & Wallet Escrow
-                </h3>
-              </div>
-              <span className="text-[11px] text-muted-foreground font-mono">
-                Standardized in $ USDC · Zero exchange-rate slippage
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Real Cash Box */}
-              <div className="p-5 rounded-xl bg-muted/40 border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="space-y-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-muted-foreground uppercase font-mono">
-                      Cash Balance
-                    </span>
-                    <Badge variant="success" className="text-[9px] font-mono">
-                      REAL MONEY
-                    </Badge>
-                  </div>
-                  <div className="text-3xl font-bold font-mono text-emerald-400">
-                    {loadingBalance ? '...' : formatEUR(cashEur)}
-                  </div>
-                  <p className="text-[11px] text-muted-foreground font-mono">
-                    Escrow Locked in Active Duels: <strong className="text-foreground">{formatEUR(lockedCashEur)}</strong>
+                <div>
+                  <h2 className="text-xl sm:text-2xl font-black text-foreground tracking-tight flex items-center gap-2">
+                    <span>Host or Find 1v1 Match</span>
+                  </h2>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Direct head-to-head match in {catalogGame.displayName}. Automated optical score verification.
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2 flex-shrink-0">
+                {/* Fast Stake Selector Pills */}
+                <div className="space-y-1.5 pt-1">
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground font-mono tracking-wider">
+                    Select Duel Stake:
+                  </span>
+                  <div className="grid grid-cols-5 gap-1.5">
+                    {STAKE_OPTIONS.map((opt) => {
+                      const isSelected = selectedStake === opt.value;
+                      return (
+                        <button
+                          key={opt.label}
+                          type="button"
+                          onClick={() => setSelectedStake(opt.value)}
+                          className={`py-2 px-1 rounded-xl text-xs font-bold font-mono transition-all border text-center flex flex-col items-center justify-center ${
+                            isSelected
+                              ? 'bg-primary text-primary-foreground border-primary shadow-md scale-[1.02]'
+                              : 'bg-muted/50 hover:bg-muted border-border text-foreground'
+                          }`}
+                        >
+                          <span className="leading-none">{opt.label}</span>
+                          <span className={`text-[9px] mt-0.5 leading-none ${isSelected ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>
+                            {opt.isCash ? 'USDC' : 'FREE'}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Button & Sublink */}
+              <div className="space-y-2 pt-2">
+                <Link
+                  href={`/matches/new?profileId=${catalogGame.id}&entryFee=${selectedStake}`}
+                  className="w-full block"
+                >
+                  <Button
+                    variant="default"
+                    size="lg"
+                    className="w-full font-black text-sm h-11 gap-2 shadow-lg shadow-primary/20 hover:scale-[1.01] transition-transform"
+                  >
+                    <Swords className="w-4 h-4" />
+                    <span>
+                      {selectedStake === 0
+                        ? 'Find Opponent (Free Glory)'
+                        : `Find Opponent ($${selectedStake.toFixed(2)} USDC)`}
+                    </span>
+                  </Button>
+                </Link>
+
+                <div className="flex items-center justify-between text-[11px] text-muted-foreground px-1">
+                  <span>Zero exchange rate fees · Instant settlement</span>
+                  <Link
+                    href="/challenges"
+                    className="text-primary hover:underline font-semibold flex items-center gap-1"
+                  >
+                    <span>Browse Open Duels ({openChallenges?.length ?? 0})</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Card 2: 🏆 5-Player Blitz Cup */}
+            <div className="relative overflow-hidden rounded-2xl border-2 border-amber-500/30 bg-gradient-to-br from-card via-card to-amber-500/5 shadow-lg hover:border-amber-500/60 transition-all p-5 flex flex-col justify-between space-y-5 group">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <Badge variant="copper" className="text-[10px] font-mono uppercase tracking-wider font-bold gap-1 px-2 py-0.5 shadow-sm">
+                    <Trophy className="w-3 h-3 text-amber-400" />
+                    <span>5-Player Sit & Go</span>
+                  </Badge>
+                  <span className="text-[10px] font-mono text-amber-400 font-bold flex items-center gap-1">
+                    <Flame className="w-3 h-3 text-amber-400 animate-pulse" />
+                    Continuous Pools
+                  </span>
+                </div>
+
+                <div>
+                  <h2 className="text-xl sm:text-2xl font-black text-foreground tracking-tight flex items-center gap-2">
+                    <span>5-Player Blitz Cup</span>
+                  </h2>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Mini tournament in {catalogGame.displayName}. Automatically begins when 5 competitors register!
+                  </p>
+                </div>
+
+                {/* Queue Status & Entrants Dots */}
+                <div className="space-y-2 p-3 rounded-xl bg-muted/40 border border-border">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-mono text-muted-foreground font-semibold">
+                      Live Queue Status:
+                    </span>
+                    <span className="font-mono font-bold text-foreground">
+                      {blitzEntrants}/5 Competitors Ready
+                    </span>
+                  </div>
+
+                  {/* 5 Dots Indicator */}
+                  <div className="flex items-center gap-2">
+                    {[0, 1, 2, 3, 4].map((idx) => {
+                      const isFilled = idx < blitzEntrants;
+                      return (
+                        <div
+                          key={idx}
+                          className={`flex-1 h-2 rounded-full transition-all ${
+                            isFilled
+                              ? 'bg-emerald-400 shadow-sm shadow-emerald-500/50'
+                              : 'bg-muted border border-border'
+                          }`}
+                        />
+                      );
+                    })}
+                  </div>
+
+                  {/* Payout Structure */}
+                  <div className="flex items-center justify-between text-[11px] pt-1 border-t border-border/50 text-muted-foreground font-mono">
+                    <span>Entry: <strong className="text-foreground">${blitzFee} USDC</strong></span>
+                    <span>1st: <strong className="text-emerald-400">${blitzFirstPlace}</strong> · 2nd: <strong className="text-foreground">${blitzSecondPlace}</strong></span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Button & Sublink */}
+              <div className="space-y-2 pt-2">
+                <Link
+                  href={activeBlitzPool ? `/tournaments/${activeBlitzPool.id}` : '/tournaments'}
+                  className="w-full block"
+                >
+                  <Button
+                    variant="secondary"
+                    size="lg"
+                    className="w-full font-black text-sm h-11 gap-2 border border-amber-500/40 hover:bg-amber-500/10 hover:border-amber-500 text-foreground shadow-sm hover:scale-[1.01] transition-transform"
+                  >
+                    <Trophy className="w-4 h-4 text-amber-400" />
+                    <span>Enter Blitz Cup (${blitzFee} USDC)</span>
+                  </Button>
+                </Link>
+
+                <div className="flex items-center justify-between text-[11px] text-muted-foreground px-1">
+                  <span>90% Prize Pool Payout (70/20)</span>
+                  <Link
+                    href="/tournaments"
+                    className="text-primary hover:underline font-semibold flex items-center gap-1"
+                  >
+                    <span>View All Tournaments</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Integrated Compact Player & Wallet Escrow Strip */}
+          <div className="p-4 rounded-xl bg-muted/30 border border-border flex flex-col md:flex-row md:items-center justify-between gap-4">
+            {/* Player Identity */}
+            <div className="flex items-center gap-3.5 min-w-0">
+              <div className="relative flex-shrink-0">
+                <Avatar className="w-12 h-12 rounded-xl border-2 border-card bg-primary text-primary-foreground text-lg font-black shadow-md">
+                  <AvatarFallback className="rounded-xl bg-zinc-900 text-primary border border-zinc-800">
+                    {username.slice(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="absolute -bottom-1 -right-1">
+                  <EloBadge elo={elo} size="sm" />
+                </div>
+              </div>
+
+              <div className="min-w-0 space-y-0.5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <CountryFlag code={countryInfo.code} size="xs" />
+                  <span className="font-bold text-sm text-foreground truncate">@{username}</span>
+                  <Badge variant="copper" className="text-[9px] px-1.5 py-0 font-mono">
+                    VERIFIED
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
+                  <span className="text-primary font-bold">{elo} ELO</span>
+                  <span>·</span>
+                  <span>Level {Math.min(10, Math.max(1, Math.floor(elo / 150)))}</span>
+                  <span>·</span>
+                  <span className="text-emerald-400 font-semibold">{winRate}% Win Rate</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Fast Cashier & Points Strip */}
+            <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap flex-shrink-0">
+              {/* Cash Box */}
+              <div className="flex items-center gap-3 px-3.5 py-2 rounded-xl bg-card border border-border shadow-sm">
+                <div className="space-y-0.5">
+                  <div className="text-[10px] uppercase font-bold text-muted-foreground font-mono flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    Cash
+                  </div>
+                  <div className="text-base font-bold font-mono text-emerald-400">
+                    {loadingBalance ? '...' : formatEUR(cashEur)}
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 pl-2 border-l border-border">
                   <Button
                     variant="default"
                     size="sm"
                     onClick={openDeposit}
-                    className="font-bold text-xs gap-1 h-8 shadow-sm"
+                    className="h-7 text-xs px-2.5 font-bold shadow-sm"
                   >
-                    <ArrowDownLeft className="w-3.5 h-3.5" />
-                    <span>Deposit</span>
+                    <ArrowDownLeft className="w-3 h-3 mr-1" />
+                    Deposit
                   </Button>
                   <Button
                     variant="secondary"
                     size="sm"
                     onClick={openWithdraw}
-                    className="font-bold text-xs gap-1 h-8"
+                    className="h-7 text-xs px-2.5 font-bold"
                   >
-                    <ArrowUpRight className="w-3.5 h-3.5" />
-                    <span>Withdraw</span>
+                    Withdraw
                   </Button>
                 </div>
               </div>
 
-              {/* Free Demo Points Box */}
-              <div className="p-5 rounded-xl bg-muted/40 border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="space-y-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-muted-foreground uppercase font-mono">
-                      Demo Play Points
-                    </span>
-                    <Badge variant="copper" className="text-[9px] font-mono">
-                      FREE PLAY
-                    </Badge>
+              {/* Points Box */}
+              <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-card border border-border shadow-sm">
+                <div className="space-y-0.5">
+                  <div className="text-[10px] uppercase font-bold text-muted-foreground font-mono">
+                    Practice
                   </div>
-                  <div className="text-3xl font-bold font-mono text-primary">
-                    {loadingBalance ? '...' : formatPoints(points, false)} <span className="text-xs text-muted-foreground font-sans">PTS</span>
+                  <div className="text-base font-bold font-mono text-primary">
+                    {loadingBalance ? '...' : formatPoints(points, false)} <span className="text-[10px] text-muted-foreground font-sans">PTS</span>
                   </div>
-                  <p className="text-[11px] text-muted-foreground font-mono">
-                    Tournaments Locked: <strong className="text-foreground">{formatPoints(lockedPoints)}</strong>
-                  </p>
                 </div>
-
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={faucetLoading}
-                    onClick={handleClaimFaucet}
-                    className="font-bold text-xs gap-1.5 h-8"
-                  >
-                    <Gift className="w-3.5 h-3.5 text-primary" />
-                    <span>{faucetLoading ? 'Claiming...' : '+1,000 PTS'}</span>
-                  </Button>
-                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={faucetLoading}
+                  onClick={handleClaimFaucet}
+                  className="h-7 text-xs px-2.5 font-bold gap-1 ml-1"
+                >
+                  <Gift className="w-3 h-3 text-primary" />
+                  <span>{faucetLoading ? '...' : '+1,000'}</span>
+                </Button>
               </div>
             </div>
           </div>
         </div>
-      </Card>
+      </section>
+
+      {/* 3. Onboarding Milestone Progress Card (Collapsible) */}
+      <OnboardingChecklistCard
+        onOpenTour={() => setOnboardingOpen(true)}
+        matchesCount={totalMatches}
+        balancePoints={points}
+      />
 
       {/* 2. BODY CONTENT: Clean Full-Width Shadcn Tabs */}
       <Tabs defaultValue="matches" className="space-y-6">
