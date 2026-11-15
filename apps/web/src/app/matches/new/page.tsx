@@ -202,6 +202,24 @@ function NewMatchForm() {
             })}
           </select>
 
+          {/* EA Sports FC 27 Verified Presets Highlight */}
+          {profileId === 'ea-sports-fc-27' && (
+            <div className="mt-2.5 p-3 rounded-xl bg-primary/10 border border-primary/20 space-y-1.5 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-foreground flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-primary" />
+                  Verified FC 27 Match Presets
+                </span>
+                <Badge variant="copper" className="text-[9px] py-0 font-mono">OPTICAL OCR LOCKED</Badge>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px] text-muted-foreground font-mono pt-1">
+                <div>⏱️ Half Length: <strong className="text-foreground">6 Mins</strong></div>
+                <div>🛡️ Defending: <strong className="text-foreground">Tactical</strong></div>
+                <div>⚖️ Squad Type: <strong className="text-foreground">90 OVR / Any</strong></div>
+              </div>
+            </div>
+          )}
+
           {/* Preset Condition Check: Linked In-Game Gamertag */}
           <div className="mt-2.5">
             {hasLinkedTag ? (

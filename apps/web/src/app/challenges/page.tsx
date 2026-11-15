@@ -5,7 +5,7 @@ import { AuthGuard } from '../../components/AuthGuard';
 import { useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { Swords, Plus, Filter, Globe, Coins, ShieldCheck } from 'lucide-react';
+import { Swords, Plus, Filter, Globe, Coins, ShieldCheck, PlaySquare } from 'lucide-react';
 import { ChallengeCard } from '../../components/ChallengeCard';
 import { apiClient } from '../../lib/api';
 import { useGameStore } from '../../lib/gameStore';
@@ -148,21 +148,29 @@ function ChallengesContent() {
           </div>
         </div>
 
-        <Link
-          href={activeGame ? `/matches/new?profileId=${activeGame.id}` : '/matches/new'}
-          onClick={(e) => {
-            if (!userProfile) {
-              e.preventDefault();
-              router.push('/login?redirect=/matches/new');
-            }
-          }}
-          className="flex-shrink-0"
-        >
-          <Button variant="default" size="default" className="w-full sm:w-auto gap-2 font-bold shadow-sm">
-            <Plus className="w-4 h-4" />
-            <span>Create Duel</span>
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap flex-shrink-0">
+          <Link href="/support">
+            <Button variant="secondary" size="default" className="w-full sm:w-auto gap-2 font-bold border border-primary/30 hover:border-primary">
+              <PlaySquare className="w-4 h-4 text-primary" />
+              <span>Watch Video Tutorials & FAQs</span>
+            </Button>
+          </Link>
+          <Link
+            href={activeGame ? `/matches/new?profileId=${activeGame.id}` : '/matches/new'}
+            onClick={(e) => {
+              if (!userProfile) {
+                e.preventDefault();
+                router.push('/login?redirect=/matches/new');
+              }
+            }}
+            className="w-full sm:w-auto"
+          >
+            <Button variant="default" size="default" className="w-full sm:w-auto gap-2 font-bold shadow-sm">
+              <Plus className="w-4 h-4" />
+              <span>Create Duel</span>
+            </Button>
+          </Link>
+        </div>
       </Card>
 
       {/* Active Game Arena Context Bar */}
