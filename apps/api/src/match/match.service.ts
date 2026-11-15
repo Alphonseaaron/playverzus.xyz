@@ -4,6 +4,7 @@ import { MatchService as CoreMatchService, generateRoomCode, type MatchFormat, t
 import { resolveAndEnsureGameProfileId } from '../game-profile/game-profile.service';
 import { globalGameAccountsCache, resolveGamertagForProfile } from '../profile/profile.service';
 import { RedisService } from '../redis/redis.service';
+import { SecurityService } from '../security/security.service';
 
 @Injectable()
 export class MatchService {
@@ -12,7 +13,10 @@ export class MatchService {
   private readyMap = new Map<string, { readyA: boolean; readyB: boolean }>();
   private readonly redis: RedisService;
 
-  constructor(@Optional() redis?: RedisService) {
+  constructor(
+    @Optional() redis?: RedisService,
+    @Optional() private readonly securityService?: SecurityService,
+  ) {
     this.redis =
       redis ??
       ({
@@ -292,9 +296,26 @@ export class MatchService {
   }
 
   async settleMatch(matchId: string) {
-    return this.redis.withLock(`settle:${matchId}`, 15_000, async () => {
-      return this.coreMatchService.settle(matchId);
-    });
+    if (this.securityService?.isSettlementHalted()) {
+      throw new BadRequestException('Match settlements are temporarily halted by Security Operations');
+    }
+
+    try {
+      return await this.redis.withLock(`settle:${matchId}`, 15_000, async () => {
+        return this.coreMatchService.settle(matchId);
+      });
+    } catch (err: any) {
+      if (err.message && err.message.includes('financial transaction is currently in progress')) {
+        this.securityService?.logEvent({
+          severity: 'CRITICAL',
+          category: 'SETTLEMENT_LOCK',
+          matchId,
+          description: `Concurrent duplicate settlement race condition prevented by distributed lock on match #${matchId}. Payout executed exactly once.`,
+          metadata: { lockKey: `settle:${matchId}` },
+        });
+      }
+      throw err;
+    }
   }
 
   async disputeMatch(matchId: string, userId: string, reason: string) {

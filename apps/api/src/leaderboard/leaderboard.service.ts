@@ -6,6 +6,7 @@ import { Leaderboard as CoreLeaderboard, type GameType } from '@playverzus/core'
 export class LeaderboardService {
   private supabase: TypedSupabaseClient;
   private coreLeaderboard: CoreLeaderboard;
+  private readonly topCache = new Map<string, { data: any[]; expiresAt: number }>();
 
   constructor() {
     const url = process.env.SUPABASE_URL || 'https://placeholder.supabase.co';
@@ -15,6 +16,12 @@ export class LeaderboardService {
   }
 
   async getTop(gameType: GameType, limit = 50) {
+    const cacheKey = `${gameType}:${limit}`;
+    const cached = this.topCache.get(cacheKey);
+    if (cached && Date.now() < cached.expiresAt) {
+      return cached.data;
+    }
+
     const records = await this.coreLeaderboard.getTop(gameType, limit);
     if (!records || records.length === 0) return [];
 
@@ -36,7 +43,7 @@ export class LeaderboardService {
       ]),
     );
 
-    return records.map((r) => {
+    const result = records.map((r) => {
       const prof = profileMap.get(r.userId);
       return {
         ...r,
@@ -44,6 +51,9 @@ export class LeaderboardService {
         countryCode: prof?.countryCode,
       };
     });
+
+    this.topCache.set(cacheKey, { data: result, expiresAt: Date.now() + 30_000 }); // 30s TTL
+    return result;
   }
 
   async getRank(userId: string, gameType: GameType) {

@@ -35,7 +35,8 @@ interface ProfileData {
     | 'SUPPORT'
     | 'TOURNAMENT_ADMIN'
     | 'FINANCE_AUDITOR'
-    | 'COMMUNITY_MANAGER';
+    | 'COMMUNITY_MANAGER'
+    | 'SECURITY_ENGINEER';
 }
 
 export default function AdminLayout({
@@ -60,14 +61,20 @@ export default function AdminLayout({
 
   const fullAdminTabs = [
     { href: '/admin', label: 'Overview', icon: BarChart3, exact: true },
+    { href: '/admin/security', label: 'Security & Anti-Cheat', icon: ShieldAlert },
     { href: '/admin/treasury', label: 'Treasury & Audit', icon: Landmark },
     { href: '/admin/support', label: 'Support Desk', icon: Headphones },
     { href: '/admin/polls', label: 'Polls & Roadmap', icon: Vote },
-    { href: '/admin/review', label: 'Review Queue', icon: ShieldAlert },
+    { href: '/admin/review', label: 'Review Queue', icon: AlertTriangle },
     { href: '/admin/profiles', label: 'Profiles', icon: Gamepad2 },
     { href: '/admin/users', label: 'Users & Staff', icon: Users },
     { href: '/admin/seasons', label: 'Seasons', icon: Trophy },
     { href: '/admin/sponsors', label: 'Sponsors', icon: Gem },
+  ];
+
+  const securityEngineerTabs = [
+    { href: '/admin/security', label: 'Security & Anti-Cheat', icon: ShieldAlert, exact: true },
+    { href: '/admin/review', label: 'Review Queue', icon: AlertTriangle, exact: false },
   ];
 
   const reviewerTabs = [
@@ -158,13 +165,15 @@ export default function AdminLayout({
   const isTournamentAdmin = role === 'TOURNAMENT_ADMIN';
   const isFinanceAuditor = role === 'FINANCE_AUDITOR';
   const isCommunityManager = role === 'COMMUNITY_MANAGER';
+  const isSecurityEngineer = role === 'SECURITY_ENGINEER';
   const isStaff =
     isAdmin ||
     isReviewer ||
     isSupport ||
     isTournamentAdmin ||
     isFinanceAuditor ||
-    isCommunityManager;
+    isCommunityManager ||
+    isSecurityEngineer;
 
   // 3. Unauthorized Player State (HTTP 403 Forbidden)
   if (!isStaff) {
@@ -388,6 +397,44 @@ export default function AdminLayout({
     );
   }
 
+  // 9. Security Engineer Scope Restriction
+  if (isSecurityEngineer && !pathname.startsWith('/admin/security') && !pathname.startsWith('/admin/review')) {
+    return (
+      <div className="max-w-md mx-auto py-16 px-4">
+        <Card className="p-8 bg-card border-destructive/40 shadow-2xl text-center space-y-6">
+          <div className="w-14 h-14 rounded-2xl bg-destructive/10 text-destructive border border-destructive/20 mx-auto flex items-center justify-center shadow-lg">
+            <ShieldAlert className="w-7 h-7" />
+          </div>
+          <div className="space-y-2">
+            <Badge variant="destructive" className="font-mono text-[10px]">
+              SECURITY OPERATIONS SCOPE
+            </Badge>
+            <h1 className="text-2xl font-black tracking-tight text-foreground">
+              Security Center & Anti-Cheat Queue Only
+            </h1>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              As a designated Security & Anti-Cheat Engineer, your credentials grant access to real-time threat monitoring, distributed settlement lock telemetry, anti-cheat adjudication, and emergency kill-switches.
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+            <Link href="/admin/security">
+              <Button variant="default" size="sm" className="font-bold text-xs gap-1.5 w-full sm:w-auto">
+                <ShieldAlert className="w-3.5 h-3.5" />
+                Security Operations Center
+              </Button>
+            </Link>
+            <Link href="/admin/review">
+              <Button variant="outline" size="sm" className="font-bold text-xs gap-1.5 w-full sm:w-auto">
+                <AlertTriangle className="w-3.5 h-3.5" />
+                Dispute Review Queue
+              </Button>
+            </Link>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   const activeMobileTabs = isReviewer
     ? reviewerTabs
     : isSupport
@@ -398,6 +445,8 @@ export default function AdminLayout({
     ? financeAuditorTabs
     : isCommunityManager
     ? communityManagerTabs
+    : isSecurityEngineer
+    ? securityEngineerTabs
     : fullAdminTabs;
 
   return (
@@ -434,6 +483,8 @@ export default function AdminLayout({
                   ? 'outline'
                   : isCommunityManager
                   ? 'default'
+                  : isSecurityEngineer
+                  ? 'destructive'
                   : 'copper'
               }
               className="text-[9px] font-mono uppercase"

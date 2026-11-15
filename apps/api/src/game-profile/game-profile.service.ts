@@ -282,6 +282,7 @@ export async function resolveAndEnsureGameProfileId(
 @Injectable()
 export class GameProfileService {
   private supabase: TypedSupabaseClient;
+  private cachedApprovedGames: { data: any[]; expiresAt: number } | null = null;
 
   constructor() {
     const url = process.env.SUPABASE_URL || 'https://placeholder.supabase.co';
@@ -304,6 +305,10 @@ export class GameProfileService {
   }
 
   async listApproved() {
+    if (this.cachedApprovedGames && Date.now() < this.cachedApprovedGames.expiresAt) {
+      return this.cachedApprovedGames.data;
+    }
+
     const { data, error } = await this.supabase
       .from('game_profiles')
       .select('*')
@@ -311,7 +316,9 @@ export class GameProfileService {
       .order('play_count', { ascending: false });
 
     if (error) throw new Error(error.message);
-    return (data || []).map((p) => this.mapProfile(p));
+    const mapped = (data || []).map((p) => this.mapProfile(p));
+    this.cachedApprovedGames = { data: mapped, expiresAt: Date.now() + 300_000 };
+    return mapped;
   }
 
   async getById(id: string) {
@@ -406,6 +413,7 @@ export class GameProfileService {
   }
 
   async approveProfile(id: string, adminId: string) {
+    this.cachedApprovedGames = null;
     const { data, error } = await this.supabase
       .from('game_profiles')
       .update({ approved: true, approved_by: adminId })

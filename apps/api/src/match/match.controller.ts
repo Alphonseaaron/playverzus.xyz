@@ -8,8 +8,10 @@ import {
   UseGuards,
   BadRequestException,
   ForbiddenException,
+  Optional,
 } from '@nestjs/common';
 import { MatchService } from './match.service';
+import { SecurityService } from '../security/security.service';
 import { SupabaseAuthGuard } from '../common/guards/supabase-auth.guard';
 import { CurrentUser, type AuthUser } from '../common/decorators/current-user.decorator';
 import type { MatchFormat, ScoreFrame } from '@playverzus/core';
@@ -17,7 +19,10 @@ import type { MatchFormat, ScoreFrame } from '@playverzus/core';
 @Controller('matches')
 @UseGuards(SupabaseAuthGuard)
 export class MatchController {
-  constructor(private readonly matchService: MatchService) {}
+  constructor(
+    private readonly matchService: MatchService,
+    @Optional() private readonly securityService?: SecurityService,
+  ) {}
 
   @Get('mine')
   async getMine(@CurrentUser() user: AuthUser) {
@@ -87,11 +92,25 @@ export class MatchController {
       throw new BadRequestException('Valid OCR rawText is required');
     }
     if (body.rawText.length > 2000) {
+      this.securityService?.logEvent({
+        severity: 'MEDIUM',
+        category: 'OCR_TAMPER',
+        actorId: user.id,
+        matchId: id,
+        description: `Blocked oversized OCR rawText payload (${body.rawText.length} chars)`,
+      });
       throw new BadRequestException('OCR payload exceeds maximum allowed size (2000 characters)');
     }
 
     const match = await this.matchService.getMatch(id);
     if (match.playerA !== user.id && match.playerB !== user.id) {
+      this.securityService?.logEvent({
+        severity: 'HIGH',
+        category: 'ANTI_CHEAT',
+        actorId: user.id,
+        matchId: id,
+        description: `Unauthorized score submission: non-participant user attempted to submit score for match #${id}`,
+      });
       throw new ForbiddenException('Only verified participants in this match can submit score proofs');
     }
     if (['SETTLED', 'CANCELLED', 'VOIDED'].includes(match.status)) {
@@ -129,6 +148,14 @@ export class MatchController {
     const isValidMatchToken = payload.auth?.token && (payload.auth.token === match.room_code || payload.auth.token === match.id);
 
     if (!isParticipant && !isValidMatchToken) {
+      this.securityService?.logEvent({
+        severity: 'HIGH',
+        category: 'GSI_AUTH',
+        actorId: user.id,
+        matchId: id,
+        description: `Rejected unauthorized CS2 GSI telemetry submission: invalid token and non-participant`,
+        metadata: { tokenProvided: Boolean(payload.auth?.token) },
+      });
       throw new ForbiddenException('Unauthorized: You must be a match participant or provide a valid match GSI security token');
     }
 

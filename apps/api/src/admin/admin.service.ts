@@ -5,6 +5,7 @@ import { CrossmintService } from '../crossmint/crossmint.service';
 @Injectable()
 export class AdminService {
   private supabase: TypedSupabaseClient;
+  private cachedStats: { data: { users: number; matches: number; tournaments: number }; expiresAt: number } | null = null;
 
   constructor(@Optional() private readonly crossmintService?: CrossmintService) {
     const url = process.env.SUPABASE_URL || 'https://placeholder.supabase.co';
@@ -13,17 +14,23 @@ export class AdminService {
   }
 
   async getPlatformStats() {
+    if (this.cachedStats && Date.now() < this.cachedStats.expiresAt) {
+      return this.cachedStats.data;
+    }
+
     const [{ count: userCount }, { count: matchCount }, { count: tournamentCount }] = await Promise.all([
       this.supabase.from('profiles').select('*', { count: 'exact', head: true }),
       this.supabase.from('matches').select('*', { count: 'exact', head: true }),
       this.supabase.from('tournaments').select('*', { count: 'exact', head: true }),
     ]);
 
-    return {
+    const result = {
       users: userCount ?? 0,
       matches: matchCount ?? 0,
       tournaments: tournamentCount ?? 0,
     };
+    this.cachedStats = { data: result, expiresAt: Date.now() + 30_000 };
+    return result;
   }
 
   async listUsers(limit = 50, offset = 0) {
@@ -89,6 +96,7 @@ export class AdminService {
       'TOURNAMENT_ADMIN',
       'FINANCE_AUDITOR',
       'COMMUNITY_MANAGER',
+      'SECURITY_ENGINEER',
       'ADMIN',
       'SUPER_ADMIN',
     ];

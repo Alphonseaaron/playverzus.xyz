@@ -25,6 +25,7 @@ import { MailModule } from './mail/mail.module';
 import { CrossmintModule } from './crossmint/crossmint.module';
 import { SupportModule } from './support/support.module';
 import { PollsModule } from './polls/polls.module';
+import { SecurityModule } from './security/security.module';
 
 import { RateLimitInterceptor } from './common/interceptors/rate-limit.interceptor';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor';
@@ -57,6 +58,7 @@ import { AuditInterceptor } from './common/interceptors/audit.interceptor';
     CrossmintModule,
     SupportModule,
     PollsModule,
+    SecurityModule,
   ],
   providers: [
     {

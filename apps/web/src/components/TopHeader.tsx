@@ -58,7 +58,8 @@ interface HeaderProfile {
     | 'SUPPORT'
     | 'TOURNAMENT_ADMIN'
     | 'FINANCE_AUDITOR'
-    | 'COMMUNITY_MANAGER';
+    | 'COMMUNITY_MANAGER'
+    | 'SECURITY_ENGINEER';
 }
 
 function getPageContext(pathname: string): { title: string } {
@@ -170,7 +171,8 @@ export function TopHeader() {
     me?.role === 'SUPPORT' ||
     me?.role === 'TOURNAMENT_ADMIN' ||
     me?.role === 'FINANCE_AUDITOR' ||
-    me?.role === 'COMMUNITY_MANAGER';
+    me?.role === 'COMMUNITY_MANAGER' ||
+    me?.role === 'SECURITY_ENGINEER';
 
   const staffTargetHref =
     me?.role === 'REVIEWER'
@@ -183,6 +185,8 @@ export function TopHeader() {
       ? '/admin/treasury'
       : me?.role === 'COMMUNITY_MANAGER'
       ? '/admin/polls'
+      : me?.role === 'SECURITY_ENGINEER'
+      ? '/admin/security'
       : '/admin';
 
   const staffLabel =
@@ -196,6 +200,8 @@ export function TopHeader() {
       ? 'Treasury & Audit'
       : me?.role === 'COMMUNITY_MANAGER'
       ? 'Roadmap & Sponsors'
+      : me?.role === 'SECURITY_ENGINEER'
+      ? 'Security & Anti-Cheat'
       : 'Operations Admin';
 
   const mobileNavLinks = [

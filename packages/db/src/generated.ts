@@ -41,7 +41,8 @@ export type RoleEnum =
   | 'SUPPORT'
   | 'TOURNAMENT_ADMIN'
   | 'FINANCE_AUDITOR'
-  | 'COMMUNITY_MANAGER';
+  | 'COMMUNITY_MANAGER'
+  | 'SECURITY_ENGINEER';
 export type KycStatusEnum = 'NONE' | 'PENDING' | 'VERIFIED' | 'REJECTED';
 export type FriendshipStatusEnum = 'PENDING' | 'ACCEPTED' | 'BLOCKED';
 export type DisputeStatusEnum = 'OPEN' | 'REVIEW' | 'RESOLVED';

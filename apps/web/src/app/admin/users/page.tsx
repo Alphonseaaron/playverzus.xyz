@@ -35,6 +35,7 @@ type UserRole =
   | 'TOURNAMENT_ADMIN'
   | 'FINANCE_AUDITOR'
   | 'COMMUNITY_MANAGER'
+  | 'SECURITY_ENGINEER'
   | 'ADMIN'
   | 'SUPER_ADMIN';
 
@@ -102,6 +103,13 @@ const STAFF_ROLES_META: Record<
     scope: 'Roadmap Polls (/admin/polls) & Sponsors (/admin/sponsors)',
     icon: Vote,
     badgeVariant: 'default',
+  },
+  SECURITY_ENGINEER: {
+    title: 'Security & Anti-Cheat Engineer',
+    description: 'Monitors anti-cheat heuristics, OCR spoof alerts, distributed settlement lock telemetry, GSI auth attacks, and triggers kill-switches.',
+    scope: 'Security Operations Center (/admin/security) & Dispute Review (/admin/review)',
+    icon: ShieldAlert,
+    badgeVariant: 'warning',
   },
   ADMIN: {
     title: 'Platform Operations Administrator',

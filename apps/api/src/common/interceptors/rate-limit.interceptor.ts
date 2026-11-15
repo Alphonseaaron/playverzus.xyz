@@ -5,8 +5,10 @@ import {
   HttpStatus,
   Injectable,
   NestInterceptor,
+  Optional,
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
+import { SecurityService } from '../../security/security.service';
 
 @Injectable()
 export class RateLimitInterceptor implements NestInterceptor {
@@ -14,7 +16,7 @@ export class RateLimitInterceptor implements NestInterceptor {
   private readonly maxRequests = 60;
   private readonly hits = new Map<string, { count: number; resetAt: number }>();
 
-  constructor() {
+  constructor(@Optional() private readonly securityService?: SecurityService) {
     // Prune stale IP and user records every 2 minutes to prevent heap growth
     setInterval(() => {
       const now = Date.now();
@@ -57,6 +59,13 @@ export class RateLimitInterceptor implements NestInterceptor {
     } else {
       record.count += 1;
       if (record.count > routeLimit) {
+        this.securityService?.logEvent({
+          severity: routeLimit <= 15 ? 'HIGH' : 'MEDIUM',
+          category: 'RATE_LIMIT',
+          actorId: req.user?.id,
+          description: `Rate limit tripped on endpoint "${path}": ${record.count} reqs in 60s (threshold: ${routeLimit}).`,
+          metadata: { ip: clientIp, path, routeLimit, count: record.count },
+        });
         throw new HttpException(
           {
             statusCode: HttpStatus.TOO_MANY_REQUESTS,

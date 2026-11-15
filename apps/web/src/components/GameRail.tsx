@@ -71,6 +71,8 @@ export function GameRail() {
       ? '/admin/treasury'
       : me?.role === 'COMMUNITY_MANAGER'
       ? '/admin/polls'
+      : me?.role === 'SECURITY_ENGINEER'
+      ? '/admin/security'
       : '/admin';
 
   const staffLabel =
@@ -84,6 +86,8 @@ export function GameRail() {
       ? 'Finance'
       : me?.role === 'COMMUNITY_MANAGER'
       ? 'Community'
+      : me?.role === 'SECURITY_ENGINEER'
+      ? 'Security'
       : 'Admin';
 
   const handleSignOut = async () => {
