@@ -38,11 +38,13 @@ const STAKE_PRESETS_DEMO = [0, 100, 250, 500, 1000, 2500];
 function NewMatchForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const defaultProfileId = searchParams.get('profileId') || searchParams.get('gameId') || '';
+  const rawParam = searchParams.get('profileId') || searchParams.get('gameId') || '';
+  const initialCatalog = rawParam ? (findCatalogGame(rawParam) || getGameById(rawParam)) : null;
+  const defaultProfileId = initialCatalog?.id || rawParam || '';
 
   const { activeGame, setActiveGameById } = useGameStore();
   const { members } = usePartyStore();
-  const { mode: walletMode } = useWalletModeStore();
+  const { mode: walletMode, toggleMode: toggleWalletMode } = useWalletModeStore();
   const { getGamertag, getGamertagLabel, setGamertag } = useGameAccountsStore();
 
   const [profileId, setProfileId] = useState(defaultProfileId || activeGame?.id || 'cs2');
@@ -76,7 +78,19 @@ function NewMatchForm() {
   const customGames = (profiles || []).filter(
     (g) => !officialIds.has(g.id.toLowerCase())
   );
-  const allAvailableGames = [...OFFICIAL_GAMES, ...customGames];
+
+  // Deduplicate game options so each title appears once with clean identifiers
+  const seenIds = new Set<string>();
+  const seenNames = new Set<string>();
+  const allAvailableGames = [...OFFICIAL_GAMES, ...customGames].filter((g) => {
+    const canonical = findCatalogGame(g.id) || getGameById(g.id);
+    const cId = (canonical?.id || g.id).toLowerCase();
+    const cName = (canonical?.displayName || g.displayName || (g as any).display_name || '').toLowerCase().trim();
+    if (seenIds.has(cId) || seenNames.has(cName)) return false;
+    seenIds.add(cId);
+    seenNames.add(cName);
+    return true;
+  });
 
   const selectedGame =
     findCatalogGame(profileId) ||
@@ -85,6 +99,12 @@ function NewMatchForm() {
   const currentGamertag = getGamertag(profileId);
   const tagLabel = getGamertagLabel(profileId);
   const hasLinkedTag = Boolean(currentGamertag?.trim());
+
+  const isFc27 =
+    profileId === 'eafc' ||
+    profileId === 'ea-sports-fc-27' ||
+    profileId === 'fc27' ||
+    (selectedGame && selectedGame.id === 'eafc');
 
   const effectiveFee = customFee !== '' ? Math.max(0, parseFloat(customFee) || 0) : entryFee;
   // Guaranteed prize pool with pre-disclosed 10% platform fee for peer-to-peer cash duels
@@ -203,7 +223,7 @@ function NewMatchForm() {
           </select>
 
           {/* EA Sports FC 27 Verified Presets Highlight */}
-          {profileId === 'ea-sports-fc-27' && (
+          {isFc27 && (
             <div className="mt-2.5 p-3 rounded-xl bg-primary/10 border border-primary/20 space-y-1.5 text-xs">
               <div className="flex items-center justify-between">
                 <span className="font-bold text-foreground flex items-center gap-1.5">
@@ -350,12 +370,20 @@ function NewMatchForm() {
               <label className="block text-xs font-semibold text-foreground">
                 4. Match Entry Fee
               </label>
-              <Badge
-                variant={walletMode === 'REAL' ? 'success' : 'secondary'}
-                className="font-mono text-[10px]"
+              <button
+                type="button"
+                onClick={toggleWalletMode}
+                className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-border bg-secondary/40 hover:border-primary/50 transition cursor-pointer"
+                title="Click to switch currency mode"
               >
-                {walletMode === 'REAL' ? 'REAL CASH ($ USDC)' : 'DEMO PLAY (PTS)'}
-              </Badge>
+                <Badge
+                  variant={walletMode === 'REAL' ? 'success' : 'secondary'}
+                  className="font-mono text-[9px] py-0 px-1.5"
+                >
+                  {walletMode === 'REAL' ? 'REAL CASH ($ USDC)' : 'DEMO PLAY (PTS)'}
+                </Badge>
+                <span className="text-[10px] text-muted-foreground font-mono">⇄ Switch</span>
+              </button>
             </div>
             <span className="text-xs text-muted-foreground">
               Guaranteed Prize:{' '}
