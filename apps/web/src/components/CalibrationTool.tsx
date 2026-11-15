@@ -167,7 +167,7 @@ export function CalibrationTool({
           onClick={() => applyPreset({ x: 0.042, y: 0.042, w: 0.177, h: 0.060 })}
           className="text-[11px] h-7 px-2.5 gap-1 text-emerald-400 hover:text-white border border-emerald-500/30 bg-emerald-500/10 font-mono"
         >
-          <span>⚽ FC27 Scorebug (PS5/PC)</span>
+          <span>FC27 Scorebug (PS5/PC)</span>
         </Button>
         <Button
           type="button"
@@ -176,7 +176,7 @@ export function CalibrationTool({
           onClick={() => applyPreset({ x: 0.302, y: 0.352, w: 0.396, h: 0.148 })}
           className="text-[11px] h-7 px-2.5 gap-1 text-emerald-400 hover:text-white border border-emerald-500/30 bg-emerald-500/10 font-mono"
         >
-          <span>⚽ FC27 Full Time</span>
+          <span>FC27 Full Time</span>
         </Button>
         <Button
           type="button"

@@ -303,7 +303,11 @@ export default function TournamentsPage() {
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <div className="text-2xl">{gameCatalog.icon}</div>
+                      <GamePoster
+                        game={gameCatalog}
+                        aspect="thumb"
+                        className="w-8 h-10 rounded-lg flex-shrink-0"
+                      />
                       <div className="min-w-0">
                         <CardTitle className="text-sm font-bold text-foreground truncate group-hover:text-primary transition-colors">
                           {gameCatalog.displayName}

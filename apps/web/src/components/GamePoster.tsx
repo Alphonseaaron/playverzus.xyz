@@ -65,8 +65,10 @@ export function GamePoster({
               {game.shortName || game.displayName.slice(0, 3)}
             </span>
           ) : (
-            <div className="flex flex-col items-center justify-center gap-1 z-10">
-              <span className="text-2xl sm:text-3xl opacity-80">{game.icon || '🎮'}</span>
+            <div className="flex flex-col items-center justify-center gap-1.5 z-10">
+              <div className="w-9 h-9 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center text-primary font-black text-xs uppercase font-mono tracking-wider shadow-sm">
+                {(game.shortName || game.displayName).slice(0, 3)}
+              </div>
               <span className="font-black text-xs sm:text-sm text-foreground uppercase tracking-wider">
                 {game.shortName || game.displayName}
               </span>

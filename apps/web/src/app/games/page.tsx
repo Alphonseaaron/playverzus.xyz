@@ -83,7 +83,6 @@ export default function GamesPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {allGames.map((g) => {
             const catalogItem = findCatalogGame(g.id) || findCatalogGame(g.displayName || (g as any).display_name);
-            const icon = catalogItem?.icon || '🎮';
             const posterUrl = catalogItem?.posterUrl;
             const bannerUrl = catalogItem?.bannerUrl;
             const tagline = catalogItem?.tagline || (g as any).tagline || 'Competitive Esports Duel';
@@ -102,7 +101,6 @@ export default function GamesPage() {
                 isOfficial={isOfficial}
                 posterUrl={posterUrl}
                 bannerUrl={bannerUrl}
-                icon={icon}
                 tagline={tagline}
                 onSelectGame={() => setActiveGame(g)}
               />

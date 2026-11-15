@@ -194,11 +194,9 @@ function NewMatchForm() {
             <option value="">Select a competitive game...</option>
             {allAvailableGames.map((p) => {
               const dName = p.displayName || (p as any).display_name || 'Game';
-              const catalogItem = findCatalogGame(p.id) || findCatalogGame(p.displayName || (p as any).display_name) || getGameById(p.id);
-              const icon = catalogItem?.icon || '🎮';
               return (
                 <option key={p.id} value={p.id}>
-                  {icon} {dName} ({p.platform || 'UNIVERSAL'})
+                  {dName} ({p.platform || 'UNIVERSAL'})
                 </option>
               );
             })}

@@ -63,7 +63,7 @@ export function GameplaySetupTutorialModal({
       tournament: {
         id: Math.random().toString(),
         type: 'tournament',
-        title: '⚔️ Tournament Round Ready — Check In',
+        title: 'Tournament Round Ready — Check In',
         body: 'You have been paired against @ApexStriker in EA FC 27 Champions Cup! Check-in required within 3:00 to avoid auto-forfeit.',
         time: 'Just now',
         badge: 'TOURNAMENT LOBBY',
@@ -73,7 +73,7 @@ export function GameplaySetupTutorialModal({
       machine: {
         id: Math.random().toString(),
         type: 'machine',
-        title: '🎮 Machine Feed Verified (1080p60)',
+        title: 'Machine Feed Verified (1080p60)',
         body: 'PlayStation 5 Remote Play stream connected with 14ms latency. Audio and frame buffer synced.',
         time: 'Just now',
         badge: 'MACHINE PAIRED',
@@ -82,7 +82,7 @@ export function GameplaySetupTutorialModal({
       vision: {
         id: Math.random().toString(),
         type: 'vision',
-        title: '🎯 AI Vision Engine Synced',
+        title: 'AI Vision Engine Synced',
         body: 'EA Sports FC 27 HUD locked! Score bug at Top-Left & Game Clock detected with 99.1% neural confidence.',
         time: 'Just now',
         badge: 'NEURAL LOCK',
@@ -91,7 +91,7 @@ export function GameplaySetupTutorialModal({
       goal: {
         id: Math.random().toString(),
         type: 'goal',
-        title: '⚽ GOAL DETECTED! (34\')',
+        title: 'Goal Detected! (34\')',
         body: 'PlayerOne scores! Real-time scoreboard updated: [FCB 1 - 0 RMA]. Matchroom state synced for spectators.',
         time: 'Just now',
         badge: 'LIVE SCORE',
@@ -100,7 +100,7 @@ export function GameplaySetupTutorialModal({
       settlement: {
         id: Math.random().toString(),
         type: 'settlement',
-        title: '💰 Match Settled — Instant Payout',
+        title: 'Match Settled — Instant Payout',
         body: 'Final whistle verified: 2 - 1. Payout of $20.00 USDC automatically credited to your Crossmint Embedded Wallet.',
         time: 'Just now',
         badge: 'ESCROW RELEASED',

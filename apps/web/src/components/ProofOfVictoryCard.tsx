@@ -71,7 +71,7 @@ export function ProofOfVictoryCard({
   // Social Brag Snippet for Discord, X (Twitter), Telegram & WhatsApp
   const socialSnippetText = `🏆 VICTORY CLAIMED on @Playverzus!
 ━━━━━━━━━━━━━━━━━━━━━━
-🎮 Game: ${gameName}
+Game: ${gameName}
 ⚔️ @${winnerName} [${cleanScore}] @${loserName}
 ${prizeAmount && prizeAmount > 0 ? `💰 Bounty: +$${prizeAmount.toFixed(2)} USD Settled Instantly\n` : ''}⚡ Verified by: Playverzus Computer Vision Oracle (Zero Disputes)
 ━━━━━━━━━━━━━━━━━━━━━━

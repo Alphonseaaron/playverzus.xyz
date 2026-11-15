@@ -243,10 +243,10 @@ function DashboardContent() {
   ];
 
   const QUICK_ARENAS = [
-    { id: 'cs2', label: 'Counter-Strike 2', icon: '🎯' },
-    { id: 'eafc', label: 'EA FC 27', icon: '⚽' },
-    { id: 'rl', label: 'Rocket League', icon: '🚗' },
-    { id: 'apex', label: 'Apex Legends', icon: '🔥' },
+    { id: 'cs2', label: 'Counter-Strike 2' },
+    { id: 'eafc', label: 'EA FC 27' },
+    { id: 'rl', label: 'Rocket League' },
+    { id: 'apex', label: 'Apex Legends' },
   ];
 
   const activeBlitzPool =
@@ -318,13 +318,12 @@ function DashboardContent() {
                     key={qa.id}
                     type="button"
                     onClick={() => matchedGame && setActiveGame(matchedGame)}
-                    className={`px-2.5 py-0.5 rounded-lg text-[11px] font-bold transition flex items-center gap-1 ${
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center ${
                       isCurrent
                         ? 'bg-primary text-primary-foreground shadow-sm'
                         : 'text-muted-foreground hover:text-foreground hover:bg-muted/70'
                     }`}
                   >
-                    <span>{qa.icon}</span>
                     <span>{qa.label}</span>
                   </button>
                 );

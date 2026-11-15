@@ -37,14 +37,11 @@ export function LeaderboardTable({ entries, gameType, gameTitle, gameIcon }: Lea
   return (
     <Card className="shadow-2xl">
       <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-border">
-        <div className="flex items-center gap-3">
-          {gameIcon && <span className="text-2xl">{gameIcon}</span>}
-          <div>
-            <CardTitle>Global Ranked Ladder</CardTitle>
-            <p className="text-xs text-muted-foreground mt-1">
-              Arena: <strong className="text-foreground font-bold">{displayTitle}</strong>
-            </p>
-          </div>
+        <div>
+          <CardTitle>Global Ranked Ladder</CardTitle>
+          <p className="text-xs text-muted-foreground mt-1">
+            Arena: <strong className="text-foreground font-bold">{displayTitle}</strong>
+          </p>
         </div>
         <Badge variant="copper" className="font-mono text-[11px]">
           VX ELO (Level 1–10)
