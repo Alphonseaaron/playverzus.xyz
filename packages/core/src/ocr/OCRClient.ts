@@ -19,8 +19,17 @@ export class OCRClient {
     return this.workerPromise;
   }
 
-  async recognize(image: Buffer | string | HTMLCanvasElement): Promise<OCRRead> {
+  async recognize(
+    image: Buffer | string | HTMLCanvasElement,
+    options?: { whitelist?: string; psm?: Tesseract.PSM },
+  ): Promise<OCRRead> {
     const worker = await this.getWorker();
+    if (options?.whitelist !== undefined || options?.psm !== undefined) {
+      await worker.setParameters({
+        ...(options?.whitelist ? { tessedit_char_whitelist: options.whitelist } : { tessedit_char_whitelist: '' }),
+        ...(options?.psm ? { tessedit_pageseg_mode: options.psm } : {}),
+      });
+    }
     const { data } = await worker.recognize(image as never);
     return { text: data.text ?? '', confidence: (data.confidence ?? 0) / 100 };
   }

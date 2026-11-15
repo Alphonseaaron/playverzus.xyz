@@ -125,6 +125,19 @@ export function useCapturePipeline(
           ctx.drawImage(v, sx, sy, sw, sh, 0, 0, sw, sh);
 
           try {
+            // Dynamic parameter tuning: Numeric whitelist on primary score HUD, full alphabet on banner ROIs
+            if (i === 0 && (profile.gameType === 'HEAD_TO_HEAD' || profile.gameType === 'HIGH_SCORE')) {
+              await workerRef.current.setParameters({
+                tessedit_char_whitelist: '0123456789-:,./ ',
+                tessedit_pageseg_mode: Tesseract.PSM.SINGLE_LINE,
+              });
+            } else {
+              await workerRef.current.setParameters({
+                tessedit_char_whitelist: '',
+                tessedit_pageseg_mode: Tesseract.PSM.AUTO,
+              });
+            }
+
             const { data } = await workerRef.current.recognize(canvas);
             const rawText = data.text?.trim() ?? '';
             const conf = (data.confidence ?? 0) / 100;
