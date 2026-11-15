@@ -20,7 +20,9 @@ import {
   Tv,
   Smartphone,
   Image as ImageIcon,
+  Crown,
 } from 'lucide-react';
+import { ProofOfVictoryCard } from './ProofOfVictoryCard';
 import { useCapturePipeline as useMatchCapture } from '../hooks/useCapturePipeline';
 import { LiveScore } from './LiveScore';
 import { MatchReadinessStepper } from './MatchReadinessStepper';
@@ -93,6 +95,9 @@ export function MatchRoom({
   const isPlayerB = currentUserId === playerBId;
   const isParticipant = isPlayerA || isPlayerB;
   const [joiningMatch, setJoiningMatch] = useState(false);
+
+  const isWinnerA = status === 'SETTLED' && winnerId === playerAId;
+  const isWinnerB = status === 'SETTLED' && winnerId === playerBId;
 
   // Ready states
   const [isReadyA, setIsReadyA] = useState(readyA ?? false);
@@ -441,50 +446,24 @@ export function MatchRoom({
         </Card>
       )}
 
-      {/* Autonomous AI Settled Match Outcome Banner */}
+      {/* Autonomous AI Settled Match Outcome & Social Proof Brag Card */}
       {status === 'SETTLED' && winnerId && (
-        <Card className="p-5 bg-emerald-500/10 border border-emerald-500/40 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500 text-stone-950 flex items-center justify-center font-black shadow-sm flex-shrink-0">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-black uppercase tracking-wider text-emerald-400">
-                  Match Verified & Settled Automatically
-                </span>
-                <Badge variant="success" className="font-mono text-[10px]">
-                  {verifiedBy || 'AI'} • {((confidence ?? 0.96) * 100).toFixed(0)}% Confidence
-                </Badge>
-              </div>
-              <div className="flex items-center gap-2 mt-1 text-sm font-bold text-foreground font-mono">
-                <span>Winner:</span>
-                <CountryFlag
-                  code={winnerId === playerAId ? playerACountry : playerBCountry}
-                  fallbackSeed={
-                    winnerId === playerAId
-                      ? playerAUsername || playerAId
-                      : playerBUsername || playerBId || winnerId
-                  }
-                  size="sm"
-                />
-                <span>
-                  {winnerId === playerAId
-                    ? playerAUsername
-                      ? `@${playerAUsername}`
-                      : `Player #${playerAId.slice(0, 8)}`
-                    : playerBUsername
-                    ? `@${playerBUsername}`
-                    : `Player #${winnerId.slice(0, 8)}`}
-                </span>
-              </div>
-            </div>
-          </div>
-          <Badge variant="copper" className="font-mono text-xs self-start sm:self-center flex items-center gap-1.5 py-1 px-3">
-            <CrossmintLogo variant="icon" className="w-3.5 h-3.5 inline-block" />
-            <span>Crossmint Escrow Settled ✓</span>
-          </Badge>
-        </Card>
+        <ProofOfVictoryCard
+          matchId={matchId}
+          gameName={profile.displayName}
+          gamePlatform={profile.platform || 'UNIVERSAL'}
+          playerAId={playerAId}
+          playerAName={playerAUsername || `Player #${playerAId.slice(0, 8)}`}
+          playerAGamertag={playerATag}
+          playerACountry={playerACountry}
+          playerBId={playerBId || ''}
+          playerBName={playerBUsername || (playerBId ? `Player #${playerBId.slice(0, 8)}` : 'Challenger')}
+          playerBGamertag={playerBTag}
+          playerBCountry={playerBCountry}
+          winnerId={winnerId}
+          scoreText={capture.lastScore}
+          confidence={confidence ?? 0.98}
+        />
       )}
 
       {/* 4-Step Match Readiness Stepper (Auto-Machine Registration & Step-by-Step Ease) */}
@@ -511,7 +490,21 @@ export function MatchRoom({
       {/* Head-to-Head Competitor Roster with In-Game Gamertags */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
         {/* Side A (Host) */}
-        <Card className="flex flex-col items-center md:items-start p-5 bg-card border border-border">
+        <Card
+          className={`flex flex-col items-center md:items-start p-5 bg-card transition-all duration-300 relative ${
+            isWinnerA
+              ? 'border-2 border-primary ring-2 ring-primary/40 shadow-[0_0_25px_rgba(139,92,246,0.30)] bg-primary/10'
+              : status === 'SETTLED'
+              ? 'border-border/60 bg-card/60 opacity-80'
+              : 'border border-border'
+          }`}
+        >
+          {isWinnerA && (
+            <div className="absolute -top-3 left-4 px-2 py-0.5 rounded-full bg-primary text-primary-foreground text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-sm">
+              <Crown className="w-3 h-3" />
+              <span>MATCH WINNER</span>
+            </div>
+          )}
           <div className="flex items-center gap-2 mb-2">
             <span className="w-6 h-6 rounded-md bg-primary text-primary-foreground font-bold text-xs flex items-center justify-center shadow-sm">
               A
@@ -631,7 +624,21 @@ export function MatchRoom({
         </div>
 
         {/* Side B (Opponent) */}
-        <Card className="flex flex-col items-center md:items-end p-5 bg-card border border-border text-right">
+        <Card
+          className={`flex flex-col items-center md:items-end p-5 bg-card text-right transition-all duration-300 relative ${
+            isWinnerB
+              ? 'border-2 border-primary ring-2 ring-primary/40 shadow-[0_0_25px_rgba(139,92,246,0.30)] bg-primary/10'
+              : status === 'SETTLED'
+              ? 'border-border/60 bg-card/60 opacity-80'
+              : 'border border-border'
+          }`}
+        >
+          {isWinnerB && (
+            <div className="absolute -top-3 right-4 px-2 py-0.5 rounded-full bg-primary text-primary-foreground text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-sm">
+              <Crown className="w-3 h-3" />
+              <span>MATCH WINNER</span>
+            </div>
+          )}
           <div className="flex items-center gap-2 mb-2">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Challenger</span>
             <span className="w-6 h-6 rounded-md bg-secondary border border-border text-foreground font-bold text-xs flex items-center justify-center shadow-sm">
