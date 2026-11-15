@@ -1,16 +1,27 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Optional } from '@nestjs/common';
 import { createServiceClient, TypedSupabaseClient } from '@playverzus/db';
 import { MatchService as CoreMatchService, generateRoomCode, type MatchFormat, type ScoreFrame } from '@playverzus/core';
 import { resolveAndEnsureGameProfileId } from '../game-profile/game-profile.service';
 import { globalGameAccountsCache, resolveGamertagForProfile } from '../profile/profile.service';
+import { RedisService } from '../redis/redis.service';
 
 @Injectable()
 export class MatchService {
   private supabase: TypedSupabaseClient;
   private coreMatchService: CoreMatchService;
   private readyMap = new Map<string, { readyA: boolean; readyB: boolean }>();
+  private readonly redis: RedisService;
 
-  constructor() {
+  constructor(@Optional() redis?: RedisService) {
+    this.redis =
+      redis ??
+      ({
+        get: async () => null,
+        set: async () => {},
+        del: async () => {},
+        checkCooldown: async () => 0,
+        withLock: async <T>(_k: string, _t: number, fn: () => Promise<T>) => fn(),
+      } as unknown as RedisService);
     const url = process.env.SUPABASE_URL || 'https://placeholder.supabase.co';
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-key';
     this.supabase = createServiceClient(url, key);
@@ -281,7 +292,9 @@ export class MatchService {
   }
 
   async settleMatch(matchId: string) {
-    return this.coreMatchService.settle(matchId);
+    return this.redis.withLock(`settle:${matchId}`, 15_000, async () => {
+      return this.coreMatchService.settle(matchId);
+    });
   }
 
   async disputeMatch(matchId: string, userId: string, reason: string) {

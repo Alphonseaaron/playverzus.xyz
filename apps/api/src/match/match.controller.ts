@@ -83,16 +83,31 @@ export class MatchController {
       gamertag?: string;
     },
   ) {
+    if (!body || typeof body.rawText !== 'string' || body.rawText.trim() === '') {
+      throw new BadRequestException('Valid OCR rawText is required');
+    }
+    if (body.rawText.length > 2000) {
+      throw new BadRequestException('OCR payload exceeds maximum allowed size (2000 characters)');
+    }
+
     const match = await this.matchService.getMatch(id);
     if (match.playerA !== user.id && match.playerB !== user.id) {
       throw new ForbiddenException('Only verified participants in this match can submit score proofs');
     }
+    if (['SETTLED', 'CANCELLED', 'VOIDED'].includes(match.status)) {
+      throw new BadRequestException(`Cannot submit score to a match with status ${match.status}`);
+    }
+
+    const clampedConfidence = typeof body.confidence === 'number'
+      ? Math.max(0, Math.min(1.0, body.confidence))
+      : 0.5;
+
     return this.matchService.submitScore(
       id,
       user.id,
-      body.rawText,
-      body.confidence,
-      body.isFinal ?? false,
+      body.rawText.trim(),
+      clampedConfidence,
+      Boolean(body.isFinal),
       body.imageHash,
       body.source,
       body.gamertag,
@@ -105,6 +120,22 @@ export class MatchController {
     @CurrentUser() user: AuthUser,
     @Body() payload: any,
   ) {
+    if (!payload || typeof payload !== 'object') {
+      throw new BadRequestException('Valid CS2 GSI payload is required');
+    }
+
+    const match = await this.matchService.getMatch(id);
+    const isParticipant = match.playerA === user.id || match.playerB === user.id;
+    const isValidMatchToken = payload.auth?.token && (payload.auth.token === match.room_code || payload.auth.token === match.id);
+
+    if (!isParticipant && !isValidMatchToken) {
+      throw new ForbiddenException('Unauthorized: You must be a match participant or provide a valid match GSI security token');
+    }
+
+    if (['SETTLED', 'CANCELLED', 'VOIDED'].includes(match.status)) {
+      throw new BadRequestException(`Cannot submit GSI telemetry to a match with status ${match.status}`);
+    }
+
     return this.matchService.handleCs2Gsi(id, user.id, payload);
   }
 

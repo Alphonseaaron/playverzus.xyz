@@ -35,19 +35,26 @@ export function analyzeScoreStream(
     }
   }
 
-  // 2. Repeated identical or near-identical frames (perceptual replay detection).
+  // 2. Frozen-Frame Spoofing Detection.
+  // Legitimate players often linger on stationary freeze-time or final victory scoreboards (isFinal: true).
+  // A replay / overlay spoof occurs when reported score values change while the background video hash is frozen,
+  // or when 20+ consecutive active mid-game frames with zero isFinal have 100% static hashes.
+  const hasFinalFrame = sorted.some((f) => f.isFinal);
+  const hashes = sorted.map((f) => f.imageHash).filter((h): h is string => !!h);
   const pHashes = sorted.map((f) => f.perceptualHash).filter((h): h is string => !!h);
-  if (pHashes.length >= 5) {
-    const first = pHashes[0]!;
-    const isPerceptualReplay = pHashes.slice(1, 5).every((h) => hammingDistance(first, h) <= 4);
-    if (isPerceptualReplay) {
-      reasons.push('near-identical frames across window (Hamming distance <= 4) — likely video replay');
-    }
-  } else {
-    const hashes = sorted.map((f) => f.imageHash).filter((h): h is string => !!h);
+
+  if (!hasFinalFrame && sorted.length >= 5) {
+    // Check if score is actively changing while frame image is completely frozen (artificial overlay injection)
+    const distinctScores = new Set(sorted.map((f) => f.parsed?.primary).filter((s) => s !== undefined));
     const uniqueHashes = new Set(hashes);
-    if (hashes.length >= 5 && uniqueHashes.size === 1) {
-      reasons.push('identical frames across window — likely replay');
+
+    if (distinctScores.size >= 3 && uniqueHashes.size === 1) {
+      reasons.push('score changing dynamically over a frozen video frame — artificial overlay spoofing detected');
+    }
+
+    // Only flag extended static video replay if mid-game window exceeds 20+ active frames with no movement
+    if (hashes.length >= 20 && uniqueHashes.size === 1) {
+      reasons.push('prolonged frozen frame across 20+ active mid-game samples — likely static video feed');
     }
   }
 
