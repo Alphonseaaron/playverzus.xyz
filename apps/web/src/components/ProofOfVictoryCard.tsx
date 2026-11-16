@@ -9,17 +9,23 @@ import {
   ShieldCheck,
   CheckCircle2,
   ArrowUpRight,
+  ArrowDownRight,
   Copy,
   Check,
   ExternalLink,
   Share2,
   XCircle,
+  Trophy,
 } from 'lucide-react';
 
 export interface ProofOfVictoryProps {
   matchId: string;
   gameName: string;
   gamePlatform?: string;
+  gameBannerUrl?: string;
+  gamePosterUrl?: string;
+  gameLogoUrl?: string;
+  perspectiveUserId?: string | null;
   playerAId: string;
   playerAName: string;
   playerAGamertag?: string;
@@ -47,6 +53,10 @@ export function ProofOfVictoryCard({
   matchId,
   gameName,
   gamePlatform = 'UNIVERSAL',
+  gameBannerUrl,
+  gamePosterUrl,
+  gameLogoUrl,
+  perspectiveUserId,
   playerAId,
   playerAName,
   playerAGamertag,
@@ -76,6 +86,14 @@ export function ProofOfVictoryCard({
   const isWinnerB = winnerId === playerBId;
   const winnerName = isWinnerA ? playerAName : playerBName;
   const loserName = isWinnerA ? playerBName : playerAName;
+
+  // Relative perspective logic:
+  // If perspectiveUserId is provided, determine if viewing user is winner or loser
+  // Default to winner's perspective if unauthenticated or spectator
+  const isViewerWinner = perspectiveUserId ? perspectiveUserId === winnerId : true;
+  const isViewerLoser = perspectiveUserId
+    ? (perspectiveUserId === playerAId || perspectiveUserId === playerBId) && !isViewerWinner
+    : false;
 
   const matchUrl =
     typeof window !== 'undefined'
@@ -112,6 +130,20 @@ export function ProofOfVictoryCard({
         year: 'numeric',
       }).toUpperCase();
 
+  // Official Logo Detection
+  const isEAFCOfficial =
+    gameName.toLowerCase().includes('fc 27') ||
+    gameName.toLowerCase().includes('ea sports fc') ||
+    gameName.toLowerCase().includes('eafc') ||
+    gameName.toLowerCase().includes('fifa');
+  const isFCMobile = gameName.toLowerCase().includes('mobile') || gameName.toLowerCase().includes('fcm');
+
+  // Background artwork fallback: high quality game poster or banner
+  const ambientBackground =
+    gameBannerUrl ||
+    gamePosterUrl ||
+    (isFCMobile ? '/eafcm_poster.jpg' : isEAFCOfficial ? '/fc27_poster.jpg' : '/fc27_banner.jpg');
+
   // Clean, zero-emoji institutional brag snippet
   const cleanSnippet = [
     `PLAYVERZUS VERIFIED MATCH SETTLEMENT`,
@@ -124,8 +156,9 @@ export function ProofOfVictoryCard({
       ? isTournamentFinal
         ? `CHAMPIONSHIP PURSE: $${wonValue.toFixed(2)} USDC`
         : `TOURNAMENT STATUS: @${winnerName} PROGRESSING | @${loserName} ELIMINATED`
-      : `AMOUNT WON: +$${wonValue.toFixed(2)} USDC | AMOUNT LOST: -$${lostValue.toFixed(2)} USDC`,
-    `VERIFICATION: Optical Computer Vision Oracle (${((confidence ?? 0.998) * 100).toFixed(1)}% Confidence)`,
+      : isViewerLoser
+      ? `AMOUNT LOST: -$${lostValue.toFixed(2)} USDC`
+      : `AMOUNT WON: +$${wonValue.toFixed(2)} USDC`,
     `AUDIT URL: ${matchUrl}`,
   ].join('\n');
 
@@ -150,20 +183,29 @@ export function ProofOfVictoryCard({
   };
 
   return (
-    <div className="w-full max-w-3xl mx-auto">
-      {/* YesWeHack-Inspired Cyber Card Container */}
-      <div className="relative rounded-3xl overflow-hidden border border-border/80 bg-[#090b11] shadow-[0_20px_50px_rgba(0,0,0,0.85)] p-6 sm:p-10 text-foreground space-y-8">
-        {/* Layered Cyber Geometric Facets & Ambient Glow */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/15 via-[#0d1017] to-[#06070a] pointer-events-none" />
+    <div className="w-full max-w-3xl mx-auto space-y-4">
+      {/* 1. PRISTINE YESWEHACK-INSPIRED CYBER SETTLEMENT CARD (Screenshot / Social Ready) */}
+      <div className="relative rounded-3xl overflow-hidden border border-border/80 bg-[#090b11] shadow-[0_25px_60px_rgba(0,0,0,0.90)] p-6 sm:p-10 text-foreground space-y-8 select-none">
+        {/* Layer 1: Blurred Game Poster/Banner Ambient Artwork */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <img
+            src={ambientBackground}
+            alt=""
+            className="w-full h-full object-cover filter blur-2xl scale-125 opacity-25 brightness-75 transition-opacity duration-700"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#090b11]/80 via-[#090b11]/92 to-[#090b11]" />
+        </div>
+
+        {/* Layer 2: Subtle Cyber Geometric Facets & Ambient Glow */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-[100px] pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-80 h-80 bg-emerald-500/5 rounded-full blur-[90px] pointer-events-none" />
 
-        {/* 1. TOP HEADER BAR: Profile & Verification Metrics */}
+        {/* 1. TOP HEADER BAR: Winner Profile & Official Game Logo */}
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/60 pb-6">
           {/* Winner Profile Chip */}
           <div className="flex items-center gap-3.5">
             <div className="relative">
-              <div className="w-14 h-14 rounded-full bg-[#131722] border-2 border-primary flex items-center justify-center overflow-hidden shadow-[0_0_15px_rgba(139,92,246,0.4)]">
+              <div className="w-14 h-14 rounded-full bg-[#131722] border-2 border-primary flex items-center justify-center overflow-hidden shadow-[0_0_20px_rgba(139,92,246,0.45)]">
                 <CountryFlag
                   code={isWinnerA ? playerACountry : playerBCountry}
                   fallbackSeed={winnerName}
@@ -180,28 +222,39 @@ export function ProofOfVictoryCard({
                 <span className="text-lg sm:text-xl font-black uppercase tracking-tight text-white">
                   {winnerName}
                 </span>
-                <span className="px-1.5 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/40 text-[9px] font-mono font-bold uppercase tracking-wider">
+                <span className="px-2 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/40 text-[9px] font-mono font-bold uppercase tracking-wider">
                   VERIFIED
                 </span>
               </div>
-              <p className="text-xs font-mono text-muted-foreground">
-                {gameName} • {gamePlatform}
+              <p className="text-xs font-mono text-muted-foreground mt-0.5">
+                MATCH WINNER • {gamePlatform}
               </p>
             </div>
           </div>
 
-          {/* Right Verification Metric Box (CVSS Style) */}
-          <div className="flex items-center gap-3 self-start sm:self-center">
-            <div className="px-3.5 py-2 rounded-xl border border-primary/40 bg-primary/10 text-right">
-              <div className="text-base sm:text-lg font-black font-mono text-primary leading-none">
-                {((confidence ?? 0.998) * 100).toFixed(1)}%
+          {/* Right Header: Official Game Logo + Status Stamp (No % CV clutter) */}
+          <div className="flex items-center gap-4 self-start sm:self-center">
+            {/* Official Logo Display */}
+            {isEAFCOfficial ? (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md">
+                <img
+                  src="/fcm_logo_hd_transparent.png"
+                  alt="EA Sports FC"
+                  className="h-6 sm:h-7 w-auto object-contain brightness-110"
+                />
               </div>
-              <div className="text-[9px] font-mono font-bold tracking-wider uppercase text-muted-foreground mt-0.5">
-                NEURAL CV
+            ) : gameLogoUrl ? (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md">
+                <img src={gameLogoUrl} alt={gameName} className="h-6 sm:h-7 w-auto object-contain" />
               </div>
-            </div>
+            ) : (
+              <div className="px-3 py-1 rounded-lg bg-white/5 border border-white/10 font-black text-xs font-mono tracking-wider uppercase text-white">
+                {gameName}
+              </div>
+            )}
 
-            <div className="text-left space-y-0.5">
+            {/* Official Settlement Stamp */}
+            <div className="text-right space-y-0.5">
               <div className="text-xs font-black font-mono uppercase tracking-wider text-emerald-400">
                 SETTLED
               </div>
@@ -212,23 +265,44 @@ export function ProofOfVictoryCard({
           </div>
         </div>
 
-        {/* 2. CENTER HERO SECTION (High-Impact Display Typography) */}
+        {/* 2. CENTER HERO SECTION: Relative Payout Display (Never Show Both Won and Lost) */}
         <div className="relative z-10 text-center space-y-4 py-2">
-          {/* Rating Pill Badge */}
-          <div className="inline-flex items-center gap-1.5 px-4 py-1 rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 font-mono text-xs font-bold shadow-[0_0_15px_rgba(16,185,129,0.15)]">
-            <span>{isTournament ? (isTournamentFinal ? 'CHAMPIONSHIP CONCLUDED' : 'ADVANCING TO NEXT ROUND') : '+25 MMR'}</span>
-            <ArrowUpRight className="w-3.5 h-3.5" />
+          {/* Status / Rating Pill Badge */}
+          <div
+            className={`inline-flex items-center gap-1.5 px-4 py-1 rounded-full border font-mono text-xs font-bold shadow-sm ${
+              isViewerLoser
+                ? 'border-rose-500/40 bg-rose-500/10 text-rose-400'
+                : 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.15)]'
+            }`}
+          >
+            {isTournament ? (
+              <span>{isTournamentFinal ? 'CHAMPIONSHIP CONCLUDED' : 'ADVANCING TO NEXT ROUND'}</span>
+            ) : isViewerLoser ? (
+              <>
+                <span>MATCH CONCLUDED</span>
+                <ArrowDownRight className="w-3.5 h-3.5" />
+              </>
+            ) : (
+              <>
+                <span>+25 MMR</span>
+                <ArrowUpRight className="w-3.5 h-3.5" />
+              </>
+            )}
           </div>
 
-          {/* HUGE Payout Display Typography */}
+          {/* HUGE Relative Display Typography */}
           <div className="space-y-1">
             {isTournament && !isTournamentFinal ? (
               <div className="text-4xl sm:text-6xl font-black tracking-tight text-white font-mono uppercase">
                 ROUND ADVANCEMENT
               </div>
+            ) : isViewerLoser ? (
+              <div className="text-5xl sm:text-7xl font-black tracking-tight text-rose-400 font-mono drop-shadow-[0_4px_25px_rgba(244,63,94,0.25)]">
+                -${lostValue.toFixed(2)}
+              </div>
             ) : (
               <div className="text-5xl sm:text-7xl font-black tracking-tight text-white font-mono drop-shadow-[0_4px_25px_rgba(255,255,255,0.15)]">
-                ${wonValue.toFixed(2)}
+                +${wonValue.toFixed(2)}
               </div>
             )}
 
@@ -237,40 +311,42 @@ export function ProofOfVictoryCard({
                 ? isTournamentFinal
                   ? `1ST PLACE TOURNAMENT PRIZE PURSE (${gameName})`
                   : `POOL: $${(tournamentPrizePool ?? 100).toFixed(2)} • PAYS ON GRAND FINAL`
+                : isViewerLoser
+                ? `STAKE SETTLED IN ESCROW (${gameName})`
                 : `1V1 SKILL DUEL SETTLEMENT (${gameName})`}
             </p>
           </div>
 
-          {/* Amount Won & Amount Lost Pill Chips (or Tournament Progress/Eliminated) */}
-          <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+          {/* SINGLE Relative Status Chip (Only Won OR Lost Relative to Player, Never Both) */}
+          <div className="flex items-center justify-center pt-1">
             {isTournament && !isTournamentFinal ? (
-              <>
-                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 font-mono text-xs font-bold">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>@{winnerName}: PROGRESSING</span>
-                </div>
-                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-500/40 bg-rose-500/10 text-rose-400 font-mono text-xs font-bold">
-                  <XCircle className="w-3.5 h-3.5 text-rose-400" />
-                  <span>@{loserName}: ELIMINATED</span>
-                </div>
-              </>
-            ) : (
-              <>
+              isViewerWinner ? (
                 <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 font-mono text-xs font-bold">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>AMOUNT WON: +${wonValue.toFixed(2)} USDC</span>
+                  <span>@{winnerName}: PROGRESSING TO NEXT ROUND</span>
                 </div>
+              ) : (
                 <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-rose-500/40 bg-rose-500/10 text-rose-400 font-mono text-xs font-bold">
                   <XCircle className="w-3.5 h-3.5 text-rose-400" />
-                  <span>AMOUNT LOST: -${lostValue.toFixed(2)} USDC</span>
+                  <span>@{loserName}: ELIMINATED FROM TOURNAMENT</span>
                 </div>
-              </>
+              )
+            ) : isViewerLoser ? (
+              <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl border border-rose-500/40 bg-rose-500/10 text-rose-400 font-mono text-xs font-bold shadow-sm">
+                <XCircle className="w-3.5 h-3.5 text-rose-400" />
+                <span>AMOUNT LOST: -${lostValue.toFixed(2)} USDC</span>
+              </div>
+            ) : (
+              <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 font-mono text-xs font-bold shadow-sm">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                <span>AMOUNT WON: +${wonValue.toFixed(2)} USDC</span>
+              </div>
             )}
           </div>
         </div>
 
         {/* 3. HEAD-TO-HEAD COMPETITOR CARDS & SCORES */}
-        {/* Enforcing brand color outline (#8B5CF6) on the winning side ONLY */}
+        {/* Strict brand color outline (#8B5CF6) on the winning side ONLY */}
         <div className="relative z-10 grid grid-cols-1 md:grid-cols-7 gap-3 items-center pt-2">
           {/* Participant A (Host) */}
           <div
@@ -358,9 +434,8 @@ export function ProofOfVictoryCard({
           </div>
         </div>
 
-        {/* 4. FOOTER: Brand Watermark & Clean Actions */}
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-t border-border/60 pt-6">
-          {/* Brand Watermark (YesWeHack Style) */}
+        {/* 4. PRISTINE CARD FOOTER: Clean Brand Watermark Only */}
+        <div className="relative z-10 flex items-center justify-between border-t border-border/60 pt-6">
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center font-black text-xs text-white">
               P
@@ -375,28 +450,43 @@ export function ProofOfVictoryCard({
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-            <Button
-              onClick={handleCopySnippet}
-              variant="default"
-              size="sm"
-              className="font-mono font-bold text-xs gap-1.5 h-9 bg-white text-black hover:bg-white/90 shadow-sm"
-            >
-              {copiedSnippet ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-              <span>{copiedSnippet ? 'SNIPPET COPIED' : 'COPY BRAG SNIPPET'}</span>
-            </Button>
-
-            <Button
-              onClick={handleCopyLink}
-              variant="outline"
-              size="sm"
-              className="font-mono text-xs gap-1.5 h-9 border-border/80 text-muted-foreground hover:text-white hover:bg-secondary/40"
-            >
-              {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <ExternalLink className="w-3.5 h-3.5" />}
-              <span>{copiedLink ? 'LINK COPIED' : 'SHARE LINK'}</span>
-            </Button>
+          <div className="text-right">
+            <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono text-[10px] font-bold uppercase tracking-wider">
+              ESCROW RELEASED ✓
+            </span>
           </div>
+        </div>
+      </div>
+
+      {/* 2. EXTERNAL ACTION DOCK (PLACED OUTSIDE THE CARD CONTAINER) */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-[#0c0f17]/90 backdrop-blur-xl border border-white/10 shadow-lg text-foreground">
+        <div className="flex items-center gap-2.5">
+          <span className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
+          <span className="text-xs font-mono font-medium text-muted-foreground">
+            Social Proof & Match Certificate Actions
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+          <Button
+            onClick={handleCopySnippet}
+            variant="default"
+            size="sm"
+            className="font-mono font-bold text-xs gap-1.5 h-10 px-4 bg-white text-black hover:bg-white/90 shadow-sm transition-all hover:scale-[1.02]"
+          >
+            {copiedSnippet ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+            <span>{copiedSnippet ? 'SNIPPET COPIED!' : 'COPY BRAG SNIPPET'}</span>
+          </Button>
+
+          <Button
+            onClick={handleCopyLink}
+            variant="outline"
+            size="sm"
+            className="font-mono text-xs gap-1.5 h-10 px-4 border-border/80 bg-secondary/60 text-muted-foreground hover:text-white hover:bg-secondary transition-all"
+          >
+            {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <ExternalLink className="w-3.5 h-3.5" />}
+            <span>{copiedLink ? 'LINK COPIED' : 'SHARE PROOF LINK'}</span>
+          </Button>
         </div>
       </div>
     </div>

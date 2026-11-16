@@ -69,6 +69,14 @@ function HomeContent() {
   const queryClient = useQueryClient();
   const { activeGame, setActiveGame } = useGameStore();
   const [selectedArenaTab, setSelectedArenaTab] = useState<'all' | 'pc' | 'console' | 'mobile'>('all');
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (typeof window === 'undefined') return;
+    const x = (e.clientX / window.innerWidth - 0.5) * 35;
+    const y = (e.clientY / window.innerHeight - 0.5) * 35;
+    setMousePos({ x, y });
+  };
 
   const viewParam = searchParams.get('view');
   const wantsLanding = viewParam === 'landing' || viewParam === 'public';
@@ -157,7 +165,32 @@ function HomeContent() {
   });
 
   return (
-    <div className="w-full flex flex-col gap-16 sm:gap-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-w-0 pb-20 pt-4 sm:pt-8">
+    <div
+      onMouseMove={handleMouseMove}
+      className="relative w-full flex flex-col gap-16 sm:gap-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-w-0 pb-20 pt-4 sm:pt-8"
+    >
+      {/* Dynamic Ambient Background Glows with Mouse Parallax */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden -z-10 select-none">
+        <div
+          className="absolute -top-24 left-1/2 w-[700px] h-[450px] bg-primary/15 rounded-full blur-[140px] transition-transform duration-500 ease-out will-change-transform"
+          style={{
+            transform: `translate3d(calc(-50% + ${mousePos.x * 0.9}px), ${mousePos.y * 0.9}px, 0)`,
+          }}
+        />
+        <div
+          className="absolute top-44 -left-20 w-[420px] h-[420px] bg-purple-600/10 rounded-full blur-[130px] transition-transform duration-500 ease-out will-change-transform"
+          style={{
+            transform: `translate3d(${-mousePos.x * 0.7}px, ${-mousePos.y * 0.7}px, 0)`,
+          }}
+        />
+        <div
+          className="absolute top-96 -right-24 w-[450px] h-[450px] bg-cyan-500/10 rounded-full blur-[130px] transition-transform duration-500 ease-out will-change-transform"
+          style={{
+            transform: `translate3d(${mousePos.x * 0.6}px, ${-mousePos.y * 0.6}px, 0)`,
+          }}
+        />
+      </div>
+
       {/* 1. Authenticated Welcome Bar (if logged in and explicitly browsing landing) */}
       {isAuthenticated && (
         <div className="p-4 sm:p-5 rounded-2xl bg-card border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
@@ -248,18 +281,19 @@ function HomeContent() {
           </span>
         </div>
 
-        {/* Primary CTA Buttons */}
+        {/* Primary CTA Buttons with Shimmer Sweep */}
         <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 w-full sm:w-auto pt-2">
           {!isAuthenticated ? (
             <>
               <Link href="/signup?redirect=/challenges" className="w-full sm:w-auto">
-                <Button size="lg" className="w-full sm:w-auto font-black text-sm uppercase tracking-wider px-8 h-12 gap-2 bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm">
-                  <Rocket className="w-4 h-4" />
+                <Button size="lg" className="relative overflow-hidden w-full sm:w-auto font-black text-sm uppercase tracking-wider px-8 h-12 gap-2 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-primary/20 transition-all group">
+                  <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
+                  <Rocket className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
                   <span>Start Competing Free</span>
                 </Button>
               </Link>
               <Link href="#arenas" className="w-full sm:w-auto">
-                <Button variant="secondary" size="lg" className="w-full sm:w-auto font-bold text-sm uppercase tracking-wider px-6 h-12 gap-2 bg-card hover:bg-zinc-800 border-border">
+                <Button variant="secondary" size="lg" className="relative overflow-hidden w-full sm:w-auto font-bold text-sm uppercase tracking-wider px-6 h-12 gap-2 bg-card hover:bg-zinc-800 border-border hover:border-zinc-700 transition-all">
                   <Gamepad2 className="w-4 h-4 text-primary" />
                   <span>Explore Arenas</span>
                 </Button>
@@ -268,13 +302,14 @@ function HomeContent() {
           ) : (
             <>
               <Link href="/challenges" className="w-full sm:w-auto">
-                <Button size="lg" className="w-full sm:w-auto font-black text-sm uppercase tracking-wider px-8 h-12 gap-2 bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm">
-                  <Swords className="w-4 h-4" />
+                <Button size="lg" className="relative overflow-hidden w-full sm:w-auto font-black text-sm uppercase tracking-wider px-8 h-12 gap-2 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-primary/20 transition-all group">
+                  <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
+                  <Swords className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
                   <span>Start Competing Free</span>
                 </Button>
               </Link>
               <Link href="/tournaments" className="w-full sm:w-auto">
-                <Button variant="secondary" size="lg" className="w-full sm:w-auto font-bold text-sm uppercase tracking-wider px-6 h-12 gap-2 bg-card hover:bg-zinc-800 border-border">
+                <Button variant="secondary" size="lg" className="relative overflow-hidden w-full sm:w-auto font-bold text-sm uppercase tracking-wider px-6 h-12 gap-2 bg-card hover:bg-zinc-800 border-border hover:border-zinc-700 transition-all">
                   <Trophy className="w-4 h-4 text-primary" />
                   <span>View Live Tournaments</span>
                 </Button>
@@ -283,24 +318,24 @@ function HomeContent() {
           )}
         </div>
 
-        {/* Live Proof Metrics Strip (FACEIT Live Stats Vibe) */}
+        {/* Live Proof Metrics Strip (FACEIT Live Stats Vibe with Hover Parallax) */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 w-full pt-8 sm:pt-12 border-t border-border">
-          <Card className="p-4 sm:p-5 rounded-xl bg-card border-border shadow-sm flex flex-col items-center justify-center text-center">
+          <Card className="p-4 sm:p-5 rounded-xl bg-card/80 backdrop-blur-sm border-border hover:border-zinc-700 hover:-translate-y-1 transition-all duration-300 shadow-sm flex flex-col items-center justify-center text-center group">
             <CrossmintLogo variant="full" className="h-6 w-auto" />
             <span className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider mt-1.5">Smart Escrow Vault</span>
           </Card>
 
-          <Card className="p-4 sm:p-5 rounded-xl bg-card border-border shadow-sm flex flex-col items-center text-center">
+          <Card className="p-4 sm:p-5 rounded-xl bg-card/80 backdrop-blur-sm border-border hover:border-primary/40 hover:-translate-y-1 transition-all duration-300 shadow-sm flex flex-col items-center text-center group">
             <span className="font-mono text-xl sm:text-2xl font-black text-primary">&lt; 2 Seconds</span>
             <span className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider mt-1">Visual Verification™</span>
           </Card>
 
-          <Card className="p-4 sm:p-5 rounded-xl bg-card border-border shadow-sm flex flex-col items-center text-center">
+          <Card className="p-4 sm:p-5 rounded-xl bg-card/80 backdrop-blur-sm border-border hover:border-zinc-700 hover:-translate-y-1 transition-all duration-300 shadow-sm flex flex-col items-center text-center group">
             <span className="font-mono text-xl sm:text-2xl font-black text-foreground">USDC Standard</span>
             <span className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider mt-1">Instant Liquidity</span>
           </Card>
 
-          <Card className="p-4 sm:p-5 rounded-xl bg-card border-border shadow-sm flex flex-col items-center text-center">
+          <Card className="p-4 sm:p-5 rounded-xl bg-card/80 backdrop-blur-sm border-border hover:border-purple-500/40 hover:-translate-y-1 transition-all duration-300 shadow-sm flex flex-col items-center text-center group">
             <span className="font-mono text-xl sm:text-2xl font-black text-purple-400">Zero Referees</span>
             <span className="text-[11px] text-muted-foreground uppercase font-bold tracking-wider mt-1">Universal Ingest</span>
           </Card>

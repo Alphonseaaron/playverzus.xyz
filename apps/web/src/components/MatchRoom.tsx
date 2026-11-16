@@ -468,6 +468,9 @@ export function MatchRoom({
           matchId={matchId}
           gameName={profile.displayName}
           gamePlatform={profile.platform || 'UNIVERSAL'}
+          gameBannerUrl={catalogGame?.bannerUrl || (profile as any).bannerUrl}
+          gamePosterUrl={catalogGame?.posterUrl || (profile as any).posterUrl}
+          perspectiveUserId={currentUserId}
           playerAId={playerAId}
           playerAName={playerAUsername || `Player #${playerAId.slice(0, 8)}`}
           playerAGamertag={playerATag}
