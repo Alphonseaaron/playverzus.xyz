@@ -27,6 +27,18 @@ interface MatchDetails {
   readyA?: boolean;
   readyB?: boolean;
   allReady?: boolean;
+  entry_fee?: number | null;
+  entryFee?: number | null;
+  prize_pool?: number | null;
+  prizeAmount?: number | null;
+  tournament_id?: string | null;
+  tournamentRound?: string | null;
+  isTournamentFinal?: boolean;
+  tournamentPrizePool?: number | null;
+  player_a_score?: number | string | null;
+  player_b_score?: number | string | null;
+  playerAScore?: number | string | null;
+  playerBScore?: number | string | null;
 }
 
 function MatchDetailContent() {
@@ -85,6 +97,14 @@ function MatchDetailContent() {
       readyA={match.readyA}
       readyB={match.readyB}
       allReady={match.allReady}
+      entryFee={match.entryFee ?? match.entry_fee}
+      prizeAmount={match.prizeAmount ?? match.prize_pool}
+      playerAScore={match.playerAScore ?? match.player_a_score}
+      playerBScore={match.playerBScore ?? match.player_b_score}
+      isTournament={Boolean(match.tournament_id)}
+      tournamentRound={match.tournamentRound}
+      isTournamentFinal={match.isTournamentFinal}
+      tournamentPrizePool={match.tournamentPrizePool}
     />
   );
 }

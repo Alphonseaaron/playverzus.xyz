@@ -61,6 +61,14 @@ interface MatchRoomProps {
   readyA?: boolean;
   readyB?: boolean;
   allReady?: boolean;
+  entryFee?: number | null;
+  prizeAmount?: number | null;
+  playerAScore?: number | string | null;
+  playerBScore?: number | string | null;
+  isTournament?: boolean;
+  tournamentRound?: string | null;
+  isTournamentFinal?: boolean;
+  tournamentPrizePool?: number | null;
 }
 
 export function MatchRoom({
@@ -84,6 +92,14 @@ export function MatchRoom({
   readyA,
   readyB,
   allReady,
+  entryFee,
+  prizeAmount,
+  playerAScore,
+  playerBScore,
+  isTournament,
+  tournamentRound,
+  isTournamentFinal,
+  tournamentPrizePool,
 }: MatchRoomProps) {
   const catalogGame = getGameById(profile.id);
   const { getGamertag, getGamertagLabel, setGamertag } = useGameAccountsStore();
@@ -305,7 +321,7 @@ export function MatchRoom({
       if (res?.readyA !== undefined) setIsReadyA(res.readyA);
       if (res?.readyB !== undefined) setIsReadyB(res.readyB);
       if (res?.allReady) {
-        notifyUser('Both Competitors Ready! 🔥', {
+        notifyUser('Both Competitors Ready', {
           body: 'Duel is now LIVE. Scores and victory screens are tracked automatically.',
           sound: 'victory',
         });
@@ -456,13 +472,21 @@ export function MatchRoom({
           playerAName={playerAUsername || `Player #${playerAId.slice(0, 8)}`}
           playerAGamertag={playerATag}
           playerACountry={playerACountry}
+          playerAScore={playerAScore}
           playerBId={playerBId || ''}
           playerBName={playerBUsername || (playerBId ? `Player #${playerBId.slice(0, 8)}` : 'Challenger')}
           playerBGamertag={playerBTag}
           playerBCountry={playerBCountry}
+          playerBScore={playerBScore}
           winnerId={winnerId}
           scoreText={capture.lastScore}
           confidence={confidence ?? 0.98}
+          entryFee={entryFee}
+          prizeAmount={prizeAmount}
+          isTournament={isTournament}
+          tournamentRound={tournamentRound}
+          isTournamentFinal={isTournamentFinal}
+          tournamentPrizePool={tournamentPrizePool}
         />
       )}
 

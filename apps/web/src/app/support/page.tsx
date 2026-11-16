@@ -17,8 +17,6 @@ import {
   Mail,
   User,
   ExternalLink,
-  PlaySquare,
-  Sparkles,
 } from 'lucide-react';
 import { apiClient } from '../../lib/api';
 import { Badge } from '../../components/ui/badge';
@@ -26,7 +24,6 @@ import { Button } from '../../components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
 import { Textarea } from '../../components/ui/textarea';
-import { VideoTutorialFaqHub } from '../../components/VideoTutorialFaqHub';
 
 interface UserProfile {
   id: string;
@@ -63,7 +60,7 @@ interface TicketDetail extends TicketSummary {
 }
 
 export default function SupportPage() {
-  const [activeTab, setActiveTab] = useState<'VIDEO_FAQS' | 'NEW_TICKET' | 'MY_TICKETS'>('VIDEO_FAQS');
+  const [activeTab, setActiveTab] = useState<'NEW_TICKET' | 'MY_TICKETS'>('NEW_TICKET');
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
 
   // Form inputs
@@ -214,35 +211,20 @@ export default function SupportPage() {
       </Card>
 
       {/* Tabs / View Selector */}
-      <div className="flex items-center gap-2 border-b border-border pb-2 overflow-x-auto">
-        <button
-          onClick={() => {
-            setActiveTab('VIDEO_FAQS');
-            setSelectedTicketId(null);
-          }}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 flex-shrink-0 ${
-            activeTab === 'VIDEO_FAQS' && !selectedTicketId
-              ? 'bg-primary text-primary-foreground shadow-sm'
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <PlaySquare className="w-3.5 h-3.5" />
-          <span>Video Tutorials & Social Proof FAQs</span>
-        </button>
-
+      <div className="flex items-center gap-2 border-b border-border pb-2">
         <button
           onClick={() => {
             setActiveTab('NEW_TICKET');
             setSelectedTicketId(null);
           }}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 flex-shrink-0 ${
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
             activeTab === 'NEW_TICKET' && !selectedTicketId
               ? 'bg-primary text-primary-foreground shadow-sm'
               : 'text-muted-foreground hover:text-foreground'
           }`}
         >
           <Send className="w-3.5 h-3.5" />
-          <span>Open Inquiry / Dispute</span>
+          <span>Open New Inquiry</span>
         </button>
 
         {userProfile && (
@@ -251,7 +233,7 @@ export default function SupportPage() {
               setActiveTab('MY_TICKETS');
               setSelectedTicketId(null);
             }}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 flex-shrink-0 ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
               activeTab === 'MY_TICKETS' || selectedTicketId
                 ? 'bg-primary text-primary-foreground shadow-sm'
                 : 'text-muted-foreground hover:text-foreground'
@@ -356,8 +338,6 @@ export default function SupportPage() {
             </div>
           )}
         </Card>
-      ) : activeTab === 'VIDEO_FAQS' ? (
-        <VideoTutorialFaqHub />
       ) : activeTab === 'MY_TICKETS' ? (
         /* My Tickets List */
         <Card className="p-6 bg-card border-border space-y-4">
