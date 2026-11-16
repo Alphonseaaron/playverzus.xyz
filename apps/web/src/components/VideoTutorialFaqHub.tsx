@@ -39,6 +39,18 @@ interface TutorialVideo {
 
 const TUTORIALS: TutorialVideo[] = [
   {
+    id: 'master-walkthrough',
+    title: 'Complete Live Platform Tour & FC 27 Match Test',
+    shortTag: 'Featured · Full Live Tour',
+    category: 'LIVE UI WALKTHROUGH',
+    src: '/tutorials/playverzus_full_platform_walkthrough.mp4',
+    icon: Sparkles,
+    description: 'Watch the complete end-to-end competitor journey: sign in, browse open duels, create an FC 27 duel with verified presets, connect console broadcast, and claim faucet rewards.',
+    faqQuestion: 'How does a player navigate from sign-in to match settlement?',
+    faqAnswer: 'The platform offers a seamless 60-second competitor journey: log in, pick an open challenge or create a custom duel with verified optical presets, join the live match room, connect your console stream or PC screen, and receive instant cryptographic settlement directly to your wallet upon the final whistle.',
+    statsBadge: '100% Live Browser Navigation (40s)',
+  },
+  {
     id: 'duel-setup',
     title: '1v1 Duel Creation & Instant Escrow',
     shortTag: 'Step 1 · Matchmaking',
