@@ -5,6 +5,94 @@ import Tesseract from 'tesseract.js';
 import type { GameProfile } from '@playverzus/core';
 import { normalizeScoreboardOcrText, matchHeadToHeadScore } from '@playverzus/core';
 import { apiClient } from '../lib/api';
+import {
+  getSessionStream,
+  setSessionStream,
+  requestSessionScreenShare,
+  hasActiveSessionStream,
+} from '../lib/screenCaptureSingleton';
+import { updateScreenPermission } from '../lib/deviceMachineStore';
+
+export interface GameViewportLock {
+  x: number;      // 0.0 - 1.0 (normalized offset from left)
+  y: number;      // 0.0 - 1.0 (normalized offset from top, skips browser navigation chrome)
+  width: number;  // 0.0 - 1.0 (normalized width of active game frame)
+  height: number; // 0.0 - 1.0 (normalized height of active game frame)
+  isLocked: boolean;
+  mode: 'NATIVE_FULLSCREEN' | 'NAV_EXCLUDED' | '16_9_LETTERBOX_LOCKED';
+}
+
+/**
+ * Intelligent Game Viewport Auto-Lock:
+ * Automatically skips browser navigation chrome (tabs, URL bar) and desktop taskbar,
+ * or locks onto 16:9 game aspect ratio on ultrawide (21:9) or laptop (16:10) monitors.
+ */
+export function detectGameViewportLock(video: HTMLVideoElement): GameViewportLock {
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
+  if (!vw || !vh) {
+    return { x: 0, y: 0, width: 1, height: 1, isLocked: false, mode: 'NATIVE_FULLSCREEN' };
+  }
+
+  const rawRatio = vw / vh;
+  const targetGameRatio = 16 / 9; // 1.7778
+
+  // Scenario 1: Standard 16:9 monitor (e.g. 1920x1080, 2560x1440, 3840x2160)
+  if (Math.abs(rawRatio - targetGameRatio) < 0.05) {
+    return {
+      x: 0,
+      y: 0,
+      width: 1,
+      height: 1,
+      isLocked: true,
+      mode: 'NATIVE_FULLSCREEN',
+    };
+  }
+
+  // Scenario 2: 16:10 laptop screen (e.g. 1920x1200, 2560x1600, 2880x1800 MacBook)
+  // Ratio is ~1.6. Standard 16:9 game renders letterboxed with black bars top and bottom
+  if (rawRatio < targetGameRatio && rawRatio >= 1.5) {
+    const gameHeight = vw / targetGameRatio;
+    const topBarHeight = Math.max(0, (vh - gameHeight) / 2);
+    const normY = topBarHeight / vh;
+    const normH = gameHeight / vh;
+    return {
+      x: 0,
+      y: normY,
+      width: 1,
+      height: normH,
+      isLocked: true,
+      mode: '16_9_LETTERBOX_LOCKED',
+    };
+  }
+
+  // Scenario 3: Ultrawide 21:9 monitor (e.g. 2560x1080, 3440x1440, 5120x2160)
+  // Ratio is ~2.33 - 2.4. A 16:9 game has pillar bars on left and right
+  if (rawRatio > targetGameRatio) {
+    const gameWidth = vh * targetGameRatio;
+    const pillarWidth = Math.max(0, (vw - gameWidth) / 2);
+    const normX = pillarWidth / vw;
+    const normW = gameWidth / vw;
+    return {
+      x: normX,
+      y: 0,
+      width: normW,
+      height: 1,
+      isLocked: true,
+      mode: '16_9_LETTERBOX_LOCKED',
+    };
+  }
+
+  // Scenario 4: Window / Browser tab capture: exclude top 8% navigation bar & bottom 2% taskbar
+  return {
+    x: 0,
+    y: 0.07,
+    width: 1,
+    height: 0.91,
+    isLocked: true,
+    mode: 'NAV_EXCLUDED',
+  };
+}
 
 export interface CaptureState {
   status: 'IDLE' | 'CAPTURING' | 'VERIFYING' | 'ENDED' | 'ERROR';
@@ -13,6 +101,8 @@ export interface CaptureState {
   error: string | null;
   mode?: 'SCREEN' | 'CAMERA' | 'CONSOLE_STREAM' | 'AUTONOMOUS_FEED' | 'SCREENSHOT_UPLOAD';
   stream?: MediaStream | null;
+  isAutoLocked?: boolean;
+  gameLockMode?: string;
 }
 
 export function useCapturePipeline(
@@ -116,15 +206,22 @@ export function useCapturePipeline(
         const is4by3 = videoRatio >= 1.25 && videoRatio <= 1.40;
         const widthMultiplier = is4by3 ? 1.20 : 1.0;
 
+        // Intelligent Game Viewport Auto-Lock: automatically skips browser navigation chrome and letterboxes
+        const gameLock = detectGameViewportLock(v);
+        const gameX = gameLock.x * v.videoWidth;
+        const gameY = gameLock.y * v.videoHeight;
+        const gameW = gameLock.width * v.videoWidth;
+        const gameH = gameLock.height * v.videoHeight;
+
         for (let i = 0; i < candidateRois.length; i++) {
           const roi = candidateRois[i]!;
-          const sw = Math.max(10, Math.floor(roi.w * v.videoWidth * widthMultiplier));
-          const sh = Math.max(10, Math.floor(roi.h * v.videoHeight));
-          let sx = Math.max(0, Math.floor(roi.x * v.videoWidth));
+          const sw = Math.max(10, Math.floor(roi.w * gameW * widthMultiplier));
+          const sh = Math.max(10, Math.floor(roi.h * gameH));
+          let sx = Math.max(0, Math.floor(gameX + (roi.x * gameW)));
           if (is4by3 && (roi.anchor === 'TOP_CENTER' || !roi.anchor)) {
             sx = Math.max(0, Math.floor(sx - (sw * 0.1)));
           }
-          const sy = Math.max(0, Math.floor(roi.y * v.videoHeight));
+          const sy = Math.max(0, Math.floor(gameY + (roi.y * gameH)));
 
           canvas.width = sw;
           canvas.height = sh;
@@ -252,8 +349,9 @@ export function useCapturePipeline(
   );
 
   /**
-   * Primary PC/Desktop Game Window Screen Capture (getDisplayMedia ONLY)
-   * NO silent fallback to webcam! If cancelled, sets clean IDLE state.
+   * Primary PC/Desktop Game Window Screen Capture
+   * Reuses persistent session stream from machine sign-in authorization with ZERO prompts,
+   * or requests once if not yet armed.
    */
   const startCapture = useCallback(async () => {
     if (!profile) {
@@ -274,23 +372,25 @@ export function useCapturePipeline(
 
       await apiClient(`/matches/${matchId}/start`, { method: 'POST' }).catch(() => {});
 
-      let stream: MediaStream;
-      try {
-        stream = await navigator.mediaDevices.getDisplayMedia({
-          video: { frameRate: 15 },
-          audio: false,
-        });
-      } catch (err: unknown) {
+      // 1. Check if machine was already authorized and session stream is live in memory
+      let stream: MediaStream | null = getSessionStream();
+      if (!stream) {
+        stream = await requestSessionScreenShare();
+      }
+
+      if (!stream) {
         // User explicitly cancelled the screen share prompt or denied permission
         setState((prev) => ({
           ...prev,
           status: 'IDLE',
-          error: 'Screen share cancelled. Click "Connect Game Window" to select your game window.',
+          error: 'Screen share cancelled. Machine permission required for autonomous verification.',
         }));
         return;
       }
 
       streamRef.current = stream;
+      setSessionStream(stream);
+      updateScreenPermission(true);
 
       // When user stops screen sharing from browser UI
       stream.getVideoTracks()[0]?.addEventListener('ended', () => {
@@ -303,6 +403,8 @@ export function useCapturePipeline(
       await video.play();
       videoRef.current = video;
 
+      const lock = detectGameViewportLock(video);
+
       setState({
         status: 'CAPTURING',
         lastScore: null,
@@ -310,6 +412,8 @@ export function useCapturePipeline(
         error: null,
         mode: 'SCREEN',
         stream,
+        isAutoLocked: lock.isLocked,
+        gameLockMode: lock.mode,
       });
 
       setupOcrLoop(video);
@@ -318,6 +422,13 @@ export function useCapturePipeline(
       setState({ status: 'ERROR', lastScore: null, confidence: 0, error: message });
     }
   }, [matchId, profile, stopCapture, setupOcrLoop]);
+
+  // If a session stream is already active from machine sign-in authorization, adopt it seamlessly
+  useEffect(() => {
+    if (hasActiveSessionStream() && state.status === 'IDLE' && profile) {
+      startCapture();
+    }
+  }, [profile, state.status, startCapture]);
 
   /**
    * Explicit Console / Companion Camera Mode (User props phone or camera facing TV)

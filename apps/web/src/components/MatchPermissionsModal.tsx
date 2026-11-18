@@ -15,6 +15,11 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
+import {
+  registerCurrentMachine,
+  updateAlertsPermission,
+  updateScreenPermission,
+} from '../lib/deviceMachineStore';
 
 export interface MatchPermissionsModalProps {
   open: boolean;
@@ -74,6 +79,7 @@ export function MatchPermissionsModal({
     try {
       setRequestingScreen(true);
       await onStartCapture();
+      updateScreenPermission(true);
     } catch {
       // Handled in pipeline
     } finally {
@@ -86,6 +92,7 @@ export function MatchPermissionsModal({
       setRequestingNotifs(true);
       const res = await onRequestNotifications();
       setLocalNotifsGranted(res);
+      updateAlertsPermission(res);
     } catch {
       // Handled
     } finally {

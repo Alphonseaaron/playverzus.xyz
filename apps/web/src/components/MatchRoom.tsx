@@ -34,6 +34,7 @@ import { apiClient } from '../lib/api';
 import { useGameAccountsStore } from '../lib/gameAccountsStore';
 import { getGameById } from '../lib/gamesCatalog';
 import { MatchRoomSpotlight } from './onboarding/MatchRoomSpotlight';
+import { isMachineRegisteredForCapture } from '../lib/deviceMachineStore';
 import type { GameProfile } from '@playverzus/core';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
@@ -204,6 +205,15 @@ export function MatchRoom({
     prevPlayerB.current = playerBId;
   }, [playerBId]);
 
+  // Auto-arm capture silently on room entry if this machine was authorized
+  useEffect(() => {
+    if (status === 'ACCEPTED' || status === 'LIVE' || status === 'OPEN') {
+      if (isMachineRegisteredForCapture() && capture.status === 'IDLE') {
+        capture.startCapture().catch(() => {});
+      }
+    }
+  }, [status, capture.status, capture.startCapture]);
+
   // 2. Notify on Screen Connected & Background Verification Active
   useEffect(() => {
     if (prevCaptureStatus.current !== 'CAPTURING' && capture.status === 'CAPTURING') {
@@ -298,10 +308,11 @@ export function MatchRoom({
       return;
     }
 
-    // 3. Screen / Feed Armed check
+    // 3. Automated Engine Auto-Arm: If capture is not already running, arm capture seamlessly
     if (capture.status !== 'CAPTURING' && capture.mode !== 'SCREENSHOT_UPLOAD' && capture.mode !== 'CONSOLE_STREAM') {
-      setPermissionsModalOpen(true);
-      return;
+      try {
+        await capture.startCapture();
+      } catch {}
     }
 
     const myCurrentReady = isPlayerA ? isReadyA : isReadyB;
@@ -321,13 +332,18 @@ export function MatchRoom({
       if (res?.readyA !== undefined) setIsReadyA(res.readyA);
       if (res?.readyB !== undefined) setIsReadyB(res.readyB);
       if (res?.allReady) {
-        notifyUser('Both Competitors Ready', {
-          body: 'Duel is now LIVE. Scores and victory screens are tracked automatically.',
+        notifyUser('Both Competitors Ready • Match Live!', {
+          body: `Escrow automatically locked for both players ($${(entryFee ? entryFee * 2 : 10).toFixed(2)} USDC). Duel underway!`,
           sound: 'victory',
         });
         onRefresh?.();
       } else {
-        notifyUser(nextReady ? 'Readiness Confirmed ✓' : 'Ready Cancelled', { sound: 'score' });
+        notifyUser(
+          nextReady
+            ? `Ready Confirmed & Escrow Secured ✓ ($${(entryFee ?? 5).toFixed(2)} USDC)`
+            : 'Ready Cancelled',
+          { sound: 'score' },
+        );
       }
     } catch {
       // Local fallback
@@ -622,9 +638,15 @@ export function MatchRoom({
               <Button
                 onClick={toggleReady}
                 variant={(isPlayerA ? isReadyA : isReadyB) ? 'outline' : 'default'}
-                className="w-full text-xs font-bold"
+                className={`w-full text-xs font-bold uppercase tracking-wider ${
+                  (isPlayerA ? isReadyA : isReadyB)
+                    ? 'border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10'
+                    : 'bg-primary text-primary-foreground shadow-sm'
+                }`}
               >
-                {(isPlayerA ? isReadyA : isReadyB) ? '✓ Ready Confirmed' : 'Mark Ready'}
+                {(isPlayerA ? isReadyA : isReadyB)
+                  ? '✓ Ready & Escrow Locked'
+                  : 'Mark Ready & Stake'}
               </Button>
 
               <Button

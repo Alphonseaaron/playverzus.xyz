@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { GameRail } from './GameRail';
 import { TopHeader } from './TopHeader';
@@ -8,9 +8,33 @@ import { PartyBar } from './PartyBar';
 import { NotificationToastContainer } from './NotificationToastContainer';
 import { BackToTop } from './BackToTop';
 import { GamerQuestHub } from './onboarding/GamerQuestHub';
+import { DeviceRegistrationModal } from './onboarding/DeviceRegistrationModal';
+import { isMachineFullyRegistered } from '../lib/deviceMachineStore';
+import { getSupabaseClient } from '../lib/supabase';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const [deviceModalOpen, setDeviceModalOpen] = useState(false);
+  const [username, setUsername] = useState('Competitor');
+
+  // Trigger high-priority device & permissions registration modal after sign-in or for unregistered machines
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const justSignedIn = sessionStorage.getItem('playverzus_just_signed_in') === 'true';
+    const dismissed = sessionStorage.getItem('playverzus_device_modal_dismissed') === 'true';
+
+    if (justSignedIn || (!isMachineFullyRegistered() && !dismissed)) {
+      const supabase = getSupabaseClient();
+      supabase.auth.getSession().then(({ data }) => {
+        if (data.session?.user) {
+          const userMeta = data.session.user.user_metadata;
+          setUsername(userMeta?.username || data.session.user.email?.split('@')[0] || 'Competitor');
+          setDeviceModalOpen(true);
+          sessionStorage.removeItem('playverzus_just_signed_in');
+        }
+      });
+    }
+  }, [pathname]);
 
   // 1. Standalone pages: NO Sidebar, NO TopHeader, NO PartyBar, NO pb-32
   // Dedicated clean view for legal agreements and authentication
@@ -105,6 +129,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <GamerQuestHub />
       <BackToTop />
       <NotificationToastContainer />
+      <DeviceRegistrationModal
+        open={deviceModalOpen}
+        onOpenChange={(open) => {
+          setDeviceModalOpen(open);
+          if (!open) {
+            try {
+              sessionStorage.setItem('playverzus_device_modal_dismissed', 'true');
+            } catch {}
+          }
+        }}
+        username={username}
+      />
     </div>
   );
 }

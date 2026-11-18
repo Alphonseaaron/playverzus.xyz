@@ -98,6 +98,9 @@ function SignUpForm() {
 
       if (signInData?.session?.access_token) {
         syncAuthCookie(signInData.session.access_token);
+        try {
+          sessionStorage.setItem('playverzus_just_signed_in', 'true');
+        } catch {}
       }
 
       // Use full browser navigation to ensure Edge Middleware receives the cookie synchronously

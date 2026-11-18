@@ -117,6 +117,9 @@ function LoginForm() {
 
       if (signInData?.session?.access_token) {
         syncAuthCookie(signInData.session.access_token);
+        try {
+          sessionStorage.setItem('playverzus_just_signed_in', 'true');
+        } catch {}
       }
 
       // If user is admin/staff and no custom redirect was specified, route straight to admin

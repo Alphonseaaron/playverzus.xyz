@@ -31,6 +31,7 @@ import { CountryFlag } from '../CountryFlag';
 import { useGameAccountsStore } from '../../lib/gameAccountsStore';
 import { apiClient } from '../../lib/api';
 import { notifyUser } from '../../lib/notifications';
+import { registerCurrentMachine } from '../../lib/deviceMachineStore';
 
 interface FirstTimeOnboardingModalProps {
   open: boolean;
@@ -128,6 +129,7 @@ export function FirstTimeOnboardingModal({
         localStorage.setItem('playverzus_onboarding_completed', 'true');
       } catch {}
     }
+    registerCurrentMachine(true, true);
     onComplete?.();
     onOpenChange(false);
   };

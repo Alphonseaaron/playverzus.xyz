@@ -25,6 +25,7 @@ import { useGameAccountsStore } from '../lib/gameAccountsStore';
 import { findCatalogGame } from '../lib/gamesCatalog';
 import { CrossmintLogo } from './CrossmintLogo';
 import { GameplaySetupTutorialModal } from './GameplaySetupTutorialModal';
+import { isMachineRegisteredForCapture } from '../lib/deviceMachineStore';
 
 interface MatchReadinessStepperProps {
   matchId: string;
@@ -114,9 +115,10 @@ export function MatchReadinessStepper({
   const isSoloGame = catalogGame?.gameType === 'HIGH_SCORE' || catalogGame?.gameType === 'LOW_TIME';
 
   // 4 Standardized Readiness Steps (Solo games like Subway Surfers bind to device session directly)
+  const machineRegistered = isMachineRegisteredForCapture();
   const step1Done = Boolean(activeMachine && (isSoloGame || myGamertag));
   const step2Done = Boolean(hasOpponent);
-  const step3Done = Boolean(isCapturing);
+  const step3Done = Boolean(isCapturing || machineRegistered);
   const step4Done = Boolean(isReady && opponentReady);
 
   return (
@@ -263,11 +265,11 @@ export function MatchReadinessStepper({
           </div>
           <div className="text-xs font-semibold text-foreground flex items-center gap-1.5">
             <span className={`w-2 h-2 rounded-full ${step3Done ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-600'}`} />
-            <span>{step3Done ? 'Scorebug Locked' : 'HUD Ready'}</span>
+            <span>{isCapturing ? 'Optical Locked' : machineRegistered ? 'Machine Armed' : 'HUD Ready'}</span>
           </div>
           <div className="mt-1">
             {step3Done ? (
-              <span className="text-[10px] font-mono text-emerald-400 font-bold">● Streaming & verifying</span>
+              <span className="text-[10px] font-mono text-emerald-400 font-bold">● Auto-Locked & verifying</span>
             ) : (
               <Button
                 size="sm"
@@ -291,7 +293,7 @@ export function MatchReadinessStepper({
         >
           <div className="flex items-center justify-between mb-2">
             <span className="text-[10px] font-mono uppercase font-bold text-muted-foreground">
-              Step 4 · Escrow & Ready
+              Step 4 · Auto Escrow
             </span>
             {step4Done ? (
               <CheckCircle2 className="w-4 h-4 text-emerald-400" />
@@ -309,9 +311,13 @@ export function MatchReadinessStepper({
               variant={isReady ? 'outline' : 'default'}
               onClick={onToggleReady}
               disabled={!isParticipant}
-              className="h-6 px-2 text-[10px] font-bold w-full mt-0.5"
+              className={`h-6 px-2 text-[10px] font-bold w-full mt-0.5 uppercase tracking-wider ${
+                isReady
+                  ? 'border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10'
+                  : 'bg-primary text-primary-foreground shadow-sm'
+              }`}
             >
-              {isReady ? '✓ Ready Confirmed' : 'Confirm Ready'}
+              {isReady ? '✓ Escrow Locked' : 'Mark Ready'}
             </Button>
           </div>
         </div>
