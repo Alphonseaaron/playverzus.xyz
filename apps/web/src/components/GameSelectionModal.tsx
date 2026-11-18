@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, X, Check, Gamepad2 } from 'lucide-react';
 import { OFFICIAL_GAMES, type CatalogGame } from '../lib/gamesCatalog';
 import { useGameStore } from '../lib/gameStore';
@@ -22,6 +22,17 @@ export function GameSelectionModal({
 }: GameSelectionModalProps) {
   const { activeGame, setActiveGame } = useGameStore();
   const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [open, onClose]);
 
   if (!open) return null;
 
@@ -48,6 +59,9 @@ export function GameSelectionModal({
     <div
       role="dialog"
       aria-modal="true"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
       className="fixed inset-0 z-50 overflow-y-auto bg-background/80 backdrop-blur-md p-3 sm:p-6 flex items-start justify-center animate-in fade-in duration-150"
     >
       <div className="w-full max-w-3xl my-4 sm:my-8 bg-card border border-border rounded-2xl shadow-2xl p-5 sm:p-6 text-foreground flex flex-col gap-5 max-h-[calc(100vh-2rem)] sm:max-h-[calc(100vh-4rem)] overflow-hidden">

@@ -1,11 +1,14 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { useGameStore } from '../lib/gameStore';
 import { getGameById, type CatalogGame } from '../lib/gamesCatalog';
 import { GamePoster } from './GamePoster';
+import { GameSelectionModal } from './GameSelectionModal';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
+import { notifyUser } from '../lib/notifications';
 
 interface GameContextBarProps {
   title?: string;
@@ -26,9 +29,22 @@ export function GameContextBar({
   onSelectGame,
   actionButton,
 }: GameContextBarProps) {
-  const { activeGame } = useGameStore();
+  const { activeGame, setActiveGame } = useGameStore();
+  const [modalOpen, setModalOpen] = useState(false);
 
   const catalogGame = getGameById(activeGame?.id);
+
+  const handlePickGame = (game: CatalogGame) => {
+    setActiveGame(game);
+    notifyUser('Active Arena Switched', {
+      body: `Now competing in ${game.displayName}`,
+      sound: 'connect',
+    });
+    if (onSelectGame) {
+      onSelectGame(game);
+    }
+    setModalOpen(false);
+  };
 
   return (
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 bg-card border border-border rounded-2xl shadow-sm">
@@ -90,18 +106,25 @@ export function GameContextBar({
             </div>
           )}
 
-          <Link href="/games">
-            <Button
-              variant="secondary"
-              size="default"
-              className="text-xs font-bold gap-1.5"
-            >
-              <span>⇄ Switch Game</span>
-            </Button>
-          </Link>
+          <Button
+            variant="secondary"
+            size="default"
+            onClick={() => setModalOpen(true)}
+            className="text-xs font-bold gap-1.5 cursor-pointer"
+            title="Switch active game arena"
+          >
+            <span>⇄ Switch Game</span>
+          </Button>
 
           {actionButton}
         </div>
+
+        {/* In-Place Game Switcher Modal */}
+        <GameSelectionModal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          onSelectGame={handlePickGame}
+        />
       </div>
   );
 }

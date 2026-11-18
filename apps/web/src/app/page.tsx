@@ -386,40 +386,47 @@ function HomeContent() {
             >
               <div>
                 {/* Poster Artwork Header */}
-                <div className="relative aspect-[16/9] w-full overflow-hidden bg-zinc-950">
-                  <GamePoster
-                    game={{
-                      displayName: game.displayName,
-                      shortName: game.shortName,
-                      posterUrl: game.posterUrl,
-                      bannerUrl: game.bannerUrl,
-                      icon: game.icon,
-                      platform: game.platform,
-                    }}
-                    aspect="banner"
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent pointer-events-none" />
+                <Link
+                  href={isAuthenticated ? `/challenges` : `/signup?redirect=/challenges`}
+                  onClick={() => setActiveGame(game)}
+                  className="block cursor-pointer"
+                  title={`Select ${game.displayName} and view open duels`}
+                >
+                  <div className="relative aspect-[16/9] w-full overflow-hidden bg-zinc-950">
+                    <GamePoster
+                      game={{
+                        displayName: game.displayName,
+                        shortName: game.shortName,
+                        posterUrl: game.posterUrl,
+                        bannerUrl: game.bannerUrl,
+                        icon: game.icon,
+                        platform: game.platform,
+                      }}
+                      aspect="banner"
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent pointer-events-none" />
 
-                  {/* Top-Right Platform Badge */}
-                  <div className="absolute top-3 right-3">
-                    <Badge variant="secondary" className="font-mono text-[10px] bg-zinc-900/90 border-zinc-700 backdrop-blur-md">
-                      {game.platforms && game.platforms.length > 0 ? game.platforms.join(' · ') : game.platform}
-                    </Badge>
-                  </div>
+                    {/* Top-Right Platform Badge */}
+                    <div className="absolute top-3 right-3">
+                      <Badge variant="secondary" className="font-mono text-[10px] bg-zinc-900/90 border-zinc-700 backdrop-blur-md">
+                        {game.platforms && game.platforms.length > 0 ? game.platforms.join(' · ') : game.platform}
+                      </Badge>
+                    </div>
 
-                  {/* Bottom-Left Title Overlay */}
-                  <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
-                    <div>
-                      <h3 className="font-black text-lg text-foreground group-hover:text-primary transition-colors drop-shadow-md">
-                        {game.displayName}
-                      </h3>
-                      <span className="font-mono text-[10px] text-zinc-400 block font-semibold">
-                        {game.shortName} · Universal Match Ingest
-                      </span>
+                    {/* Bottom-Left Title Overlay */}
+                    <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
+                      <div>
+                        <h3 className="font-black text-lg text-foreground group-hover:text-primary transition-colors drop-shadow-md">
+                          {game.displayName}
+                        </h3>
+                        <span className="font-mono text-[10px] text-zinc-400 block font-semibold">
+                          {game.shortName} · Universal Match Ingest
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
+                </Link>
 
                 {/* Card Body */}
                 <div className="p-4 sm:p-5 space-y-3">
@@ -441,15 +448,34 @@ function HomeContent() {
                 </div>
               </div>
 
-              {/* Action Button */}
-              <div className="p-4 sm:p-5 pt-0">
+              {/* Action Buttons: Play Duels & Enter Arena */}
+              <div className="p-4 sm:p-5 pt-0 grid grid-cols-2 gap-2">
                 <Link
-                  href={isAuthenticated ? `/matches/new?gameId=${game.id}` : `/signup?redirect=/matches/new?gameId=${game.id}`}
-                  className="w-full block"
+                  href={isAuthenticated ? `/challenges` : `/signup?redirect=/challenges`}
+                  onClick={() => setActiveGame(game)}
+                  className="w-full"
                 >
-                  <Button variant="secondary" size="sm" className="w-full font-bold text-xs uppercase tracking-wider gap-1.5 h-9 group-hover:bg-primary group-hover:text-primary-foreground transition-all">
-                    <Swords className="w-3.5 h-3.5 text-primary group-hover:text-primary-foreground" />
-                    <span>Enter {game.shortName} Arena</span>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="w-full font-bold text-xs uppercase tracking-wider gap-1.5 h-9 shadow-sm"
+                  >
+                    <Swords className="w-3.5 h-3.5" />
+                    <span>Play Duels</span>
+                  </Button>
+                </Link>
+
+                <Link
+                  href={isAuthenticated ? `/matches/new?profileId=${game.id}` : `/signup?redirect=/matches/new?profileId=${game.id}`}
+                  onClick={() => setActiveGame(game)}
+                  className="w-full"
+                >
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="w-full font-bold text-xs uppercase tracking-wider gap-1.5 h-9"
+                  >
+                    <span>Create Match</span>
                   </Button>
                 </Link>
               </div>

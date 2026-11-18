@@ -102,7 +102,10 @@ export default function GamesPage() {
                 posterUrl={posterUrl}
                 bannerUrl={bannerUrl}
                 tagline={tagline}
-                onSelectGame={() => setActiveGame(g)}
+                onSelectGame={() => {
+                  const resolved = catalogItem || g;
+                  setActiveGame(resolved);
+                }}
               />
             );
           })}

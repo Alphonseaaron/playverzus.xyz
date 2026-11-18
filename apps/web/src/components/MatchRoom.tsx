@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Monitor,
   Coins,
@@ -21,6 +22,8 @@ import {
   Smartphone,
   Image as ImageIcon,
   Crown,
+  ArrowLeft,
+  ArrowLeftRight,
 } from 'lucide-react';
 import { ProofOfVictoryCard } from './ProofOfVictoryCard';
 import { useCapturePipeline as useMatchCapture } from '../hooks/useCapturePipeline';
@@ -32,7 +35,9 @@ import { CrossmintLogo } from './CrossmintLogo';
 import { notifyUser, requestNotificationPermission } from '../lib/notifications';
 import { apiClient } from '../lib/api';
 import { useGameAccountsStore } from '../lib/gameAccountsStore';
-import { getGameById } from '../lib/gamesCatalog';
+import { useGameStore } from '../lib/gameStore';
+import { getGameById, type CatalogGame } from '../lib/gamesCatalog';
+import { GameSelectionModal } from './GameSelectionModal';
 import { MatchRoomSpotlight } from './onboarding/MatchRoomSpotlight';
 import { isMachineRegisteredForCapture } from '../lib/deviceMachineStore';
 import type { GameProfile } from '@playverzus/core';
@@ -102,11 +107,14 @@ export function MatchRoom({
   isTournamentFinal,
   tournamentPrizePool,
 }: MatchRoomProps) {
+  const router = useRouter();
+  const { setActiveGame } = useGameStore();
   const catalogGame = getGameById(profile.id);
   const { getGamertag, getGamertagLabel, setGamertag } = useGameAccountsStore();
   const gameTagLabel = getGamertagLabel(profile.id);
   const myGamertag = getGamertag(profile.id);
   const capture = useMatchCapture(matchId, profile, myGamertag);
+  const [gameModalOpen, setGameModalOpen] = useState(false);
 
   const isPlayerA = currentUserId === playerAId;
   const isPlayerB = currentUserId === playerBId;
@@ -151,6 +159,16 @@ export function MatchRoom({
     });
     await capture.uploadScoreboardScreenshot(file);
     if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleSelectGame = (game: CatalogGame) => {
+    setActiveGame(game);
+    setGameModalOpen(false);
+    notifyUser('Active Arena Switched', {
+      body: `Leaving matchroom. Entering ${game.displayName} duels...`,
+      sound: 'connect',
+    });
+    router.push('/challenges');
   };
 
   const handleAcceptOpenMatch = async () => {
@@ -386,6 +404,39 @@ export function MatchRoom({
         </Card>
       )}
 
+      {/* Match Navigation & Arena Exit Breadcrumbs */}
+      <div className="flex items-center justify-between gap-3 text-xs pb-1">
+        <div className="flex items-center gap-2 text-muted-foreground min-w-0">
+          <Link
+            href="/challenges"
+            className="hover:text-primary transition-colors flex items-center gap-1.5 font-bold text-foreground bg-card hover:bg-muted border border-border px-3 py-1.5 rounded-xl shadow-sm flex-shrink-0"
+            title="Exit this matchroom and return to open challenges"
+          >
+            <ArrowLeft className="w-3.5 h-3.5 text-primary" />
+            <span>Exit Match to Arenas</span>
+          </Link>
+          <span className="text-zinc-600 hidden sm:inline">•</span>
+          <span className="font-semibold text-foreground hidden sm:inline truncate">
+            {profile.displayName} Arena
+          </span>
+          <span className="text-zinc-600 hidden md:inline">•</span>
+          <span className="font-mono text-muted-foreground hidden md:inline">
+            Match #{matchId.slice(0, 8)}
+          </span>
+        </div>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setGameModalOpen(true)}
+          className="h-8 text-xs font-bold gap-1.5 border-border hover:border-primary/50 text-foreground flex-shrink-0 shadow-sm rounded-xl"
+          title="Switch to another game arena"
+        >
+          <ArrowLeftRight className="w-3.5 h-3.5 text-primary" />
+          <span>Switch Game</span>
+        </Button>
+      </div>
+
       {/* Top Header Matchroom Card */}
       <Card className="p-6 sm:p-8 border border-border bg-card shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div className="flex items-center gap-4 sm:gap-6 min-w-0">
@@ -400,6 +451,15 @@ export function MatchRoom({
               <Badge variant="secondary" className="font-mono text-[10px]">
                 {profile.platform || 'UNIVERSAL'}
               </Badge>
+              <button
+                type="button"
+                onClick={() => setGameModalOpen(true)}
+                className="text-[11px] font-bold text-primary hover:text-primary/80 transition-colors flex items-center gap-1 ml-1 cursor-pointer bg-primary/10 border border-primary/30 px-2 py-0.5 rounded-md"
+                title="Change active game arena"
+              >
+                <ArrowLeftRight className="w-3 h-3" />
+                <span>Switch Game</span>
+              </button>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground truncate">
               Arena Matchroom #{matchId.slice(0, 8)}
@@ -1129,6 +1189,13 @@ export function MatchRoom({
           </div>
         </Card>
       )}
+
+      {/* In-Match Arena Switcher Modal */}
+      <GameSelectionModal
+        open={gameModalOpen}
+        onClose={() => setGameModalOpen(false)}
+        onSelectGame={handleSelectGame}
+      />
     </div>
   );
 }

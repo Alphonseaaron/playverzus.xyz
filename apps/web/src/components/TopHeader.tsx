@@ -33,8 +33,10 @@ import { apiClient } from '../lib/api';
 import { getSupabaseClient } from '../lib/supabase';
 import { formatUSDC, formatPoints } from '../lib/currency';
 import { useWalletModeStore } from '../lib/walletModeStore';
-import { OFFICIAL_GAMES, getGameById } from '../lib/gamesCatalog';
+import { OFFICIAL_GAMES, getGameById, type CatalogGame } from '../lib/gamesCatalog';
 import { GamePoster } from './GamePoster';
+import { ActiveGameSwitcher } from './ActiveGameSwitcher';
+import { GameSelectionModal } from './GameSelectionModal';
 import { Button } from './ui/button';
 import { Avatar, AvatarFallback } from './ui/avatar';
 
@@ -83,9 +85,10 @@ function getPageContext(pathname: string): { title: string } {
 export function TopHeader() {
   const pathname = usePathname();
   const queryClient = useQueryClient();
-  const { activeGame } = useGameStore();
+  const { activeGame, setActiveGame } = useGameStore();
   const { mode: walletMode, toggleMode: toggleWalletMode } = useWalletModeStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [gameModalOpen, setGameModalOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -246,18 +249,21 @@ export function TopHeader() {
   if (pathname === '/') {
     return (
       <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border h-16 w-full">
-        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 flex items-center justify-between h-full">
-          {/* Left: Clean Brand Logo */}
-          <Link href={isStaff ? staffTargetHref : me ? '/dashboard' : '/'} className="flex items-center group flex-shrink-0">
-            <Image
-              src="/images/logo.png"
-              alt="playverzus.xyz"
-              width={140}
-              height={32}
-              className="h-8 w-auto object-contain transition group-hover:opacity-90"
-              priority
-            />
-          </Link>
+        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 flex items-center justify-between h-full gap-3">
+          {/* Left: Clean Brand Logo & Quick Game Switcher */}
+          <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
+            <Link href={isStaff ? staffTargetHref : me ? '/dashboard' : '/'} className="flex items-center group flex-shrink-0">
+              <Image
+                src="/images/logo.png"
+                alt="playverzus.xyz"
+                width={140}
+                height={32}
+                className="h-8 w-auto object-contain transition group-hover:opacity-90"
+                priority
+              />
+            </Link>
+            <ActiveGameSwitcher compact className="hidden sm:flex" />
+          </div>
 
           {/* Right: Clean Action Buttons (Sign In + Play Free) + Mobile Menu Toggle */}
           <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
@@ -330,6 +336,30 @@ export function TopHeader() {
 
               {/* Menu Container: Slides down from the top header */}
               <div className="relative z-10 w-full bg-zinc-950/98 border-b border-border shadow-2xl p-4 sm:p-6 max-h-[calc(100vh-4rem)] overflow-y-auto animate-in slide-in-from-top-2 duration-200">
+                {/* Active Arena Mobile Card */}
+                <div className="p-3 mb-4 rounded-xl bg-card border border-border flex items-center justify-between shadow-sm">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <GamePoster game={activeCatalogGame} aspect="thumb" className="w-8 h-10 rounded-md border border-border flex-shrink-0" />
+                    <div className="min-w-0">
+                      <span className="text-[10px] font-mono uppercase font-bold text-muted-foreground block">Active Arena</span>
+                      <span className="text-xs font-bold text-foreground truncate block">{activeCatalogGame.displayName}</span>
+                      <span className="text-[10px] text-muted-foreground font-mono block">{activeCatalogGame.platform}</span>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      setGameModalOpen(true);
+                    }}
+                    className="text-xs font-bold gap-1.5 flex-shrink-0 h-8"
+                  >
+                    <ArrowLeftRight className="w-3 h-3 text-primary" />
+                    <span>Switch</span>
+                  </Button>
+                </div>
+
                 {/* Navigation Links Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-5">
                   <a
@@ -460,6 +490,12 @@ export function TopHeader() {
             </div>,
             document.body
           )}
+
+        {/* Global Game Selection Modal (Public / Landing) */}
+        <GameSelectionModal
+          open={gameModalOpen}
+          onClose={() => setGameModalOpen(false)}
+        />
       </header>
     );
   }
@@ -500,12 +536,15 @@ export function TopHeader() {
           />
         </Link>
 
-        {/* Clean Page Title (Desktop lg+) */}
-        <div className="hidden lg:flex items-center min-w-0">
+        {/* Clean Page Title (Desktop xl+) */}
+        <div className="hidden xl:flex items-center min-w-0">
           <h1 className="text-sm font-bold text-foreground tracking-tight truncate">
             {pageContext.title}
           </h1>
         </div>
+
+        {/* Universal Active Game Switcher */}
+        <ActiveGameSwitcher />
       </div>
 
       {/* Right: Decongested Clean Wallet + Bell + Avatar */}
@@ -607,32 +646,38 @@ export function TopHeader() {
                 </Link>
               </div>
 
-              {/* Active Arena Switcher Link */}
+              {/* Active Arena Switcher */}
               <div className="mb-4">
-                <Link
-                  href="/games"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="w-full p-2.5 rounded-xl bg-muted/60 border border-border hover:border-primary/50 flex items-center justify-between text-left transition"
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    setGameModalOpen(true);
+                  }}
+                  className="w-full p-2.5 rounded-xl bg-card border border-border hover:border-primary/50 flex items-center justify-between text-left transition shadow-sm cursor-pointer"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     <GamePoster
                       game={activeCatalogGame}
-                      aspect="mini"
-                      className="w-6 h-8 rounded flex-shrink-0"
+                      aspect="thumb"
+                      className="w-7 h-9 rounded-md flex-shrink-0 border border-border"
                     />
                     <div className="flex flex-col min-w-0">
-                      <span className="text-[10px] text-muted-foreground font-mono uppercase">
+                      <span className="text-[10px] text-muted-foreground font-mono uppercase font-bold">
                         Active Arena
                       </span>
                       <span className="text-xs font-bold text-foreground truncate">
                         {activeCatalogGame.displayName}
                       </span>
+                      <span className="text-[10px] text-muted-foreground font-mono">
+                        {activeCatalogGame.platform}
+                      </span>
                     </div>
                   </div>
-                  <span className="text-xs font-bold text-primary flex items-center gap-1 flex-shrink-0">
-                    Browse ▾
+                  <span className="text-xs font-bold text-primary flex items-center gap-1 flex-shrink-0 bg-primary/10 border border-primary/30 px-2 py-1 rounded-lg">
+                    Switch ▾
                   </span>
-                </Link>
+                </button>
               </div>
 
               {/* Navigation Links Grid */}
@@ -684,6 +729,12 @@ export function TopHeader() {
           </div>,
           document.body
         )}
+
+      {/* Global Game Selection Modal (In-App) */}
+      <GameSelectionModal
+        open={gameModalOpen}
+        onClose={() => setGameModalOpen(false)}
+      />
     </header>
   );
 }

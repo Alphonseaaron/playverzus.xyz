@@ -26,15 +26,18 @@ import { useGameStore } from '../lib/gameStore';
 import { apiClient } from '../lib/api';
 import { getSupabaseClient } from '../lib/supabase';
 import type { GameProfile } from '@playverzus/core';
-import { OFFICIAL_GAMES, getGameById } from '../lib/gamesCatalog';
+import { OFFICIAL_GAMES, getGameById, type CatalogGame } from '../lib/gamesCatalog';
 import { GamePoster } from './GamePoster';
+import { GameSelectionModal } from './GameSelectionModal';
 import { AdminSidebar } from './AdminSidebar';
 import { Separator } from './ui/separator';
+import { notifyUser } from '../lib/notifications';
 
 export function GameRail() {
   const pathname = usePathname();
   const queryClient = useQueryClient();
   const { activeGame, setActiveGame, initializeDefaultGame } = useGameStore();
+  const [gameModalOpen, setGameModalOpen] = useState(false);
 
   // All hooks called before any conditional return
   const { data: games } = useQuery<GameProfile[]>({
@@ -174,16 +177,17 @@ export function GameRail() {
             <span className="text-[10px] uppercase font-bold text-muted-foreground font-mono tracking-wider px-1">
               Active Arena
             </span>
-            <Link
-              href="/games"
-              className="flex items-center justify-between p-2 rounded-xl bg-secondary/50 hover:bg-muted/80 border border-border hover:border-primary/50 transition group text-left w-full shadow-sm"
-              title="Click to view full game roster & switch arena"
+            <button
+              type="button"
+              onClick={() => setGameModalOpen(true)}
+              className="flex items-center justify-between p-2 rounded-xl bg-secondary/50 hover:bg-muted/80 border border-border hover:border-primary/50 transition group text-left w-full shadow-sm cursor-pointer"
+              title="Click to switch active game arena (EA Sports FC 27, CS2, etc.)"
             >
               <div className="flex items-center gap-2.5 min-w-0">
                 <GamePoster
                   game={activeCatalogGame}
                   aspect="thumb"
-                  className="w-8 h-10 rounded-md flex-shrink-0 shadow-sm"
+                  className="w-8 h-10 rounded-md flex-shrink-0 shadow-sm border border-border"
                 />
                 <div className="min-w-0 flex-1">
                   <span className="text-xs font-bold text-foreground truncate block group-hover:text-primary transition-colors">
@@ -195,7 +199,7 @@ export function GameRail() {
                 </div>
               </div>
               <ChevronsUpDown className="w-4 h-4 text-muted-foreground group-hover:text-primary flex-shrink-0 ml-1 transition-colors" />
-            </Link>
+            </button>
           </div>
 
           {/* Primary Navigation Links */}
@@ -251,7 +255,13 @@ export function GameRail() {
                   <button
                     key={game.id}
                     type="button"
-                    onClick={() => setActiveGame(game)}
+                    onClick={() => {
+                      setActiveGame(game);
+                      notifyUser('Active Arena Switched', {
+                        body: `Now competing in ${game.displayName}`,
+                        sound: 'connect',
+                      });
+                    }}
                     className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition border text-left w-full group ${
                       isSelected
                         ? 'bg-secondary border-primary/40 text-foreground font-semibold shadow-sm'
@@ -412,6 +422,12 @@ export function GameRail() {
           )}
         </div>
       </aside>
+
+      {/* Global In-Place Game Switcher Modal */}
+      <GameSelectionModal
+        open={gameModalOpen}
+        onClose={() => setGameModalOpen(false)}
+      />
     </>
   );
 }
