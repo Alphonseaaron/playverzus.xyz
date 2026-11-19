@@ -37,6 +37,7 @@ import { toUserFriendlyWalletError } from '../../lib/walletErrors';
 import { FirstTimeOnboardingModal } from '../../components/onboarding/FirstTimeOnboardingModal';
 import { OnboardingChecklistCard } from '../../components/onboarding/OnboardingChecklistCard';
 import { LinkedGameAccountsCard } from '../../components/dashboard/LinkedGameAccountsCard';
+import { GameSelectionModal } from '../../components/GameSelectionModal';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '../../components/ui/card';
@@ -101,6 +102,7 @@ function DashboardContent() {
   const [faucetLoading, setFaucetLoading] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [selectedStake, setSelectedStake] = useState<number>(5);
+  const [arenaModalOpen, setArenaModalOpen] = useState(false);
 
   // Note: Uninvited auto-popup modal disabled in favor of non-intrusive GamerQuestHub drawer
   // Users can still launch the full onboarding wizard intentionally via checklist or settings button
@@ -242,12 +244,8 @@ function DashboardContent() {
     { label: '$25.00', value: 25, isCash: true },
   ];
 
-  const QUICK_ARENAS = [
-    { id: 'cs2', label: 'Counter-Strike 2' },
-    { id: 'eafc', label: 'EA FC 27' },
-    { id: 'rl', label: 'Rocket League' },
-    { id: 'apex', label: 'Apex Legends' },
-  ];
+  const FEATURED_ARENA_KEYS = ['cs2', 'eafc', 'eafcm', 'rl', 'val', 'apex', 'marvelrivals'];
+  const activeQuickIds = Array.from(new Set([catalogGame.id.toLowerCase(), ...FEATURED_ARENA_KEYS])).slice(0, 5);
 
   const activeBlitzPool =
     blitzPools?.find((p: any) => p.profile_id === catalogGame.id || p.game_profiles?.id === catalogGame.id) ||
@@ -310,30 +308,39 @@ function DashboardContent() {
             </div>
 
             <div className="hidden sm:flex items-center gap-1 bg-background/80 backdrop-blur-md border border-border/80 p-1 rounded-xl shadow-sm">
-              {QUICK_ARENAS.map((qa) => {
-                const isCurrent = catalogGame.id.toLowerCase() === qa.id.toLowerCase();
-                const matchedGame = OFFICIAL_GAMES.find((g) => g.id.toLowerCase() === qa.id.toLowerCase());
+              {activeQuickIds.map((id) => {
+                const matchedGame = OFFICIAL_GAMES.find((g) => g.id.toLowerCase() === id.toLowerCase());
+                if (!matchedGame) return null;
+                const isCurrent = catalogGame.id.toLowerCase() === matchedGame.id.toLowerCase();
                 return (
                   <button
-                    key={qa.id}
+                    key={matchedGame.id}
                     type="button"
-                    onClick={() => matchedGame && setActiveGame(matchedGame)}
+                    onClick={() => {
+                      setActiveGame(matchedGame);
+                      notifyUser('Active Arena Switched', {
+                        body: `Now competing in ${matchedGame.displayName}`,
+                        sound: 'connect',
+                      });
+                    }}
                     className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center ${
                       isCurrent
                         ? 'bg-primary text-primary-foreground shadow-sm'
                         : 'text-muted-foreground hover:text-foreground hover:bg-muted/70'
                     }`}
                   >
-                    <span>{qa.label}</span>
+                    <span>{matchedGame.shortName || matchedGame.displayName}</span>
                   </button>
                 );
               })}
-              <Link
-                href="/games"
-                className="px-2 py-0.5 rounded-lg text-[11px] font-semibold text-primary hover:underline"
+              <button
+                type="button"
+                onClick={() => setArenaModalOpen(true)}
+                className="px-2.5 py-1 rounded-lg text-[11px] font-bold text-primary hover:bg-primary/10 transition flex items-center gap-1 cursor-pointer"
+                title="Browse and select from all 21 official esports arenas"
               >
-                + All (21)
-              </Link>
+                <span>+ All (21)</span>
+              </button>
             </div>
           </div>
         </div>
@@ -869,6 +876,12 @@ function DashboardContent() {
           <LinkedGameAccountsCard />
         </TabsContent>
       </Tabs>
+
+      {/* Global In-Place Game Switcher Modal */}
+      <GameSelectionModal
+        open={arenaModalOpen}
+        onClose={() => setArenaModalOpen(false)}
+      />
     </div>
   );
 }

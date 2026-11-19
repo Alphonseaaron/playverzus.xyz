@@ -132,7 +132,7 @@ export function GameRail() {
   const activeCatalogGame = getGameById(activeGame?.id);
   const [arenasExpanded, setArenasExpanded] = useState(false);
 
-  const FEATURED_ARENA_IDS = ['cs2', 'eafc', 'rl'];
+  const FEATURED_ARENA_IDS = ['cs2', 'eafc', 'eafcm', 'rl', 'val', 'marvelrivals'];
   const featuredGames = OFFICIAL_GAMES.filter((g) => FEATURED_ARENA_IDS.includes(g.id.toLowerCase()));
   const isActiveInFeatured = FEATURED_ARENA_IDS.includes(activeCatalogGame.id.toLowerCase());
   const remainingGames = OFFICIAL_GAMES.filter(

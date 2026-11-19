@@ -42,6 +42,23 @@ export const OFFICIAL_SLUG_TO_UUID: Record<string, string> = {
   'high-score': '11111111-1111-1111-1111-111111111111',
   'time-trial': '22222222-2222-2222-2222-222222222222',
   'win-loss': '33333333-3333-3333-3333-333333333333',
+  pubgm: '00000000-0000-0000-0000-000000000014',
+  'pubg-mobile': '00000000-0000-0000-0000-000000000014',
+  pubgpc: '00000000-0000-0000-0000-000000000015',
+  pubg: '00000000-0000-0000-0000-000000000015',
+  'pubg-battlegrounds': '00000000-0000-0000-0000-000000000015',
+  efootballm: '00000000-0000-0000-0000-000000000017',
+  'efootball-mobile': '00000000-0000-0000-0000-000000000017',
+  efootball: '00000000-0000-0000-0000-000000000018',
+  'efootball-console': '00000000-0000-0000-0000-000000000018',
+  eafcm: '00000000-0000-0000-0000-000000000019',
+  'fc-mobile': '00000000-0000-0000-0000-000000000019',
+  'fifa-mobile': '00000000-0000-0000-0000-000000000019',
+  '8ballpool': '00000000-0000-0000-0000-000000000020',
+  '8-ball-pool': '00000000-0000-0000-0000-000000000020',
+  mk11: '00000000-0000-0000-0000-000000000021',
+  'mortal-kombat': '00000000-0000-0000-0000-000000000021',
+  'mortal-kombat-11': '00000000-0000-0000-0000-000000000021',
 };
 
 export const OFFICIAL_SEED_BY_UUID: Record<
@@ -227,6 +244,102 @@ export const OFFICIAL_SEED_BY_UUID: Record<
     approved: true,
     is_official: true,
   },
+  '00000000-0000-0000-0000-000000000014': {
+    id: '00000000-0000-0000-0000-000000000014',
+    display_name: 'PUBG Mobile',
+    game_type: 'HEAD_TO_HEAD',
+    platform: 'MOBILE',
+    roi: { x: 0.35, y: 0.02, w: 0.3, h: 0.08 },
+    constraints: { min: 0, max: 100 },
+    end_keywords: ['WINNER WINNER CHICKEN DINNER', 'VICTORY', 'MATCH OVER', 'DEFEAT'],
+    regex_pattern: '(?:[A-Z0-9]{2,4}\\s*)?(\\d{1,2})\\s*[-:]\\s*(\\d{1,2})',
+    approved: true,
+    is_official: true,
+  },
+  '00000000-0000-0000-0000-000000000015': {
+    id: '00000000-0000-0000-0000-000000000015',
+    display_name: 'PUBG: BATTLEGROUNDS',
+    game_type: 'HEAD_TO_HEAD',
+    platform: 'PC',
+    roi: { x: 0.35, y: 0.02, w: 0.3, h: 0.08 },
+    constraints: { min: 0, max: 100 },
+    end_keywords: ['WINNER WINNER CHICKEN DINNER', 'MATCH COMPLETED', 'VICTORY'],
+    regex_pattern: '(?:[A-Z0-9]{2,4}\\s*)?(\\d{1,2})\\s*[-:]\\s*(\\d{1,2})',
+    approved: true,
+    is_official: true,
+  },
+  '00000000-0000-0000-0000-000000000016': {
+    id: '00000000-0000-0000-0000-000000000016',
+    display_name: 'Subway Surfers',
+    game_type: 'HIGH_SCORE',
+    platform: 'MOBILE',
+    roi: { x: 0.65, y: 0.05, w: 0.3, h: 0.08 },
+    constraints: { min: 0, max: 100000000, maxJumpPerSec: 5000 },
+    end_keywords: ['Game Over', 'Try Again', 'High Score'],
+    regex_pattern: '([0-9][0-9,\\.]*)',
+    approved: true,
+    is_official: true,
+  },
+  '00000000-0000-0000-0000-000000000017': {
+    id: '00000000-0000-0000-0000-000000000017',
+    display_name: 'eFootball Mobile',
+    game_type: 'HEAD_TO_HEAD',
+    platform: 'MOBILE',
+    roi: { x: 0.177, y: 0.111, w: 0.083, h: 0.054 },
+    constraints: { min: 0, max: 20 },
+    end_keywords: ['FULL TIME', 'MATCH OVER', 'FINAL SCORE'],
+    regex_pattern: '(?:[A-Z0-9]{2,4}\\s*)?(\\d{1,2})\\s*[-:]\\s*(\\d{1,2})',
+    approved: true,
+    is_official: true,
+  },
+  '00000000-0000-0000-0000-000000000018': {
+    id: '00000000-0000-0000-0000-000000000018',
+    display_name: 'eFootball (Console & PC)',
+    game_type: 'HEAD_TO_HEAD',
+    platform: 'CONSOLE',
+    roi: { x: 0.042, y: 0.042, w: 0.177, h: 0.060 },
+    constraints: { min: 0, max: 20 },
+    end_keywords: ['FULL TIME', 'MATCH OVER', 'FINAL SCORE'],
+    regex_pattern: '(?:[A-Z0-9]{2,4}\\s*)?(\\d{1,2})\\s*[-:]\\s*(\\d{1,2})',
+    approved: true,
+    is_official: true,
+  },
+  '00000000-0000-0000-0000-000000000019': {
+    id: '00000000-0000-0000-0000-000000000019',
+    display_name: 'EA Sports FC Mobile',
+    game_type: 'HEAD_TO_HEAD',
+    platform: 'MOBILE',
+    roi: { x: 0.177, y: 0.111, w: 0.083, h: 0.054 },
+    constraints: { min: 0, max: 20 },
+    end_keywords: ['FULL TIME', 'FT', 'MATCH OVER', 'FINAL SCORE', 'CONTINUE'],
+    regex_pattern: '(?:[A-Z0-9]{2,4}\\s*)?(\\d{1,2})\\s*[-:]\\s*(\\d{1,2})',
+    approved: true,
+    is_official: true,
+  },
+  '00000000-0000-0000-0000-000000000020': {
+    id: '00000000-0000-0000-0000-000000000020',
+    display_name: '8 Ball Pool',
+    game_type: 'BINARY_RESULT',
+    platform: 'MOBILE',
+    roi: { x: 0.35, y: 0.25, w: 0.3, h: 0.15 },
+    constraints: {},
+    end_keywords: ['YOU WON', 'YOU LOST', 'MATCH OVER', 'VICTORY'],
+    regex_pattern: null,
+    approved: true,
+    is_official: true,
+  },
+  '00000000-0000-0000-0000-000000000021': {
+    id: '00000000-0000-0000-0000-000000000021',
+    display_name: 'Mortal Kombat 11',
+    game_type: 'BINARY_RESULT',
+    platform: 'CONSOLE',
+    roi: { x: 0.3, y: 0.3, w: 0.4, h: 0.2 },
+    constraints: {},
+    end_keywords: ['FATALITY', 'BRUTALITY', 'FLAWLESS VICTORY', 'FINISH HIM', 'FINISH HER', 'YOU WIN', 'YOU LOSE'],
+    regex_pattern: null,
+    approved: true,
+    is_official: true,
+  },
 };
 
 export async function resolveAndEnsureGameProfileId(
@@ -309,16 +422,36 @@ export class GameProfileService {
       return this.cachedApprovedGames.data;
     }
 
-    const { data, error } = await this.supabase
-      .from('game_profiles')
-      .select('*')
-      .eq('approved', true)
-      .order('play_count', { ascending: false });
+    let dbProfiles: any[] = [];
+    try {
+      const { data, error } = await this.supabase
+        .from('game_profiles')
+        .select('*')
+        .eq('approved', true)
+        .order('play_count', { ascending: false });
 
-    if (error) throw new Error(error.message);
-    const mapped = (data || []).map((p) => this.mapProfile(p));
-    this.cachedApprovedGames = { data: mapped, expiresAt: Date.now() + 300_000 };
-    return mapped;
+      if (!error && data) {
+        dbProfiles = data.map((p) => this.mapProfile(p));
+      }
+    } catch {
+      // Non-fatal if Supabase is offline; official seeds will be served
+    }
+
+    const seenUuids = new Set(dbProfiles.map((p) => p.id));
+    const seenNames = new Set(dbProfiles.map((p) => p.displayName?.toLowerCase()));
+
+    // Merge static official seeds so all 21 games are always available from the API
+    const officialSeedProfiles = Object.values(OFFICIAL_SEED_BY_UUID).map((s) => this.mapProfile(s));
+    for (const seed of officialSeedProfiles) {
+      if (!seenUuids.has(seed.id) && !seenNames.has(seed.displayName?.toLowerCase())) {
+        dbProfiles.push(seed);
+        seenUuids.add(seed.id);
+        seenNames.add(seed.displayName?.toLowerCase());
+      }
+    }
+
+    this.cachedApprovedGames = { data: dbProfiles, expiresAt: Date.now() + 300_000 };
+    return dbProfiles;
   }
 
   async getById(id: string) {

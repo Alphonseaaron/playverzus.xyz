@@ -157,10 +157,44 @@ function HomeContent() {
     );
   }
 
+  const getTabCount = (tab: 'all' | 'pc' | 'console' | 'mobile') => {
+    if (tab === 'all') return OFFICIAL_GAMES.length;
+    return OFFICIAL_GAMES.filter((g) => {
+      const platList = (g.platforms || [g.platform]).map((p) => p.toUpperCase());
+      if (tab === 'pc') return platList.includes('PC') || platList.includes('UNIVERSAL') || g.platform === 'PC';
+      if (tab === 'console') {
+        return (
+          platList.some((p) => ['CONSOLE', 'PS5', 'PLAYSTATION', 'XBOX', 'SWITCH', 'UNIVERSAL'].includes(p)) ||
+          g.platform === 'CONSOLE'
+        );
+      }
+      if (tab === 'mobile') {
+        return (
+          platList.some((p) => ['MOBILE', 'ANDROID', 'IOS', 'EMULATOR', 'UNIVERSAL'].includes(p)) ||
+          g.platform === 'MOBILE'
+        );
+      }
+      return true;
+    }).length;
+  };
+
   const filteredGames = OFFICIAL_GAMES.filter((g) => {
-    if (selectedArenaTab === 'pc') return g.platform === 'PC';
-    if (selectedArenaTab === 'console') return g.platform === 'CONSOLE';
-    if (selectedArenaTab === 'mobile') return g.platform === 'MOBILE';
+    const platList = (g.platforms || [g.platform]).map((p) => p.toUpperCase());
+    if (selectedArenaTab === 'pc') {
+      return platList.includes('PC') || platList.includes('UNIVERSAL') || g.platform === 'PC';
+    }
+    if (selectedArenaTab === 'console') {
+      return (
+        platList.some((p) => ['CONSOLE', 'PS5', 'PLAYSTATION', 'XBOX', 'SWITCH', 'UNIVERSAL'].includes(p)) ||
+        g.platform === 'CONSOLE'
+      );
+    }
+    if (selectedArenaTab === 'mobile') {
+      return (
+        platList.some((p) => ['MOBILE', 'ANDROID', 'IOS', 'EMULATOR', 'UNIVERSAL'].includes(p)) ||
+        g.platform === 'MOBILE'
+      );
+    }
     return true;
   });
 
@@ -371,7 +405,7 @@ function HomeContent() {
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                {tab === 'all' ? 'All Arenas' : tab}
+                {tab === 'all' ? `All Arenas (${getTabCount('all')})` : `${tab} (${getTabCount(tab)})`}
               </button>
             ))}
           </div>

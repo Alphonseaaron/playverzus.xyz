@@ -16,6 +16,7 @@ import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Input } from '../ui/input';
 import { useGameAccountsStore } from '../../lib/gameAccountsStore';
+import { OFFICIAL_GAMES } from '../../lib/gamesCatalog';
 import { notifyUser } from '../../lib/notifications';
 
 interface GameItem {
@@ -26,24 +27,43 @@ interface GameItem {
   platform: 'PC' | 'CONSOLE' | 'MOBILE' | 'UNIVERSAL';
 }
 
-const SUPPORTED_GAMES: GameItem[] = [
-  { id: 'cs2', name: 'Counter-Strike 2', tagLabel: 'Steam ID / Friend Code', placeholder: 'e.g. 76561198... or s1mple', platform: 'PC' },
-  { id: 'eafc', name: 'EA Sports FC 25', tagLabel: 'EA ID / PSN Handle', placeholder: 'e.g. ProStriker_99', platform: 'CONSOLE' },
-  { id: 'val', name: 'Valorant', tagLabel: 'Riot ID (Name#TAG)', placeholder: 'e.g. TenZ#NA1', platform: 'PC' },
-  { id: 'mlbb', name: 'Mobile Legends: Bang Bang', tagLabel: 'MLBB User ID (Server ID)', placeholder: 'e.g. 12345678 (2041)', platform: 'MOBILE' },
-  { id: 'rl', name: 'Rocket League', tagLabel: 'Epic Games ID', placeholder: 'e.g. Zen_RL', platform: 'UNIVERSAL' },
-  { id: 'dota2', name: 'Dota 2', tagLabel: 'Steam ID / Friend Code', placeholder: 'e.g. 89234102', platform: 'PC' },
-  { id: 'cod', name: 'Call of Duty: Warzone', tagLabel: 'Activision ID (Name#1234)', placeholder: 'e.g. Scump#1234567', platform: 'UNIVERSAL' },
-  { id: 'fortnite', name: 'Fortnite', tagLabel: 'Epic Games ID', placeholder: 'e.g. Mongraal', platform: 'UNIVERSAL' },
-  { id: 'apex', name: 'Apex Legends', tagLabel: 'EA ID / Gamertag', placeholder: 'e.g. ImperialHal', platform: 'UNIVERSAL' },
-  { id: 'tekken8', name: 'Tekken 8', tagLabel: 'Tekken ID / PSN', placeholder: 'e.g. ArslanAsh', platform: 'CONSOLE' },
-];
+const DEFAULT_PLACEHOLDERS: Record<string, string> = {
+  cs2: 'e.g. 76561198... or s1mple',
+  eafc: 'e.g. ProStriker_99',
+  eafcm: 'e.g. FCM_Striker99',
+  val: 'e.g. TenZ#NA1',
+  mlbb: 'e.g. 12345678 (2041)',
+  rl: 'e.g. Zen_RL',
+  dota2: 'e.g. 89234102',
+  cod: 'e.g. Scump#1234567',
+  fortnite: 'e.g. Mongraal',
+  apex: 'e.g. ImperialHal',
+  tekken8: 'e.g. ArslanAsh',
+  mk11: 'e.g. SonicFox',
+  marvelrivals: 'e.g. Rivals_Star',
+  lol: 'e.g. Faker#KR1',
+  subway: 'e.g. Runner_007',
+  chess: 'e.g. MagnusC',
+  pubgm: 'e.g. 5123456789 (Mortal)',
+  pubgpc: 'e.g. TGLTN',
+  efootballm: 'e.g. eFoot_Pro',
+  efootball: 'e.g. Konami_Champ',
+  '8ballpool': 'e.g. 192-834-01',
+};
 
 export function LinkedGameAccountsCard() {
-  const { accounts, getGamertag, setGamertag } = useGameAccountsStore();
+  const { accounts, getGamertag, getGamertagLabel, setGamertag } = useGameAccountsStore();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const supportedGames: GameItem[] = OFFICIAL_GAMES.map((g) => ({
+    id: g.id,
+    name: g.displayName,
+    tagLabel: getGamertagLabel(g.id) || 'In-Game Gamertag',
+    placeholder: DEFAULT_PLACEHOLDERS[g.id] || 'e.g. PlayerHandle_99',
+    platform: (g.platform || 'UNIVERSAL') as any,
+  }));
 
   const handleStartEdit = (gameId: string, currentVal: string) => {
     setEditingId(gameId);
@@ -92,7 +112,7 @@ export function LinkedGameAccountsCard() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {SUPPORTED_GAMES.map((game) => {
+        {supportedGames.map((game) => {
           const linkedTag = accounts[game.id] || getGamertag(game.id);
           const isEditing = editingId === game.id;
 
