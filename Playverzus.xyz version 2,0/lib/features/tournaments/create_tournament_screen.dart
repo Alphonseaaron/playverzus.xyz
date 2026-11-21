@@ -100,7 +100,9 @@ class _CreateTournamentScreenState
   Widget build(BuildContext context) {
     final activeGame = ref.watch(activeGameProvider);
     final gateway = ref.watch(paymentGatewayProvider);
-    final prizePool = _entryFeeUsd * _size * 0.90;
+    final prizePool = _entryFeeUsd *
+        _size *
+        (1.0 - PlatformRakeSchedule.tournamentCupRakeRate);
 
     return ListView(
       padding: const EdgeInsets.only(bottom: 100),

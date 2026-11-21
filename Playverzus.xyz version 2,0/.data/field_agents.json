@@ -1,0 +1,233 @@
+{
+  "agents": [
+    {
+      "id": "ag_lead_nairobi_01",
+      "userId": "user_ag_kevin",
+      "username": "kevin_ground_lead",
+      "fullName": "Kevin Otieno (Nairobi Lead)",
+      "email": "kevin.agent@playverzus.xyz",
+      "phone": "+254712345678",
+      "region": "Nairobi CBD & Universities",
+      "tier": "LEAD_AGENT",
+      "parentAgentId": null,
+      "parentAgentCode": null,
+      "parentAgentName": null,
+      "referralCode": "PVZ-KE-KEVIN",
+      "wingInviteCode": "WING-KE-KEVIN",
+      "status": "ACTIVE",
+      "referredPlayersCount": 18,
+      "activatedDepositorsCount": 14,
+      "subAgentsCount": 2,
+      "grossPlayerDepositsKes": 24500,
+      "grossMatchPotVolumeKes": 92000,
+      "grossPlatformRakeGeneratedKes": 15640,
+      "firstDepositCommissionKes": 650,
+      "gameplayRakeCommissionKes": 2450,
+      "wingOverrideCommissionKes": 635,
+      "totalEarnedKes": 3735,
+      "totalPaidKes": 2000,
+      "pendingOwedKes": 1735,
+      "payoutRequested": true,
+      "lastPayoutRequestedAt": "2026-11-21T14:20:00Z",
+      "createdAt": "2026-11-01T09:00:00Z",
+      "referredPlayers": [
+        {
+          "username": "omondi_fc27",
+          "joinedAt": "2026-11-18",
+          "firstDepositKes": 1500,
+          "activatedFirstMatch": true,
+          "cashMatchesPlayed": 19,
+          "rakeGeneratedKes": 2850,
+          "agentCommissionKes": 588
+        },
+        {
+          "username": "shanice_codm",
+          "joinedAt": "2026-11-19",
+          "firstDepositKes": 1000,
+          "activatedFirstMatch": true,
+          "cashMatchesPlayed": 12,
+          "rakeGeneratedKes": 1920,
+          "agentCommissionKes": 395
+        },
+        {
+          "username": "dante_tekken",
+          "joinedAt": "2026-11-21",
+          "firstDepositKes": 500,
+          "activatedFirstMatch": true,
+          "cashMatchesPlayed": 6,
+          "rakeGeneratedKes": 780,
+          "agentCommissionKes": 165
+        }
+      ],
+      "payoutHistory": [
+        {
+          "id": "SET-9001",
+          "amountKes": 2000,
+          "phone": "+254712345678",
+          "reference": "MPESA-SJK82910Q",
+          "paidByAdmin": "Super Admin",
+          "paidAt": "2026-11-15T16:40:00Z",
+          "status": "SETTLED"
+        }
+      ]
+    },
+    {
+      "id": "ag_sub_nairobi_02",
+      "userId": "user_ag_brian",
+      "username": "brian_kasarani",
+      "fullName": "Brian Mwangi (Kasarani Sub-Agent)",
+      "email": "brian.sub@playverzus.xyz",
+      "phone": "+254723987654",
+      "region": "Kasarani & Thika Road Gaming Lounges",
+      "tier": "SUB_AGENT",
+      "parentAgentId": "ag_lead_nairobi_01",
+      "parentAgentCode": "WING-KE-KEVIN",
+      "parentAgentName": "Kevin Otieno (Nairobi Lead)",
+      "referralCode": "PVZ-KE-BRIAN",
+      "wingInviteCode": "WING-KE-BRIAN",
+      "status": "ACTIVE",
+      "referredPlayersCount": 11,
+      "activatedDepositorsCount": 9,
+      "subAgentsCount": 0,
+      "grossPlayerDepositsKes": 13200,
+      "grossMatchPotVolumeKes": 48000,
+      "grossPlatformRakeGeneratedKes": 8160,
+      "firstDepositCommissionKes": 380,
+      "gameplayRakeCommissionKes": 1150,
+      "wingOverrideCommissionKes": 0,
+      "totalEarnedKes": 1530,
+      "totalPaidKes": 1000,
+      "pendingOwedKes": 530,
+      "payoutRequested": false,
+      "lastPayoutRequestedAt": null,
+      "createdAt": "2026-11-05T11:30:00Z",
+      "referredPlayers": [
+        {
+          "username": "kibe_ps5",
+          "joinedAt": "2026-11-19",
+          "firstDepositKes": 2000,
+          "activatedFirstMatch": true,
+          "cashMatchesPlayed": 14,
+          "rakeGeneratedKes": 2100,
+          "agentCommissionKes": 385
+        },
+        {
+          "username": "moraa_chess",
+          "joinedAt": "2026-11-20",
+          "firstDepositKes": 650,
+          "activatedFirstMatch": true,
+          "cashMatchesPlayed": 8,
+          "rakeGeneratedKes": 940,
+          "agentCommissionKes": 164
+        }
+      ],
+      "payoutHistory": [
+        {
+          "id": "SET-9002",
+          "amountKes": 1000,
+          "phone": "+254723987654",
+          "reference": "MPESA-SJL44192P",
+          "paidByAdmin": "Super Admin",
+          "paidAt": "2026-11-17T12:15:00Z",
+          "status": "SETTLED"
+        }
+      ]
+    },
+    {
+      "id": "ag_sub_nairobi_03",
+      "userId": "user_ag_faith",
+      "username": "faith_westlands",
+      "fullName": "Faith Wanjiku (Westlands Sub-Agent)",
+      "email": "faith.sub@playverzus.xyz",
+      "phone": "+254734556677",
+      "region": "Westlands & Campus Hostels",
+      "tier": "SUB_AGENT",
+      "parentAgentId": "ag_lead_nairobi_01",
+      "parentAgentCode": "WING-KE-KEVIN",
+      "parentAgentName": "Kevin Otieno (Nairobi Lead)",
+      "referralCode": "PVZ-KE-FAITH",
+      "wingInviteCode": "WING-KE-FAITH",
+      "status": "ACTIVE",
+      "referredPlayersCount": 7,
+      "activatedDepositorsCount": 5,
+      "subAgentsCount": 0,
+      "grossPlayerDepositsKes": 6500,
+      "grossMatchPotVolumeKes": 22000,
+      "grossPlatformRakeGeneratedKes": 3740,
+      "firstDepositCommissionKes": 228,
+      "gameplayRakeCommissionKes": 561,
+      "wingOverrideCommissionKes": 0,
+      "totalEarnedKes": 789,
+      "totalPaidKes": 0,
+      "pendingOwedKes": 789,
+      "payoutRequested": true,
+      "lastPayoutRequestedAt": "2026-11-21T18:05:00Z",
+      "createdAt": "2026-11-10T14:00:00Z",
+      "referredPlayers": [
+        {
+          "username": "jay_val",
+          "joinedAt": "2026-11-20",
+          "firstDepositKes": 1300,
+          "activatedFirstMatch": true,
+          "cashMatchesPlayed": 9,
+          "rakeGeneratedKes": 1350,
+          "agentCommissionKes": 248
+        }
+      ],
+      "payoutHistory": []
+    },
+    {
+      "id": "ag_lead_mombasa_01",
+      "userId": "user_ag_hassan",
+      "username": "hassan_coast_lead",
+      "fullName": "Hassan Ali (Mombasa & Coast Lead)",
+      "email": "hassan.agent@playverzus.xyz",
+      "phone": "+254745112233",
+      "region": "Mombasa, Nyali & Bamburi",
+      "tier": "LEAD_AGENT",
+      "parentAgentId": null,
+      "parentAgentCode": null,
+      "parentAgentName": null,
+      "referralCode": "PVZ-KE-HASSAN",
+      "wingInviteCode": "WING-KE-HASSAN",
+      "status": "ACTIVE",
+      "referredPlayersCount": 12,
+      "activatedDepositorsCount": 10,
+      "subAgentsCount": 0,
+      "grossPlayerDepositsKes": 16800,
+      "grossMatchPotVolumeKes": 64000,
+      "grossPlatformRakeGeneratedKes": 10880,
+      "firstDepositCommissionKes": 620,
+      "gameplayRakeCommissionKes": 1850,
+      "wingOverrideCommissionKes": 0,
+      "totalEarnedKes": 2470,
+      "totalPaidKes": 1500,
+      "pendingOwedKes": 970,
+      "payoutRequested": false,
+      "lastPayoutRequestedAt": null,
+      "createdAt": "2026-11-04T10:00:00Z",
+      "referredPlayers": [
+        {
+          "username": "swahili_sniper",
+          "joinedAt": "2026-11-17",
+          "firstDepositKes": 2600,
+          "activatedFirstMatch": true,
+          "cashMatchesPlayed": 21,
+          "rakeGeneratedKes": 3360,
+          "agentCommissionKes": 735
+        }
+      ],
+      "payoutHistory": [
+        {
+          "id": "SET-9003",
+          "amountKes": 1500,
+          "phone": "+254745112233",
+          "reference": "MPESA-SJM99104K",
+          "paidByAdmin": "Super Admin",
+          "paidAt": "2026-11-18T17:10:00Z",
+          "status": "SETTLED"
+        }
+      ]
+    }
+  ]
+}

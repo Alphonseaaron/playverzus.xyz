@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../catalog/official_games.dart';
+import '../config/app_config.dart';
 import '../network/api_client.dart';
 import '../storage/app_state.dart';
 
@@ -217,41 +218,46 @@ class ArenaDataNotifier extends StateNotifier<ArenaDataState> {
     final List<String> errors = [];
     bool anySuccess = false;
 
-    // 1. Public Blitz Pools
-    try {
-      final blitzRes = await ApiClient.get('/tournaments/blitz-pools');
-      if (blitzRes is List) {
-        anySuccess = true;
-        nextBlitz = blitzRes
-            .whereType<Map<String, dynamic>>()
-            .map(_parseTournamentFromApi)
-            .where((t) => t.isBlitz)
-            .toList();
-      }
-    } on ApiException catch (e) {
-      errors.add(e.message);
-    } catch (_) {}
+    // Execute public + authenticated lobby fetches concurrently (4x RTT -> 1x RTT)
+    Future<void> loadBlitz() async {
+      try {
+        final blitzRes = await ApiClient.get('/tournaments/blitz-pools');
+        if (blitzRes is List) {
+          anySuccess = true;
+          nextBlitz = blitzRes
+              .whereType<Map<String, dynamic>>()
+              .map(_parseTournamentFromApi)
+              .where((t) => t.isBlitz)
+              .toList();
+        }
+      } on ApiException catch (e) {
+        errors.add(e.message);
+      } catch (_) {}
+    }
 
-    // 2. Public Tournaments
-    try {
-      final tourRes = await ApiClient.get('/tournaments');
-      if (tourRes is List) {
-        anySuccess = true;
-        nextTournaments = tourRes
-            .whereType<Map<String, dynamic>>()
-            .map(_parseTournamentFromApi)
-            .where((t) => !t.isBlitz)
-            .toList();
-      }
-    } on ApiException catch (e) {
-      errors.add(e.message);
-    } catch (_) {}
+    Future<void> loadTournaments() async {
+      try {
+        final tourRes = await ApiClient.get('/tournaments');
+        if (tourRes is List) {
+          anySuccess = true;
+          nextTournaments = tourRes
+              .whereType<Map<String, dynamic>>()
+              .map(_parseTournamentFromApi)
+              .where((t) => !t.isBlitz)
+              .toList();
+        }
+      } on ApiException catch (e) {
+        errors.add(e.message);
+      } catch (_) {}
+    }
 
-    // 3. Authenticated Open Matches & User's Own Matches (strictly scoped to current player)
-    if (session.isAuthenticated &&
-        session.isPlayer &&
-        session.accessToken != null &&
-        session.accessToken!.isNotEmpty) {
+    Future<void> loadOpenMatches() async {
+      if (!session.isAuthenticated ||
+          !session.isPlayer ||
+          session.accessToken == null ||
+          session.accessToken!.isEmpty) {
+        return;
+      }
       try {
         final openRes = await ApiClient.get('/matches/open');
         if (openRes is List) {
@@ -264,7 +270,15 @@ class ArenaDataNotifier extends StateNotifier<ArenaDataState> {
       } on ApiException catch (e) {
         errors.add(e.message);
       } catch (_) {}
+    }
 
+    Future<void> loadMyMatches() async {
+      if (!session.isAuthenticated ||
+          !session.isPlayer ||
+          session.accessToken == null ||
+          session.accessToken!.isEmpty) {
+        return;
+      }
       try {
         final mineRes = await ApiClient.get('/matches/mine');
         if (mineRes is List) {
@@ -278,6 +292,13 @@ class ArenaDataNotifier extends StateNotifier<ArenaDataState> {
         errors.add(e.message);
       } catch (_) {}
     }
+
+    await Future.wait([
+      loadBlitz(),
+      loadTournaments(),
+      loadOpenMatches(),
+      loadMyMatches(),
+    ]);
 
     state = state.copyWith(
       blitzPools: nextBlitz,
@@ -296,12 +317,15 @@ class ArenaDataNotifier extends StateNotifier<ArenaDataState> {
     final game = findOfficialGameById(rawGameId);
     final entryFee = (m['entry_fee'] as num?)?.toDouble() ?? 10.0;
     final size = (m['size'] as num?)?.toInt() ?? 5;
-    final prize =
-        (m['prize_pool'] as num?)?.toDouble() ?? (entryFee * size * 0.9);
     final enrolled = (m['enrolled_count'] as num?)?.toInt() ?? 0;
     final tier = (m['tier'] as num?)?.toInt() ?? _tierFromFee(entryFee);
     final name = (m['name'] as String?) ?? '${game.displayName} Cup';
     final isBlitz = size == 5 || name.toLowerCase().contains('blitz');
+    final rakeRate = isBlitz
+        ? PlatformRakeSchedule.blitzRakeRate(tier)
+        : PlatformRakeSchedule.tournamentCupRakeRate;
+    final prize =
+        (m['prize_pool'] as num?)?.toDouble() ?? (entryFee * size * (1.0 - rakeRate));
 
     final rawParticipants = (m['participants'] ?? m['entrants']) as List?;
     final entrants = rawParticipants == null
@@ -531,7 +555,11 @@ class ArenaDataNotifier extends StateNotifier<ArenaDataState> {
       format: format,
       size: size,
       entryFeeUsd: entryFeeUsd,
-      prizePoolUsd: entryFeeUsd > 0 ? entryFeeUsd * size * 0.90 : 0,
+      prizePoolUsd: entryFeeUsd > 0
+          ? entryFeeUsd *
+              size *
+              (1.0 - PlatformRakeSchedule.tournamentCupRakeRate)
+          : 0,
       status: 'REGISTRATION',
       isBlitz: false,
       region: region,

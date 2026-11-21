@@ -1,9 +1,28 @@
 import { NextResponse } from 'next/server';
+import { kvGetJson, kvSetJson } from '@/lib/upstash-kv';
 
+const GATEWAY_KV_KEY = 'platform:payment_gateway';
 let cachedOAuthToken: string | null = null;
 let cachedOAuthExpiry = 0;
 let activePlatformGateway: 'kopokopo' | 'crossmint' =
   process.env.DEFAULT_PAYMENT_GATEWAY === 'crossmint' ? 'crossmint' : 'kopokopo';
+
+async function getPersistedGateway(): Promise<'kopokopo' | 'crossmint'> {
+  const saved = await kvGetJson<{ activeGateway?: string }>(GATEWAY_KV_KEY);
+  if (saved?.activeGateway === 'crossmint' || saved?.activeGateway === 'kopokopo') {
+    activePlatformGateway = saved.activeGateway;
+  }
+  return activePlatformGateway;
+}
+
+async function setPersistedGateway(mode: unknown): Promise<'kopokopo' | 'crossmint'> {
+  activePlatformGateway = mode === 'crossmint' ? 'crossmint' : 'kopokopo';
+  await kvSetJson(GATEWAY_KV_KEY, {
+    activeGateway: activePlatformGateway,
+    updatedAt: new Date().toISOString(),
+  });
+  return activePlatformGateway;
+}
 
 function getCrossmintReadiness() {
   const sk = process.env.CROSSMINT_SERVER_API_KEY || '';
@@ -100,9 +119,10 @@ export async function GET(
         oauthError = e instanceof Error ? e.message : 'OAuth error';
       }
     }
+    const currentGateway = await getPersistedGateway();
     const crossmint = getCrossmintReadiness();
     return NextResponse.json({
-      activeGateway: activePlatformGateway,
+      activeGateway: currentGateway,
       configured,
       mode: cfg.baseUrl.includes('sandbox') ? 'sandbox' : 'live',
       tillConfigured: Boolean(cfg.tillNumber),
@@ -164,11 +184,11 @@ export async function POST(
 
   if (action === 'gateway') {
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
-    activePlatformGateway = body.activeGateway === 'crossmint' ? 'crossmint' : 'kopokopo';
+    const updatedGateway = await setPersistedGateway(body.activeGateway);
     const configured = Boolean(cfg.clientId && cfg.clientSecret && cfg.tillNumber);
     return NextResponse.json({
       ok: true,
-      activeGateway: activePlatformGateway,
+      activeGateway: updatedGateway,
       kopokopo: {
         configured,
         mode: cfg.baseUrl.includes('sandbox') ? 'sandbox' : 'live',
@@ -334,8 +354,19 @@ function checkAndRecordDailyWithdrawal(userKey: string, amountKes: number) {
         );
       }
       const userKey = String(body.userId || phone);
+      const isExpress = body.expressPayout === true;
+      const expressSurchargeKes = isExpress ? 35 : 0;
+      const feeKes = 50 + expressSurchargeKes; // KES 50 Kopo Kopo cost + optional KES 35 pure profit VIP instant fee
+      const minGross = 100 + feeKes;
+      if (!grossWithdrawalKes || grossWithdrawalKes < minGross) {
+        return NextResponse.json(
+          {
+            message: `Minimum M-PESA ${isExpress ? 'Express VIP ' : ''}withdrawal is KES ${minGross} (KES 100 net + KES ${feeKes} fee).`,
+          },
+          { status: 400 },
+        );
+      }
       const commitDaily = checkAndRecordDailyWithdrawal(userKey, grossWithdrawalKes);
-      const feeKes = 50;
       const netPayoutKes = grossWithdrawalKes - feeKes;
 
       const token = await getKopoAccessToken(cfg);

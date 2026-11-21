@@ -25,6 +25,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
   bool _submitting = false;
   bool _loadingHistory = false;
   bool _checkingStk = false;
+  bool _expressPayout = false;
   String? _pendingStkLocation;
   String? _pendingStkStatus;
   String? _error;
@@ -38,12 +39,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
   @override
   void initState() {
     super.initState();
-    _amountCtrl.addListener(_onAmountChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadWalletData());
-  }
-
-  void _onAmountChanged() {
-    if (mounted) setState(() {});
   }
 
   void _startAutoStkPolling() {
@@ -67,7 +63,6 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
   @override
   void dispose() {
     _stkPollTimer?.cancel();
-    _amountCtrl.removeListener(_onAmountChanged);
     _amountCtrl.dispose();
     _mpesaPhoneCtrl.dispose();
     _walletAddrCtrl.dispose();
@@ -286,9 +281,16 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
 
     if (isMpesa) {
       final kes = rawInputAmount.round();
-      if (kes < PaymentFeeSchedule.mpesaMinWithdrawalKes) {
+      final minWithdrawKes = _expressPayout
+          ? PaymentFeeSchedule.mpesaMinExpressWithdrawalKes
+          : PaymentFeeSchedule.mpesaMinWithdrawalKes;
+      final feeKes = PaymentFeeSchedule.mpesaFlatPayoutFeeKes +
+          (_expressPayout
+              ? PaymentFeeSchedule.mpesaExpressPrioritySurchargeKes
+              : 0);
+      if (kes < minWithdrawKes) {
         ref.read(toastProvider.notifier).show(
-              'Minimum M-PESA withdrawal is KES ${PaymentFeeSchedule.mpesaMinWithdrawalKes} (KES ${PaymentFeeSchedule.mpesaMinNetPayoutKes} net + KES ${PaymentFeeSchedule.mpesaFlatPayoutFeeKes} payout fee)',
+              'Minimum M-PESA ${_expressPayout ? 'Express VIP ' : ''}withdrawal is KES $minWithdrawKes (KES ${PaymentFeeSchedule.mpesaMinNetPayoutKes} net + KES $feeKes fee)',
               tone: ToastTone.error,
             );
         return;
@@ -301,9 +303,13 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
         return;
       }
     } else {
-      if (rawInputAmount < PaymentFeeSchedule.crossmintMinWithdrawalUsd) {
+      final minWithdrawUsd = _expressPayout
+          ? PaymentFeeSchedule.crossmintMinWithdrawalUsd +
+              PaymentFeeSchedule.crossmintExpressPrioritySurchargeUsd
+          : PaymentFeeSchedule.crossmintMinWithdrawalUsd;
+      if (rawInputAmount < minWithdrawUsd) {
         ref.read(toastProvider.notifier).show(
-              'Minimum withdrawal is \$${PaymentFeeSchedule.crossmintMinWithdrawalUsd.toStringAsFixed(2)} USDC',
+              'Minimum withdrawal is \$${minWithdrawUsd.toStringAsFixed(2)} USDC',
               tone: ToastTone.error,
             );
         return;
@@ -344,10 +350,14 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
       _error = null;
     });
 
-    final mpesaOut =
-        PaymentFeeSchedule.mpesaWithdrawalBreakdown(rawInputAmount.round());
-    final cmOut =
-        PaymentFeeSchedule.crossmintWithdrawalBreakdown(rawInputAmount);
+    final mpesaOut = PaymentFeeSchedule.mpesaWithdrawalBreakdown(
+      rawInputAmount.round(),
+      expressPayout: _expressPayout,
+    );
+    final cmOut = PaymentFeeSchedule.crossmintWithdrawalBreakdown(
+      rawInputAmount,
+      expressPayout: _expressPayout,
+    );
 
     try {
       if (session.accessToken != null && session.accessToken!.isNotEmpty) {
@@ -358,6 +368,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
             'userId': session.userId,
             'firstName': session.username,
             'email': session.email,
+            'expressPayout': _expressPayout,
           });
         } else {
           await ApiClient.post('/wallet/payout', data: {
@@ -366,6 +377,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
               'type': 'CROSSMINT_USDC',
               'destinationAddress': dest,
               'chain': 'base',
+              'expressPayout': _expressPayout,
             },
           });
         }
@@ -582,8 +594,33 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
 
                         const SizedBox(height: 12),
 
+                        if (_tab == 1) ...[
+                          HigSegmentedControl<bool>(
+                            backgroundColor: HigColors.surfaceGrouped,
+                            groupValue: _expressPayout,
+                            onChanged: (v) => setState(() => _expressPayout = v),
+                            segments: {
+                              false: isMpesa
+                                  ? 'Standard Payout (KES 50 Fee)'
+                                  : 'Standard (\$1.00 Fee)',
+                              true: isMpesa
+                                  ? 'Instant VIP (+KES 35 · Priority)'
+                                  : 'Instant VIP (+\$0.50 · Priority)',
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+
                         // Live Upfront Customer-Paid Fee & Threshold Breakdown Box
-                        _buildLiveFeeBreakdownBox(isMpesa, _tab == 0),
+                        // Uses ValueListenableBuilder so keystrokes repaint ONLY this card at 120fps.
+                        ValueListenableBuilder<TextEditingValue>(
+                          valueListenable: _amountCtrl,
+                          builder: (_, value, __) => _buildLiveFeeBreakdownBox(
+                            isMpesa,
+                            _tab == 0,
+                            value.text,
+                          ),
+                        ),
 
                         const SizedBox(height: 12),
 
@@ -752,9 +789,13 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
     );
   }
 
-  Widget _buildLiveFeeBreakdownBox(bool isMpesa, bool isDeposit) {
+  Widget _buildLiveFeeBreakdownBox(
+    bool isMpesa,
+    bool isDeposit,
+    String rawAmountText,
+  ) {
     final raw =
-        double.tryParse(_amountCtrl.text.trim().replaceAll(',', '')) ?? 0.0;
+        double.tryParse(rawAmountText.trim().replaceAll(',', '')) ?? 0.0;
 
     if (isMpesa && isDeposit) {
       final kes = raw > 0 ? raw.round() : 500;
@@ -798,7 +839,10 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
 
     if (isMpesa && !isDeposit) {
       final kes = raw > 0 ? raw.round() : 500;
-      final b = PaymentFeeSchedule.mpesaWithdrawalBreakdown(kes);
+      final b = PaymentFeeSchedule.mpesaWithdrawalBreakdown(
+        kes,
+        expressPayout: _expressPayout,
+      );
       return Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
@@ -813,7 +857,9 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                 HigColors.labelPrimary),
             const SizedBox(height: 5),
             _feeLine(
-              'M-PESA Payout Fee (Flat · Customer Paid Upfront)',
+              _expressPayout
+                  ? 'M-PESA Payout + Instant VIP Priority Fee'
+                  : 'M-PESA Payout Fee (Flat · Customer Paid Upfront)',
               '-KES ${b.feeKes}',
               HigColors.labelSecondary,
             ),
@@ -826,7 +872,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
             ),
             const SizedBox(height: 6),
             Text(
-              'Thresholds: Min KES ${PaymentFeeSchedule.mpesaMinWithdrawalKes} (KES ${PaymentFeeSchedule.mpesaMinNetPayoutKes} net + KES ${PaymentFeeSchedule.mpesaFlatPayoutFeeKes} fee) · Max KES ${PaymentFeeSchedule.mpesaMaxSingleWithdrawalKes}/tx · Daily Limit KES ${PaymentFeeSchedule.mpesaMaxDailyWithdrawalKes} (max ${PaymentFeeSchedule.mpesaMaxDailyWithdrawalCount}/day).',
+              'Thresholds: Min KES ${_expressPayout ? PaymentFeeSchedule.mpesaMinExpressWithdrawalKes : PaymentFeeSchedule.mpesaMinWithdrawalKes} (KES ${PaymentFeeSchedule.mpesaMinNetPayoutKes} net + KES ${b.feeKes} fee) · Max KES ${PaymentFeeSchedule.mpesaMaxSingleWithdrawalKes}/tx · Daily Limit KES ${PaymentFeeSchedule.mpesaMaxDailyWithdrawalKes} (max ${PaymentFeeSchedule.mpesaMaxDailyWithdrawalCount}/day).',
               style: HigTypography.caption(),
             ),
           ],
@@ -873,7 +919,10 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
     }
 
     final usd = raw > 0 ? raw : 10.0;
-    final b = PaymentFeeSchedule.crossmintWithdrawalBreakdown(usd);
+    final b = PaymentFeeSchedule.crossmintWithdrawalBreakdown(
+      usd,
+      expressPayout: _expressPayout,
+    );
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -888,7 +937,9 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
               '\$${b.walletDeductionUsd.toStringAsFixed(2)} USDC', HigColors.labelPrimary),
           const SizedBox(height: 5),
           _feeLine(
-            'On-Chain Payout Fee (Flat · Customer Paid Upfront)',
+            _expressPayout
+                ? 'On-Chain Payout + Instant VIP Priority Fee'
+                : 'On-Chain Payout Fee (Flat · Customer Paid Upfront)',
             '-\$${b.feeUsd.toStringAsFixed(2)} USDC',
             HigColors.labelSecondary,
           ),

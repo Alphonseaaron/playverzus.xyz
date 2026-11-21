@@ -16,6 +16,7 @@ export class AuthController {
       dateOfBirth?: string;
       phone?: string;
       countryCode?: string;
+      referralCode?: string;
     }
   ) {
     return this.authService.register(body);

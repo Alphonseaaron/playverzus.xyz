@@ -14,7 +14,7 @@ import { TournamentEngine } from './TournamentEngine';
 
 import { assertTransition } from './MatchStateMachine';
 
-import type { MatchFormat, MatchStatus } from '../constants';
+import { getDuelRakeRate, type MatchFormat, type MatchStatus } from '../constants';
 import type { GameProfile, MatchContext, MatchRecord, ParsedResult, ScoreFrame } from '../types';
 
 const log = namedLogger('MatchService');
@@ -316,7 +316,15 @@ export class MatchService {
     const wallet = getWallet();
     if (match.entryFee > 0 && winnerId) {
       try {
-        await wallet.settle(match.id, winnerId, match.entryFee * 2);
+        const totalPot = match.entryFee * 2;
+        const rakeRate = getDuelRakeRate(match.entryFee);
+        const netWinnerAward = Math.round(totalPot * (1 - rakeRate) * 100) / 100;
+        const platformRake = Math.round((totalPot - netWinnerAward) * 100) / 100;
+        await wallet.settle(match.id, winnerId, netWinnerAward);
+        log.info(
+          { matchId, totalPot, rakeRate, platformRake, netWinnerAward },
+          'Settled match pot with differentiated platform rake locked for company production',
+        );
       } catch (err) {
         log.warn({ err, matchId }, 'core wallet settle warning');
       }

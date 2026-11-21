@@ -90,6 +90,38 @@ export const PLATFORM_FEE_AND_AGENT_SCHEDULE = {
     subAgentDirectShareOfRakePercent: 15.0,     // Sub-Agent direct player match: 15% of collected rake
     leadAgentWingOverrideShareOfRakePercent: 5.0, // Lead Agent override on Sub-Agent's player match: 5% of collected rake
   },
+
+  // 3. Additional Non-Rake High-Margin Revenue Streams (Subscription, VIP Express, B2B Studio & Venue Licenses)
+  ancillaryRevenueStreams: [
+    {
+      id: 'EXPRESS_VIP_PAYOUT',
+      name: 'Express VIP Instant Payout Surcharge',
+      pricing: '+KES 35 (M-PESA Total KES 85) / +$0.50 USDC',
+      companyGrossMarginPercent: 100.0,
+      description: 'Optional priority instant withdrawal surcharge above gateway cost (KES 50 Kopo Kopo / $1.00 Crossmint).',
+    },
+    {
+      id: 'ARENA_PRO_PASS',
+      name: 'Arena Pro Pass & Season Battle Pass',
+      pricing: 'KES 499/mo ($3.99/mo) · Season Pass KES 999',
+      companyGrossMarginPercent: 82.0,
+      description: 'Lowers Starter Duel rake to 11%, includes 1 free Tier-1 Blitz entry, and 1 weekly Express fee waiver.',
+    },
+    {
+      id: 'GAMING_LOUNGE_LICENSE',
+      name: 'Verified Gaming Lounge / Cyber-Cafe Wing License',
+      pricing: 'KES 2,500/mo per Venue + 20% Local Bracket Rake',
+      companyGrossMarginPercent: 95.0,
+      description: 'PS5/PC gaming cafes operate verified Playverzus tournament nights with 0 hardware cost to Playverzus.',
+    },
+    {
+      id: 'STUDIO_API_AND_SPONSORS',
+      name: 'Game Developer Featured Arena & Brand Sponsor Ops Fee',
+      pricing: 'KES 25,000/mo Studio Slot · 20% Sponsor Production Fee',
+      companyGrossMarginPercent: 92.0,
+      description: 'Studios pay for featured Stats API spotlight placement; Brand sponsors pay 20% production fee off gross grant.',
+    },
+  ],
 };
 
 function defaultStore() {
@@ -116,9 +148,9 @@ function defaultStore() {
         grossPlayerDepositsKes: 24500,
         grossMatchPotVolumeKes: 92000,
         grossPlatformRakeGeneratedKes: 15640,
-        firstDepositCommissionKes: 980,
-        gameplayRakeCommissionKes: 2110,
-        wingOverrideCommissionKes: 645,
+        firstDepositCommissionKes: 650,
+        gameplayRakeCommissionKes: 2450,
+        wingOverrideCommissionKes: 635,
         totalEarnedKes: 3735,
         totalPaidKes: 2000,
         pendingOwedKes: 1735,
@@ -187,12 +219,12 @@ function defaultStore() {
         grossPlayerDepositsKes: 13200,
         grossMatchPotVolumeKes: 48000,
         grossPlatformRakeGeneratedKes: 8160,
-        firstDepositCommissionKes: 462,
-        gameplayRakeCommissionKes: 1224,
+        firstDepositCommissionKes: 380,
+        gameplayRakeCommissionKes: 1150,
         wingOverrideCommissionKes: 0,
-        totalEarnedKes: 1686,
+        totalEarnedKes: 1530,
         totalPaidKes: 1000,
-        pendingOwedKes: 686,
+        pendingOwedKes: 530,
         payoutRequested: false,
         lastPayoutRequestedAt: null,
         createdAt: '2026-11-05T11:30:00Z',
@@ -292,12 +324,12 @@ function defaultStore() {
         grossPlayerDepositsKes: 16800,
         grossMatchPotVolumeKes: 64000,
         grossPlatformRakeGeneratedKes: 10880,
-        firstDepositCommissionKes: 720,
-        gameplayRakeCommissionKes: 1958,
+        firstDepositCommissionKes: 620,
+        gameplayRakeCommissionKes: 1850,
         wingOverrideCommissionKes: 0,
-        totalEarnedKes: 2678,
+        totalEarnedKes: 2470,
         totalPaidKes: 1500,
-        pendingOwedKes: 1178,
+        pendingOwedKes: 970,
         payoutRequested: false,
         lastPayoutRequestedAt: null,
         createdAt: '2026-11-04T10:00:00Z',
@@ -358,6 +390,8 @@ export function buildAgentsOverview() {
   let totalGrossDepositsKes = 0;
   let totalGrossMatchVolumeKes = 0;
   let totalPlatformRakeGeneratedKes = 0;
+  let totalGameplayCommissionsKes = 0;
+  let totalFirstDepositBonusKes = 0;
   let totalCommissionsEarnedKes = 0;
   let totalSettledPaidKes = 0;
   let totalPendingOwedKes = 0;
@@ -365,23 +399,31 @@ export function buildAgentsOverview() {
 
   for (const ag of agents) {
     ag.pendingOwedKes = Math.max(0, Math.round((ag.totalEarnedKes || 0) - (ag.totalPaidKes || 0)));
+    const gameplayCut = Number(ag.gameplayRakeCommissionKes || 0) + Number(ag.wingOverrideCommissionKes || 0);
     const companyNetFromAgent = Math.max(
       0,
       Math.round((ag.grossPlatformRakeGeneratedKes || 0) - (ag.totalEarnedKes || 0)),
     );
     ag.companyNetRetainedKes = companyNetFromAgent;
+    ag.gameplayCutKes = gameplayCut;
 
     totalReferredPlayers += Number(ag.referredPlayersCount || 0);
     totalActivatedDepositors += Number(ag.activatedDepositorsCount || 0);
     totalGrossDepositsKes += Number(ag.grossPlayerDepositsKes || 0);
     totalGrossMatchVolumeKes += Number(ag.grossMatchPotVolumeKes || 0);
     totalPlatformRakeGeneratedKes += Number(ag.grossPlatformRakeGeneratedKes || 0);
+    totalGameplayCommissionsKes += gameplayCut;
+    totalFirstDepositBonusKes += Number(ag.firstDepositCommissionKes || 0);
     totalCommissionsEarnedKes += Number(ag.totalEarnedKes || 0);
     totalSettledPaidKes += Number(ag.totalPaidKes || 0);
     totalPendingOwedKes += Number(ag.pendingOwedKes || 0);
     if (ag.payoutRequested && ag.pendingOwedKes > 0) payoutRequestsCount++;
   }
 
+  const companyGameplayFloorKes = Math.max(
+    0,
+    totalPlatformRakeGeneratedKes - totalGameplayCommissionsKes,
+  );
   const companyNetProfitAfterAgentsKes = Math.max(
     0,
     totalPlatformRakeGeneratedKes - totalCommissionsEarnedKes,
@@ -398,11 +440,18 @@ export function buildAgentsOverview() {
       totalGrossDepositsKes,
       totalGrossMatchVolumeKes,
       totalPlatformRakeGeneratedKes,
+      companyGameplayFloorKes,
+      gameplayRetentionPercentOfRake:
+        totalPlatformRakeGeneratedKes > 0
+          ? Math.round((companyGameplayFloorKes / totalPlatformRakeGeneratedKes) * 1000) / 10
+          : 82.0,
       companyNetProfitAfterAgentsKes,
       companyRetentionPercentOfRake:
         totalPlatformRakeGeneratedKes > 0
           ? Math.round((companyNetProfitAfterAgentsKes / totalPlatformRakeGeneratedKes) * 1000) / 10
-          : 82.0,
+          : 80.0,
+      totalGameplayCommissionsKes,
+      totalFirstDepositBonusKes,
       totalCommissionsEarnedKes,
       totalSettledPaidKes,
       totalPendingOwedKes,

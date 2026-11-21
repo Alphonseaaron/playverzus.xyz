@@ -84,13 +84,20 @@ export const MAX_DEPOSIT_EUR = MAX_DEPOSIT_USDC;
 export const MIN_WITHDRAWAL_EUR = MIN_WITHDRAWAL_USDC;
 export const MAX_WITHDRAWAL_EUR = MAX_WITHDRAWAL_USDC;
 
-/** Match stakes & fees */
+/** Match stakes & differentiated platform rake schedule */
 export const MIN_DUEL_STAKE_USDC = 0.50; // Micro grass-roots entry
 export const MIN_DUEL_STAKE_EUR = MIN_DUEL_STAKE_USDC;
 export const MIN_DUEL_STAKE_POINTS = 50;
-export const PLATFORM_RAKE_PERCENT = 5.0; // 5% platform fee on cash matches
+export const PLATFORM_RAKE_PERCENT = 15.0; // Starter duels (<= $5.00 / KES 650)
+export const PLATFORM_RAKE_PRO_PERCENT = 12.5; // Pro / Standard duels (> $5.00 / KES 650)
+export const TOURNAMENT_CUP_RAKE_PERCENT = 20.0; // Multi-bracket tournaments (8-64 players)
 
-/** 5-Player Sit & Go Blitz Tournament Tier Configurations */
+export function getDuelRakeRate(entryFeeUsd: number): number {
+  if (!entryFeeUsd || entryFeeUsd <= 0) return 0;
+  return entryFeeUsd <= 5.0 ? 0.15 : 0.125;
+}
+
+/** 5-Player Sit & Go Blitz Tournament Tier Configurations (16% -> 22% Differentiated Rake) */
 export interface TournamentTierConfig {
   tier: 1 | 2 | 3 | 4 | 5;
   name: string;
@@ -113,12 +120,12 @@ export const TOURNAMENT_TIERS: Record<1 | 2 | 3 | 4 | 5, TournamentTierConfig> =
     entryFee: 10.00,
     totalEntrants: 5,
     totalPot: 50.00,
-    rakePercent: 10.0,
-    rakeAmount: 5.00,
-    netPrizePool: 45.00,
+    rakePercent: 16.0,
+    rakeAmount: 8.00,
+    netPrizePool: 42.00,
     payouts: {
-      firstPlace: { percent: 70.0, amount: 31.50 },
-      secondPlace: { percent: 30.0, amount: 13.50 },
+      firstPlace: { percent: 70.0, amount: 29.40 },
+      secondPlace: { percent: 30.0, amount: 12.60 },
     },
   },
   2: {
@@ -127,12 +134,12 @@ export const TOURNAMENT_TIERS: Record<1 | 2 | 3 | 4 | 5, TournamentTierConfig> =
     entryFee: 50.00,
     totalEntrants: 5,
     totalPot: 250.00,
-    rakePercent: 15.0,
-    rakeAmount: 37.50,
-    netPrizePool: 212.50,
+    rakePercent: 18.0,
+    rakeAmount: 45.00,
+    netPrizePool: 205.00,
     payouts: {
-      firstPlace: { percent: 70.0, amount: 148.75 },
-      secondPlace: { percent: 30.0, amount: 63.75 },
+      firstPlace: { percent: 70.0, amount: 143.50 },
+      secondPlace: { percent: 30.0, amount: 61.50 },
     },
   },
   3: {
@@ -169,12 +176,12 @@ export const TOURNAMENT_TIERS: Record<1 | 2 | 3 | 4 | 5, TournamentTierConfig> =
     entryFee: 500.00,
     totalEntrants: 5,
     totalPot: 2500.00,
-    rakePercent: 20.0,
-    rakeAmount: 500.00,
-    netPrizePool: 2000.00,
+    rakePercent: 22.0,
+    rakeAmount: 550.00,
+    netPrizePool: 1950.00,
     payouts: {
-      firstPlace: { percent: 70.0, amount: 1400.00 },
-      secondPlace: { percent: 30.0, amount: 600.00 },
+      firstPlace: { percent: 70.0, amount: 1365.00 },
+      secondPlace: { percent: 30.0, amount: 585.00 },
     },
   },
 };

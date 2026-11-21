@@ -19,8 +19,9 @@ export class AuthService {
     dateOfBirth?: string;
     phone?: string;
     countryCode?: string;
+    referralCode?: string;
   }) {
-    const { email, password, username, fullName, dateOfBirth, phone, countryCode } = body;
+    const { email, password, username, fullName, dateOfBirth, phone, countryCode, referralCode } = body;
     if (!email || !password || !username) {
       throw new BadRequestException('Email, username, and password are required.');
     }
@@ -42,6 +43,7 @@ export class AuthService {
       phone: (phone || '').trim(),
       country_code: countryCode || 'US',
       region: countryCode || 'US',
+      ...(referralCode && referralCode.trim() ? { referred_by_code: referralCode.trim().toUpperCase() } : {}),
     };
 
     const { data: created, error: createError } = await this.supabase.auth.admin.createUser({

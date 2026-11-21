@@ -963,9 +963,11 @@ class PlayerSessionNotifier extends StateNotifier<PlayerSession> {
     required String countryCode,
     bool asDeveloper = false,
     String? studioName,
+    String? referralCode,
   }) async {
     final cleanEmail = email.trim().toLowerCase();
     final cleanUser = username.trim();
+    final cleanRef = (referralCode ?? '').trim().toUpperCase();
     if (cleanUser.length < 3) {
       return 'Gamer tag / username must be at least 3 characters.';
     }
@@ -993,7 +995,21 @@ class PlayerSessionNotifier extends StateNotifier<PlayerSession> {
           'dateOfBirth': dateOfBirth.trim(),
         if (phone != null && phone.trim().isNotEmpty) 'phone': phone.trim(),
         'countryCode': countryCode.trim().toUpperCase(),
+        if (cleanRef.isNotEmpty) 'referralCode': cleanRef,
       });
+
+      if (cleanRef.isNotEmpty) {
+        try {
+          await ApiClient.post('/agents/attribute', data: {
+            'referralCode': cleanRef,
+            'playerUsername': cleanUser,
+            'firstDepositKes': 0,
+            'matchPotKes': 0,
+          });
+        } catch (_) {
+          // Non-fatal if code is unrecognized
+        }
+      }
 
       if (asDeveloper) {
         await ApiClient.post('/developer/register-role', data: {

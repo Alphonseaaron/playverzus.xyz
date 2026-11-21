@@ -633,10 +633,13 @@ export class WalletService {
       const methodType = typeof methodInput === 'string' ? methodInput : (methodObj?.type || 'CROSSMINT');
       const destinationAddress = String(methodObj?.destinationAddress || methodObj?.address || '').trim();
       const chain = String(methodObj?.chain || 'base').toLowerCase();
+      const isExpress = methodObj?.expressPayout === true;
+      const payoutFeeUsd = methodType === 'CROSSMINT_USDC' || destinationAddress ? (isExpress ? 1.50 : 1.00) : 0;
+      const netTransferUsd = Math.max(0.50, Math.round((roundedAmount - payoutFeeUsd) * 100) / 100);
       const amountCents = Math.round(roundedAmount * 100);
       const balanceAfterCents = Math.round(newCashBalance * 100);
 
-      // Execute live Crossmint Wallets API on-chain USDC transfer when destinationAddress & server key are present
+      // Execute live Crossmint Wallets API on-chain USDC transfer for netTransferUsd (retaining upfront fee)
       let transferTxId: string | null = null;
       const crossmintServerKey = process.env.CROSSMINT_SERVER_API_KEY || '';
       const treasuryAddr = process.env.CROSSMINT_TREASURY_ADDRESS || 'playverzus_master_treasury';
@@ -652,7 +655,7 @@ export class WalletService {
             },
             body: JSON.stringify({
               recipient: destinationAddress,
-              amount: roundedAmount.toFixed(2),
+              amount: netTransferUsd.toFixed(2),
             }),
           });
           const cmData = (await cmRes.json().catch(() => ({}))) as Record<string, any>;

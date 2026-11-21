@@ -1,7 +1,10 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../core/config/app_config.dart';
 import '../../core/storage/app_state.dart';
 import '../../design_system/layout/responsive.dart';
 import '../../design_system/tokens/hig_tokens.dart';
@@ -1039,6 +1042,27 @@ class _AdminConsoleScreenState extends ConsumerState<AdminConsoleScreen> {
               _feeRuleRow(
                 'Playverzus Differentiated Company Earning Model',
                 '1v1/Squad Duels: 15.0% Starter / 12.5% Pro rake · 5-Player Blitz Sit & Go: Tier 1 (16%), Tier 2 (18%), Tier 3 & 4 (20%), Tier 5 (22%) · Tournaments & Cups: 20.0%. First 80%–82% of all rake is locked for Company Cost of Production & Profit before Field Agent commission.',
+              ),
+              const Divider(height: 14),
+              _feeRuleRow(
+                '4 Additional High-Margin Revenue Streams (Subscription, VIP Express, Venue & B2B)',
+                'Express VIP Instant Payout (+KES 35 / +\$0.50 pure profit) · Arena Pro Pass (KES 499/mo · \$3.99/mo) · Verified Gaming Lounge Wing Licenses (KES 2,500/mo) · Game Studio Featured Arena (KES 25,000/mo) & Sponsor Production Fee (20%).',
+              ),
+              const SizedBox(height: 12),
+              HigButton(
+                label: 'Download Executive Revenue Model PDF',
+                icon: CupertinoIcons.doc_text_fill,
+                size: HigButtonSize.small,
+                variant: HigButtonVariant.secondary,
+                onPressed: () {
+                  final pdfUrl = kIsWeb
+                      ? '${Uri.base.origin}/${PlatformRevenueStreams.revenueModelPdfPath}'
+                      : 'https://playverzus.xyz/${PlatformRevenueStreams.revenueModelPdfPath}';
+                  launchUrl(
+                    Uri.parse(pdfUrl),
+                    mode: LaunchMode.externalApplication,
+                  );
+                },
               ),
             ],
           ),

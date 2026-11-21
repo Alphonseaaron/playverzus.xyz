@@ -1,4 +1,7 @@
 import { NextResponse } from 'next/server';
+import { kvGetJson, kvSetJson } from '@/lib/upstash-kv';
+
+const AGENTS_KV_KEY = 'platform:field_agents_v2';
 
 const PLATFORM_FEE_AND_AGENT_SCHEDULE = {
   platformRakes: [
@@ -70,6 +73,32 @@ const PLATFORM_FEE_AND_AGENT_SCHEDULE = {
     subAgentDirectShareOfRakePercent: 15.0,
     leadAgentWingOverrideShareOfRakePercent: 5.0,
   },
+  ancillaryRevenueStreams: [
+    {
+      id: 'EXPRESS_VIP_PAYOUT',
+      name: 'Express VIP Instant Payout Surcharge',
+      pricing: '+KES 35 (M-PESA Total KES 85) / +$0.50 USDC',
+      companyGrossMarginPercent: 100.0,
+    },
+    {
+      id: 'ARENA_PRO_PASS',
+      name: 'Arena Pro Pass & Season Battle Pass',
+      pricing: 'KES 499/mo ($3.99/mo) · Season Pass KES 999',
+      companyGrossMarginPercent: 82.0,
+    },
+    {
+      id: 'GAMING_LOUNGE_LICENSE',
+      name: 'Verified Gaming Lounge / Cyber-Cafe Wing License',
+      pricing: 'KES 2,500/mo per Venue + 20% Local Bracket Rake',
+      companyGrossMarginPercent: 95.0,
+    },
+    {
+      id: 'STUDIO_API_AND_SPONSORS',
+      name: 'Game Developer Featured Arena & Brand Sponsor Ops Fee',
+      pricing: 'KES 25,000/mo Studio Slot · 20% Sponsor Production Fee',
+      companyGrossMarginPercent: 92.0,
+    },
+  ],
 };
 
 const agentsStore: any[] = [
@@ -94,9 +123,9 @@ const agentsStore: any[] = [
     grossPlayerDepositsKes: 24500,
     grossMatchPotVolumeKes: 92000,
     grossPlatformRakeGeneratedKes: 15640,
-    firstDepositCommissionKes: 980,
-    gameplayRakeCommissionKes: 2110,
-    wingOverrideCommissionKes: 645,
+    firstDepositCommissionKes: 650,
+    gameplayRakeCommissionKes: 2450,
+    wingOverrideCommissionKes: 635,
     totalEarnedKes: 3735,
     totalPaidKes: 2000,
     pendingOwedKes: 1735,
@@ -156,12 +185,12 @@ const agentsStore: any[] = [
     grossPlayerDepositsKes: 13200,
     grossMatchPotVolumeKes: 48000,
     grossPlatformRakeGeneratedKes: 8160,
-    firstDepositCommissionKes: 462,
-    gameplayRakeCommissionKes: 1224,
+    firstDepositCommissionKes: 380,
+    gameplayRakeCommissionKes: 1150,
     wingOverrideCommissionKes: 0,
-    totalEarnedKes: 1686,
+    totalEarnedKes: 1530,
     totalPaidKes: 1000,
-    pendingOwedKes: 686,
+    pendingOwedKes: 530,
     payoutRequested: false,
     lastPayoutRequestedAt: null,
     createdAt: '2026-11-05T11:30:00Z',
@@ -252,12 +281,12 @@ const agentsStore: any[] = [
     grossPlayerDepositsKes: 16800,
     grossMatchPotVolumeKes: 64000,
     grossPlatformRakeGeneratedKes: 10880,
-    firstDepositCommissionKes: 720,
-    gameplayRakeCommissionKes: 1958,
+    firstDepositCommissionKes: 620,
+    gameplayRakeCommissionKes: 1850,
     wingOverrideCommissionKes: 0,
-    totalEarnedKes: 2678,
+    totalEarnedKes: 2470,
     totalPaidKes: 1500,
-    pendingOwedKes: 1178,
+    pendingOwedKes: 970,
     payoutRequested: false,
     lastPayoutRequestedAt: null,
     createdAt: '2026-11-04T10:00:00Z',
@@ -266,12 +295,26 @@ const agentsStore: any[] = [
   },
 ];
 
+async function loadPersistedAgents(): Promise<any[]> {
+  const saved = await kvGetJson<any[]>(AGENTS_KV_KEY);
+  if (Array.isArray(saved) && saved.length > 0) {
+    agentsStore.splice(0, agentsStore.length, ...saved);
+  }
+  return agentsStore;
+}
+
+async function savePersistedAgents() {
+  await kvSetJson(AGENTS_KV_KEY, agentsStore);
+}
+
 function buildOverview() {
   let totalReferredPlayers = 0;
   let totalActivatedDepositors = 0;
   let totalGrossDepositsKes = 0;
   let totalGrossMatchVolumeKes = 0;
   let totalPlatformRakeGeneratedKes = 0;
+  let totalGameplayCommissionsKes = 0;
+  let totalFirstDepositBonusKes = 0;
   let totalCommissionsEarnedKes = 0;
   let totalSettledPaidKes = 0;
   let totalPendingOwedKes = 0;
@@ -279,6 +322,8 @@ function buildOverview() {
 
   for (const ag of agentsStore) {
     ag.pendingOwedKes = Math.max(0, Math.round((ag.totalEarnedKes || 0) - (ag.totalPaidKes || 0)));
+    const gameplayCut = Number(ag.gameplayRakeCommissionKes || 0) + Number(ag.wingOverrideCommissionKes || 0);
+    ag.gameplayCutKes = gameplayCut;
     ag.companyNetRetainedKes = Math.max(
       0,
       Math.round((ag.grossPlatformRakeGeneratedKes || 0) - (ag.totalEarnedKes || 0)),
@@ -288,12 +333,18 @@ function buildOverview() {
     totalGrossDepositsKes += Number(ag.grossPlayerDepositsKes || 0);
     totalGrossMatchVolumeKes += Number(ag.grossMatchPotVolumeKes || 0);
     totalPlatformRakeGeneratedKes += Number(ag.grossPlatformRakeGeneratedKes || 0);
+    totalGameplayCommissionsKes += gameplayCut;
+    totalFirstDepositBonusKes += Number(ag.firstDepositCommissionKes || 0);
     totalCommissionsEarnedKes += Number(ag.totalEarnedKes || 0);
     totalSettledPaidKes += Number(ag.totalPaidKes || 0);
     totalPendingOwedKes += Number(ag.pendingOwedKes || 0);
     if (ag.payoutRequested && ag.pendingOwedKes > 0) payoutRequestsCount++;
   }
 
+  const companyGameplayFloorKes = Math.max(
+    0,
+    totalPlatformRakeGeneratedKes - totalGameplayCommissionsKes,
+  );
   const companyNetProfitAfterAgentsKes = Math.max(
     0,
     totalPlatformRakeGeneratedKes - totalCommissionsEarnedKes,
@@ -310,11 +361,18 @@ function buildOverview() {
       totalGrossDepositsKes,
       totalGrossMatchVolumeKes,
       totalPlatformRakeGeneratedKes,
+      companyGameplayFloorKes,
+      gameplayRetentionPercentOfRake:
+        totalPlatformRakeGeneratedKes > 0
+          ? Math.round((companyGameplayFloorKes / totalPlatformRakeGeneratedKes) * 1000) / 10
+          : 82.0,
       companyNetProfitAfterAgentsKes,
       companyRetentionPercentOfRake:
         totalPlatformRakeGeneratedKes > 0
           ? Math.round((companyNetProfitAfterAgentsKes / totalPlatformRakeGeneratedKes) * 1000) / 10
-          : 82.0,
+          : 80.0,
+      totalGameplayCommissionsKes,
+      totalFirstDepositBonusKes,
       totalCommissionsEarnedKes,
       totalSettledPaidKes,
       totalPendingOwedKes,
@@ -328,12 +386,13 @@ export async function GET(
   req: Request,
   context: { params: { slug?: string[] } },
 ) {
+  await loadPersistedAgents();
   const slug = context.params?.slug || [];
   const action = slug[0] || 'overview';
   const url = new URL(req.url);
 
   if (action === 'overview') {
-    return NextResponse.json(buildOverview());
+    return NextResponse.json(buildOverview(), { headers: { 'Cache-Control': 'no-store' } });
   }
 
   if (action === 'me') {
@@ -349,11 +408,14 @@ export async function GET(
           (qUser && a.username.toLowerCase() === qUser),
       ) || overview.agents[0];
     const subAgents = overview.agents.filter((a) => a.parentAgentId === found?.id);
-    return NextResponse.json({
-      agent: found,
-      subAgents,
-      schedule: overview.schedule,
-    });
+    return NextResponse.json(
+      {
+        agent: found,
+        subAgents,
+        schedule: overview.schedule,
+      },
+      { headers: { 'Cache-Control': 'no-store' } },
+    );
   }
 
   return NextResponse.json({ message: 'Not found' }, { status: 404 });
@@ -363,6 +425,7 @@ export async function POST(
   req: Request,
   context: { params: { slug?: string[] } },
 ) {
+  await loadPersistedAgents();
   const slug = context.params?.slug || [];
   const action = slug[0] || '';
   const body = (await req.json().catch(() => ({}))) as Record<string, any>;
@@ -423,6 +486,7 @@ export async function POST(
     };
     if (parent) parent.subAgentsCount = Number(parent.subAgentsCount || 0) + 1;
     agentsStore.unshift(created);
+    await savePersistedAgents();
     return NextResponse.json({ ok: true, agent: created, overview: buildOverview() }, { status: 201 });
   }
 
@@ -449,6 +513,7 @@ export async function POST(
     };
     agent.payoutHistory = agent.payoutHistory || [];
     agent.payoutHistory.unshift(receipt);
+    await savePersistedAgents();
     return NextResponse.json({ ok: true, agent, receipt, overview: buildOverview() });
   }
 
@@ -458,6 +523,7 @@ export async function POST(
     if (!agent) return NextResponse.json({ message: 'Agent not found' }, { status: 404 });
     agent.payoutRequested = true;
     agent.lastPayoutRequestedAt = new Date().toISOString();
+    await savePersistedAgents();
     return NextResponse.json({ ok: true, agent, overview: buildOverview() });
   }
 
@@ -467,10 +533,29 @@ export async function POST(
     if (!agent) return NextResponse.json({ message: 'Agent not found' }, { status: 404 });
     const firstDepositKes = Math.max(0, Math.round(Number(body.firstDepositKes || 0)));
     const matchPotKes = Math.max(0, Math.round(Number(body.matchPotKes || 0)));
-    const platformRakeKes = Math.round(matchPotKes * 0.16);
+    const mode = String(body.mode || 'DUEL_STARTER').toUpperCase();
+    const rakeRate =
+      mode === 'DUEL_PRO'
+        ? 0.125
+        : mode === 'BLITZ_TIER_1'
+          ? 0.16
+          : mode === 'BLITZ_TIER_2'
+            ? 0.18
+            : mode === 'BLITZ_TIER_5'
+              ? 0.22
+              : mode.startsWith('BLITZ') || mode.startsWith('TOURNAMENT')
+                ? 0.2
+                : 0.15;
+    const platformRakeKes = Math.round(matchPotKes * rakeRate);
     const isSub = agent.tier === 'SUB_AGENT' && Boolean(agent.parentAgentId);
-    const directFtd = firstDepositKes >= 300 && matchPotKes > 0 ? Math.min(isSub ? 105 : 150, Math.round(firstDepositKes * (isSub ? 0.035 : 0.05))) : 0;
-    const parentFtd = isSub && firstDepositKes >= 300 && matchPotKes > 0 ? Math.min(45, Math.round(firstDepositKes * 0.015)) : 0;
+    const directFtd =
+      firstDepositKes >= 300 && matchPotKes > 0
+        ? Math.min(isSub ? 105 : 150, Math.round(firstDepositKes * (isSub ? 0.035 : 0.05)))
+        : 0;
+    const parentFtd =
+      isSub && firstDepositKes >= 300 && matchPotKes > 0
+        ? Math.min(45, Math.round(firstDepositKes * 0.015))
+        : 0;
     const directRake = Math.round(platformRakeKes * (isSub ? 0.15 : 0.18));
     const parentRake = isSub ? Math.round(platformRakeKes * 0.05) : 0;
 
@@ -481,17 +566,36 @@ export async function POST(
     agent.grossPlatformRakeGeneratedKes += platformRakeKes;
     agent.firstDepositCommissionKes += directFtd;
     agent.gameplayRakeCommissionKes += directRake;
-    agent.totalEarnedKes = agent.firstDepositCommissionKes + agent.gameplayRakeCommissionKes + agent.wingOverrideCommissionKes;
+    agent.totalEarnedKes =
+      agent.firstDepositCommissionKes +
+      agent.gameplayRakeCommissionKes +
+      agent.wingOverrideCommissionKes;
     agent.pendingOwedKes = Math.max(0, agent.totalEarnedKes - agent.totalPaidKes);
     if (isSub && agent.parentAgentId) {
       const parent = agentsStore.find((a) => a.id === agent.parentAgentId);
       if (parent) {
         parent.wingOverrideCommissionKes += parentFtd + parentRake;
-        parent.totalEarnedKes = parent.firstDepositCommissionKes + parent.gameplayRakeCommissionKes + parent.wingOverrideCommissionKes;
+        parent.totalEarnedKes =
+          parent.firstDepositCommissionKes +
+          parent.gameplayRakeCommissionKes +
+          parent.wingOverrideCommissionKes;
         parent.pendingOwedKes = Math.max(0, parent.totalEarnedKes - parent.totalPaidKes);
       }
     }
-    return NextResponse.json({ ok: true, agent, overview: buildOverview() });
+    await savePersistedAgents();
+    return NextResponse.json({
+      ok: true,
+      agent,
+      breakdown: {
+        firstDepositKes,
+        matchPotKes,
+        platformRakeKes,
+        companyNetRetainedKes: Math.max(0, platformRakeKes - (directRake + parentRake)),
+        directAgentEarnedKes: directFtd + directRake,
+        leadAgentOverrideEarnedKes: parentFtd + parentRake,
+      },
+      overview: buildOverview(),
+    });
   }
 
   return NextResponse.json({ message: 'Unknown action' }, { status: 400 });

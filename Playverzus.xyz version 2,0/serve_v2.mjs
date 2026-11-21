@@ -156,6 +156,30 @@ function normalizeKenyaPhone(raw) {
   return digits;
 }
 
+function sendJson(req, res, statusCode, payload) {
+  const jsonBuf = Buffer.from(JSON.stringify(payload));
+  const acceptEnc = String(req.headers['accept-encoding'] || '');
+  if (jsonBuf.length > 512 && acceptEnc.includes('gzip')) {
+    zlib.gzip(jsonBuf, (err, compressed) => {
+      if (err) {
+        res.writeHead(statusCode, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+        res.end(jsonBuf);
+        return;
+      }
+      res.writeHead(statusCode, {
+        'Content-Type': 'application/json',
+        'Content-Encoding': 'gzip',
+        'Cache-Control': 'no-store',
+        Vary: 'Accept-Encoding',
+      });
+      res.end(compressed);
+    });
+    return;
+  }
+  res.writeHead(statusCode, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+  res.end(jsonBuf);
+}
+
 function readJsonBody(req) {
   return new Promise((resolve, reject) => {
     let raw = '';
@@ -337,25 +361,27 @@ async function handleMpesaPayout(req, res) {
     const body = await readJsonBody(req);
     const grossWithdrawalKes = Math.round(Number(body.amountKes || 0));
     const phone = normalizeKenyaPhone(body.phone);
-    if (!grossWithdrawalKes || grossWithdrawalKes < 150) {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ message: 'Minimum M-PESA withdrawal is KES 150 (KES 100 net payout + KES 50 payout fee).' }));
+    const isExpress = body.expressPayout === true;
+    const expressSurchargeKes = isExpress ? 35 : 0;
+    const feeKes = 50 + expressSurchargeKes; // KES 50 Kopo Kopo cost + optional KES 35 VIP instant margin
+    const minGross = 100 + feeKes;
+    if (!grossWithdrawalKes || grossWithdrawalKes < minGross) {
+      sendJson(req, res, 400, {
+        message: `Minimum M-PESA ${isExpress ? 'Express VIP ' : ''}withdrawal is KES ${minGross} (KES 100 net payout + KES ${feeKes} fee).`,
+      });
       return;
     }
     if (grossWithdrawalKes > 70000) {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ message: 'Maximum single M-PESA withdrawal is KES 70,000.' }));
+      sendJson(req, res, 400, { message: 'Maximum single M-PESA withdrawal is KES 70,000.' });
       return;
     }
     if (!/^\+254\d{9}$/.test(phone)) {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ message: 'Enter a valid Kenyan M-PESA phone number (+2547XXXXXXXX).' }));
+      sendJson(req, res, 400, { message: 'Enter a valid Kenyan M-PESA phone number (+2547XXXXXXXX).' });
       return;
     }
 
     const userKey = String(body.userId || phone);
     const commitDaily = checkAndRecordDailyWithdrawal(userKey, grossWithdrawalKes);
-    const feeKes = 50;
     const netPayoutKes = grossWithdrawalKes - feeKes;
 
     const token = await getKopoAccessToken(cfg);
@@ -501,8 +527,7 @@ const server = http.createServer((req, res) => {
         const p = parsed.pathname;
 
         if (p === '/api/agents/overview' && req.method === 'GET') {
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify(buildAgentsOverview()));
+          sendJson(req, res, 200, buildAgentsOverview());
           return;
         }
         if (p === '/api/agents/me' && req.method === 'GET') {
@@ -518,14 +543,11 @@ const server = http.createServer((req, res) => {
                 (qUser && a.username.toLowerCase() === qUser),
             ) || overview.agents[0];
           const subAgents = overview.agents.filter((a) => a.parentAgentId === found?.id);
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(
-            JSON.stringify({
-              agent: found,
-              subAgents,
-              schedule: overview.schedule,
-            }),
-          );
+          sendJson(req, res, 200, {
+            agent: found,
+            subAgents,
+            schedule: overview.schedule,
+          });
           return;
         }
         if (p === '/api/agents/register' && req.method === 'POST') {

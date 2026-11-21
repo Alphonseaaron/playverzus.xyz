@@ -49,6 +49,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   void initState() {
     super.initState();
     _registerAsDeveloper = widget.initialDeveloper;
+    final refFromUrl = Uri.base.queryParameters['ref'] ?? '';
+    if (refFromUrl.trim().isNotEmpty) {
+      _referralCodeCtrl.text = refFromUrl.trim().toUpperCase();
+    }
   }
 
   @override
@@ -233,6 +237,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
             countryCode: _countryCode,
             asDeveloper: _registerAsDeveloper,
             studioName: _registerAsDeveloper ? _studioNameCtrl.text : null,
+            referralCode: _referralCodeCtrl.text,
           )
         : await notifier.signInWithBackend(
             _identifierCtrl.text,

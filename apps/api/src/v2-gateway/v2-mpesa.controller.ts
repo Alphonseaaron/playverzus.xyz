@@ -347,8 +347,16 @@ export class V2MpesaController {
 
     const userId = String(body?.userId || '').trim();
     const userKey = userId || phone;
+    const isExpress = body?.expressPayout === true;
+    const expressSurchargeKes = isExpress ? 35 : 0;
+    const feeKes = 50 + expressSurchargeKes; // KES 50 Kopo Kopo cost + optional KES 35 VIP instant margin
+    const minGross = 100 + feeKes;
+    if (grossWithdrawalKes < minGross) {
+      throw new BadRequestException(
+        `Minimum M-PESA ${isExpress ? 'Express VIP ' : ''}withdrawal is KES ${minGross} (KES 100 net payout + KES ${feeKes} fee).`,
+      );
+    }
     const commitDaily = this.checkAndRecordDailyWithdrawal(userKey, grossWithdrawalKes);
-    const feeKes = 50;
     const netPayoutKes = grossWithdrawalKes - feeKes;
 
     // Validate & deduct grossWithdrawalKes from player's Real Cash wallet on the server

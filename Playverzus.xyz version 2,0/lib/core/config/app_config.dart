@@ -64,9 +64,15 @@ class PaymentFeeSchedule {
   static const int mpesaBuyGoodsMaxFeeKes = 200; // Capped at KES 200 above KES 36,365
 
   static const int mpesaFlatPayoutFeeKes = 50; // Kopo Kopo Move Money / PAY flat fee
+  static const int mpesaExpressPrioritySurchargeKes =
+      35; // Optional Instant VIP Payout pure profit surcharge (Total KES 85)
   static const int mpesaMinNetPayoutKes = 100; // Minimum net sent to M-PESA phone
   static const int mpesaMinWithdrawalKes =
       mpesaMinNetPayoutKes + mpesaFlatPayoutFeeKes; // KES 150 total deduction
+  static const int mpesaMinExpressWithdrawalKes =
+      mpesaMinNetPayoutKes +
+      mpesaFlatPayoutFeeKes +
+      mpesaExpressPrioritySurchargeKes; // KES 185 total deduction
   static const int mpesaMaxSingleWithdrawalKes = 70000;
   static const int mpesaMaxDailyWithdrawalKes = 150000;
   static const int mpesaMaxDailyWithdrawalCount = 3;
@@ -79,6 +85,8 @@ class PaymentFeeSchedule {
   static const double crossmintMinDepositFeeUsd = 0.50;
 
   static const double crossmintFlatPayoutFeeUsd = 1.00;
+  static const double crossmintExpressPrioritySurchargeUsd =
+      0.50; // Optional Instant VIP pure profit ($1.50 total)
   static const double crossmintMinWithdrawalUsd = 5.00; // $4.00 net + $1.00 fee
   static const double crossmintMaxSingleWithdrawalUsd = 1000.00;
   static const double crossmintMaxDailyWithdrawalUsd = 2500.00;
@@ -107,15 +115,22 @@ class PaymentFeeSchedule {
   }
 
   /// Full M-PESA withdrawal breakdown: `walletDeductionKes` is deducted from the
-  /// player's wallet, `feeKes` (KES 50) covers Kopo Kopo's flat Move Money tariff,
+  /// player's wallet, `feeKes` (KES 50 Standard or KES 85 Express VIP) covers
+  /// Kopo Kopo's flat Move Money tariff (+ KES 35 company margin on Express),
   /// and `netToMpesaKes` is disbursed to the player's phone.
-  static ({int walletDeductionKes, int feeKes, int netToMpesaKes})
-      mpesaWithdrawalBreakdown(int requestedWithdrawalKes) {
-    final fee = requestedWithdrawalKes > 0 ? mpesaFlatPayoutFeeKes : 0;
+  static ({int walletDeductionKes, int feeKes, int profitKes, int netToMpesaKes})
+      mpesaWithdrawalBreakdown(int requestedWithdrawalKes,
+          {bool expressPayout = false}) {
+    final base = requestedWithdrawalKes > 0 ? mpesaFlatPayoutFeeKes : 0;
+    final surcharge = (requestedWithdrawalKes > 0 && expressPayout)
+        ? mpesaExpressPrioritySurchargeKes
+        : 0;
+    final fee = base + surcharge;
     final net = (requestedWithdrawalKes - fee).clamp(0, requestedWithdrawalKes);
     return (
       walletDeductionKes: requestedWithdrawalKes,
       feeKes: fee,
+      profitKes: surcharge,
       netToMpesaKes: net,
     );
   }
@@ -144,10 +159,20 @@ class PaymentFeeSchedule {
   }
 
   /// Full Crossmint withdrawal breakdown: `walletDeductionUsd` is deducted from wallet,
-  /// `feeUsd` ($1.00) covers payout overhead, and `netToWalletUsd` is sent on-chain.
-  static ({double walletDeductionUsd, double feeUsd, double netToWalletUsd})
-      crossmintWithdrawalBreakdown(double requestedWithdrawalUsd) {
-    final fee = requestedWithdrawalUsd > 0 ? crossmintFlatPayoutFeeUsd : 0.0;
+  /// `feeUsd` ($1.00 Standard or $1.50 Express VIP) covers payout overhead (+$0.50 profit),
+  /// and `netToWalletUsd` is sent on-chain.
+  static ({
+    double walletDeductionUsd,
+    double feeUsd,
+    double profitUsd,
+    double netToWalletUsd
+  }) crossmintWithdrawalBreakdown(double requestedWithdrawalUsd,
+      {bool expressPayout = false}) {
+    final base = requestedWithdrawalUsd > 0 ? crossmintFlatPayoutFeeUsd : 0.0;
+    final surcharge = (requestedWithdrawalUsd > 0 && expressPayout)
+        ? crossmintExpressPrioritySurchargeUsd
+        : 0.0;
+    final fee = base + surcharge;
     final net = ((requestedWithdrawalUsd - fee).clamp(0.0, requestedWithdrawalUsd) *
             100)
         .roundToDouble() /
@@ -155,9 +180,22 @@ class PaymentFeeSchedule {
     return (
       walletDeductionUsd: requestedWithdrawalUsd,
       feeUsd: fee,
+      profitUsd: surcharge,
       netToWalletUsd: net,
     );
   }
+}
+
+/// Complete 8-Stream Playverzus Commercial & Unit Economics Model.
+class PlatformRevenueStreams {
+  static const int arenaProPassMonthlyKes = 499;
+  static const double arenaProPassMonthlyUsd = 3.99;
+  static const int seasonBattlePassKes = 999;
+  static const int gamingLoungeMonthlyLicenseKes = 2500;
+  static const int studioFeaturedSlotMonthlyKes = 25000;
+  static const double sponsorProductionFeePercent = 20.0;
+  static const String revenueModelPdfPath =
+      'downloads/playverzus-v2-revenue-model.pdf';
 }
 
 /// Differentiated Platform Rake & 2-Tier Field Agent Commission Schedule.

@@ -302,15 +302,30 @@ void main() {
       );
     }
 
-    // 2. M-PESA Withdrawals: Flat KES 50 Kopo Kopo PAY fee covered upfront by customer
+    // 2. M-PESA Withdrawals: Standard (KES 50) & Express VIP (KES 85 = KES 50 cost + KES 35 profit)
     for (final withdrawKes in [150, 500, 1000, 10000, 70000]) {
       final w = PaymentFeeSchedule.mpesaWithdrawalBreakdown(withdrawKes);
       expect(w.feeKes, 50);
+      expect(w.profitKes, 0);
       expect(w.netToMpesaKes, withdrawKes - 50);
       expect(w.netToMpesaKes >= 100, isTrue);
       // Total cash leaving company (netToMpesaKes + 50 Kopo Kopo fee) == walletDeductionKes
       expect(w.netToMpesaKes + 50, w.walletDeductionKes);
     }
+    final expressW = PaymentFeeSchedule.mpesaWithdrawalBreakdown(
+      1000,
+      expressPayout: true,
+    );
+    expect(expressW.feeKes, 85);
+    expect(expressW.profitKes, 35);
+    expect(expressW.netToMpesaKes, 915);
+    final expressCm = PaymentFeeSchedule.crossmintWithdrawalBreakdown(
+      20.0,
+      expressPayout: true,
+    );
+    expect(expressCm.feeUsd, 1.50);
+    expect(expressCm.profitUsd, 0.50);
+    expect(expressCm.netToWalletUsd, 18.50);
 
     // 3. Differentiated Platform Rake & 2-Tier Agent Split locks >= 80% of rake for Company Production first
     expect(PlatformRakeSchedule.duelRakeRate(5.0), 0.15);

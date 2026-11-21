@@ -49,10 +49,13 @@ class _TournamentDetailScreenState
       _error = null;
     });
     try {
-      final tRes = await ApiClient.get('/tournaments/${widget.tournamentId}');
+      final results = await Future.wait([
+        ApiClient.get('/tournaments/${widget.tournamentId}'),
+        ApiClient.get('/tournaments/${widget.tournamentId}/bracket'),
+      ]);
+      final tRes = results[0];
+      final bRes = results[1];
       if (tRes is Map<String, dynamic>) _remoteTournament = tRes;
-      final bRes =
-          await ApiClient.get('/tournaments/${widget.tournamentId}/bracket');
       if (bRes is List) {
         _bracketMatches = bRes.whereType<Map<String, dynamic>>().toList();
       } else if (bRes is Map && bRes['matches'] is List) {
@@ -93,6 +96,11 @@ class _TournamentDetailScreenState
           (gp?['id'] ?? m['profile_id'] ?? 'eafc').toString());
       final fee = (m['entry_fee'] as num?)?.toDouble() ?? 0.0;
       final size = (m['size'] as num?)?.toInt() ?? 8;
+      final isBlitz = size == 5;
+      final rake = isBlitz
+          ? PlatformRakeSchedule.blitzRakeRate(
+              (m['tier'] as num?)?.toInt() ?? 1)
+          : PlatformRakeSchedule.tournamentCupRakeRate;
       tournament = TournamentModel(
         id: widget.tournamentId,
         name: (m['name'] ?? '${g.displayName} Cup').toString(),
@@ -101,9 +109,9 @@ class _TournamentDetailScreenState
         size: size,
         entryFeeUsd: fee,
         prizePoolUsd:
-            (m['prize_pool'] as num?)?.toDouble() ?? (fee * size * 0.9),
+            (m['prize_pool'] as num?)?.toDouble() ?? (fee * size * (1.0 - rake)),
         status: (m['status'] ?? 'REGISTRATION').toString(),
-        isBlitz: size == 5,
+        isBlitz: isBlitz,
         region: (m['region'] ?? 'Global').toString(),
         entrants: const [],
       );

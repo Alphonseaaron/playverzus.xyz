@@ -272,7 +272,7 @@ class _TournamentsScreenState extends ConsumerState<TournamentsScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Fast 5-player knockout pools. 1st (70%) & 2nd (20%) win cash. Auto-clones a new pool the second 5/5 fills!',
+                          'Fast 5-player knockout pools. Net prize pool splits 1st (70%) & 2nd (30%). Auto-clones a new pool the second 5/5 fills!',
                           style: HigTypography.footnote(),
                         ),
                       ],
@@ -338,8 +338,10 @@ class _TournamentsScreenState extends ConsumerState<TournamentsScreen> {
                       children: visibleBlitz.map((pool) {
                         final g = findOfficialGameById(pool.gameId);
                         final accent = _tierColor(pool.tier);
-                        final firstPrize = pool.entryFeeUsd * 5 * 0.70;
-                        final secondPrize = pool.entryFeeUsd * 5 * 0.20;
+                        final rake = PlatformRakeSchedule.blitzRakeRate(pool.tier);
+                        final netPool = pool.entryFeeUsd * 5 * (1.0 - rake);
+                        final firstPrize = netPool * 0.70;
+                        final secondPrize = netPool * 0.30;
                         final alreadyIn = pool.entrants
                             .any((e) => e.username == session.username);
 

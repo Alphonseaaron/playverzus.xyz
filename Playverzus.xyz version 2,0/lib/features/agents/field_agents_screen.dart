@@ -1,7 +1,9 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/config/app_config.dart';
 import '../../core/network/api_client.dart';
 import '../../core/storage/app_state.dart';
@@ -317,9 +319,31 @@ class _AdminGroundAgentsPanelState
                     'Differentiated Platform Fee & 2-Tier Ground Commission Model',
                     style: HigTypography.title3(),
                   ),
-                  const HigBadge(
-                    label: '80%+ OF ALL RAKE LOCKED FOR COMPANY PRODUCTION FIRST',
-                    tone: HigBadgeTone.emerald,
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      const HigBadge(
+                        label: '80%+ OF ALL RAKE LOCKED FOR COMPANY PRODUCTION FIRST',
+                        tone: HigBadgeTone.emerald,
+                      ),
+                      HigButton(
+                        label: 'Revenue Model PDF',
+                        icon: CupertinoIcons.doc_text_fill,
+                        size: HigButtonSize.small,
+                        variant: HigButtonVariant.secondary,
+                        onPressed: () {
+                          final pdfUrl = kIsWeb
+                              ? '${Uri.base.origin}/${PlatformRevenueStreams.revenueModelPdfPath}'
+                              : 'https://playverzus.xyz/${PlatformRevenueStreams.revenueModelPdfPath}';
+                          launchUrl(
+                            Uri.parse(pdfUrl),
+                            mode: LaunchMode.externalApplication,
+                          );
+                        },
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -441,6 +465,11 @@ class _AdminGroundAgentsPanelState
               Text(
                 'First-Deposit Bonus Protection: Unlocks ONLY after referred player deposits ≥ KES 300 AND completes 1st settled Cash Match (Lead Agent Direct: 5.0% capped at KES 150 · Wing Sub-Agent Direct: 3.5% + Lead Agent Wing Override: 1.5%).',
                 style: HigTypography.caption(color: HigColors.emerald),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Additional Company-Only Profit Streams: Express VIP Instant Cashout (+KES 35 / +\$0.50 · 100% Margin) · Arena Pro Pass (KES 499/mo · 82% Margin) · Gaming Lounge Wing License (KES 2,500/mo · 95% Margin) · Game Studio Featured Arena (KES 25,000/mo) & Brand Sponsor Production Fee (20%).',
+                style: HigTypography.caption(color: HigColors.brandBright),
               ),
             ],
           ),
@@ -960,26 +989,35 @@ class _FieldAgentStaffScreenState extends ConsumerState<FieldAgentStaffScreen> {
     final session = ref.read(playerSessionProvider);
     final targetCode = codeOverride ?? _selectedAgentCode ?? '';
     try {
+      // Single-round-trip fetch: `/agents/overview` contains full agents list + schedule
       final overviewRes = await ApiClient.get('/agents/overview');
       if (overviewRes is Map && overviewRes['agents'] is List) {
         _allAgents = (overviewRes['agents'] as List)
             .whereType<Map>()
             .map((e) => Map<String, dynamic>.from(e))
             .toList();
-      }
-      final query = targetCode.isNotEmpty
-          ? 'code=${Uri.encodeQueryComponent(targetCode)}'
-          : 'username=${Uri.encodeQueryComponent(session.username)}&email=${Uri.encodeQueryComponent(session.email)}';
-      final meRes = await ApiClient.get('/agents/me?$query');
-      if (meRes is Map) {
-        if (meRes['agent'] is Map) {
-          _agent = Map<String, dynamic>.from(meRes['agent'] as Map);
+        if (_allAgents.isNotEmpty) {
+          final qUser = session.username.toLowerCase();
+          final qEmail = session.email.toLowerCase();
+          final qCode = targetCode.toUpperCase();
+          final found = _allAgents.firstWhere(
+            (a) =>
+                (qCode.isNotEmpty &&
+                    (a['referralCode'] ?? '').toString().toUpperCase() ==
+                        qCode) ||
+                (qCode.isEmpty &&
+                    qEmail.isNotEmpty &&
+                    (a['email'] ?? '').toString().toLowerCase() == qEmail) ||
+                (qCode.isEmpty &&
+                    qUser.isNotEmpty &&
+                    (a['username'] ?? '').toString().toLowerCase() == qUser),
+            orElse: () => _allAgents.first,
+          );
+          _agent = found;
           _selectedAgentCode = (_agent['referralCode'] ?? '').toString();
-        }
-        if (meRes['subAgents'] is List) {
-          _subAgents = (meRes['subAgents'] as List)
-              .whereType<Map>()
-              .map((e) => Map<String, dynamic>.from(e))
+          final myId = (_agent['id'] ?? '').toString();
+          _subAgents = _allAgents
+              .where((a) => (a['parentAgentId'] ?? '').toString() == myId)
               .toList();
         }
       }
