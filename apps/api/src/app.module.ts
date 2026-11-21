@@ -26,6 +26,7 @@ import { CrossmintModule } from './crossmint/crossmint.module';
 import { SupportModule } from './support/support.module';
 import { PollsModule } from './polls/polls.module';
 import { SecurityModule } from './security/security.module';
+import { V2GatewayModule } from './v2-gateway/v2-gateway.module';
 
 import { RateLimitInterceptor } from './common/interceptors/rate-limit.interceptor';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor';
@@ -59,6 +60,7 @@ import { AuditInterceptor } from './common/interceptors/audit.interceptor';
     SupportModule,
     PollsModule,
     SecurityModule,
+    V2GatewayModule,
   ],
   providers: [
     {

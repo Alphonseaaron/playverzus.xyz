@@ -12,10 +12,7 @@ class AppConfig {
   static String get apiBaseUrl {
     if (_envApiUrl.isNotEmpty) return _envApiUrl;
     if (kIsWeb) {
-      final host = Uri.base.host.toLowerCase();
-      if (host == 'localhost' || host == '127.0.0.1') {
-        return '${Uri.base.origin}/api';
-      }
+      return '${Uri.base.origin}/api';
     }
     return 'https://playverzus-api.onrender.com/api';
   }

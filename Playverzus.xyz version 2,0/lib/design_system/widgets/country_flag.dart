@@ -23,10 +23,7 @@ class CountryFlag extends StatelessWidget {
 
   static String _flagUrlFor(String isoLower) {
     if (kIsWeb) {
-      final host = Uri.base.host;
-      if (host == 'localhost' || host == '127.0.0.1') {
-        return '${Uri.base.origin}/flags/$isoLower.png';
-      }
+      return '${Uri.base.origin}/flags/$isoLower.png';
     }
     return 'https://flagcdn.com/w40/$isoLower.png';
   }

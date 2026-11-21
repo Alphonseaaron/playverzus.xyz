@@ -26,6 +26,51 @@ const nextConfig = {
       { source: '/arena', destination: '/matches/new', permanent: false },
     ];
   },
+  async rewrites() {
+    const v2Routes = [
+      '/',
+      '/login',
+      '/signup',
+      '/dashboard',
+      '/challenges',
+      '/games',
+      '/games/:path*',
+      '/tournaments',
+      '/tournaments/:path*',
+      '/matches/:path*',
+      '/cashier',
+      '/leaderboards',
+      '/leaderboards/:path*',
+      '/ratings',
+      '/settlement-preview',
+      '/profile',
+      '/profile/:path*',
+      '/friends',
+      '/settings',
+      '/support',
+      '/community/polls',
+      '/download',
+      '/privacy',
+      '/terms',
+      '/responsible-gaming',
+      '/developer',
+      '/developer/:path*',
+      '/admin',
+      '/admin/:path*',
+    ];
+    return {
+      beforeFiles: v2Routes.map((source) => ({
+        source,
+        destination: '/v2_index.html',
+      })),
+      afterFiles: [
+        {
+          source: '/api/:path*',
+          destination: 'https://playverzus-api.onrender.com/api/:path*',
+        },
+      ],
+    };
+  },
   async headers() {
     return [
       {
