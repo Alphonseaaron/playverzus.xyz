@@ -8,6 +8,7 @@ import '../../design_system/widgets/brand_logo.dart';
 import '../../design_system/widgets/hig_primitives.dart';
 import '../../features/admin/admin_console_screen.dart';
 import '../../features/admin/admin_models.dart';
+import '../../features/agents/field_agents_screen.dart';
 import '../../features/cashier/cashier_screen.dart';
 import '../../features/challenges/challenges_screen.dart';
 import '../../features/community_support/support_screen.dart';
@@ -404,6 +405,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: '/community/polls',
             pageBuilder: (context, state) =>
                 _subtlePage(state, const SupportScreen(initialTab: 0)),
+          ),
+
+          // FIELD AGENT & GROUND STAFF HUB
+          GoRoute(
+            path: '/agent',
+            pageBuilder: (context, state) =>
+                _subtlePage(state, const FieldAgentStaffScreen()),
           ),
 
           // GAME DEVELOPER STUDIO ROUTES

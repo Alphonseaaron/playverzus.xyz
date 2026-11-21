@@ -37,6 +37,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   final _passwordCtrl = TextEditingController();
   final _dobCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
+  final _referralCodeCtrl = TextEditingController();
 
   late bool _registerAsDeveloper;
   String _countryCode = '';
@@ -60,6 +61,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     _passwordCtrl.dispose();
     _dobCtrl.dispose();
     _phoneCtrl.dispose();
+    _referralCodeCtrl.dispose();
     super.dispose();
   }
 
@@ -553,6 +555,17 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                     ],
                                   );
                                 },
+                              ),
+                              const SizedBox(height: 12),
+
+                              _fieldLabel(
+                                'Agent / Referral Code',
+                                hint: '(Optional · e.g. PVZ-KE-KEVIN)',
+                              ),
+                              HigTextField(
+                                controller: _referralCodeCtrl,
+                                placeholder: 'Enter Field Agent referral code if invited',
+                                prefixIcon: CupertinoIcons.tag,
                               ),
                               const SizedBox(height: 14),
 

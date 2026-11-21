@@ -7,6 +7,7 @@ import '../../design_system/layout/responsive.dart';
 import '../../design_system/tokens/hig_tokens.dart';
 import '../../design_system/widgets/brand_logo.dart';
 import '../../design_system/widgets/hig_primitives.dart';
+import '../agents/field_agents_screen.dart';
 import 'admin_community_panels.dart';
 import 'admin_models.dart';
 import 'admin_repository.dart';
@@ -250,6 +251,7 @@ class _AdminConsoleScreenState extends ConsumerState<AdminConsoleScreen> {
                     _buildOverviewPanel(context, admin, allowedModules),
                   AdminModule.security => _buildSecurityPanel(admin),
                   AdminModule.treasury => _buildTreasuryPanel(admin),
+                  AdminModule.agents => const AdminGroundAgentsPanel(),
                   AdminModule.support => const AdminSupportPanel(),
                   AdminModule.polls => const AdminPollsPanel(),
                   AdminModule.review => _buildReviewPanel(admin),
@@ -1008,14 +1010,14 @@ class _AdminConsoleScreenState extends ConsumerState<AdminConsoleScreen> {
                     style: HigTypography.title3(),
                   ),
                   const HigBadge(
-                    label: 'ZERO NEGATIVE MARGIN · 10% RAKE 100% RETAINED',
+                    label: 'ZERO NEGATIVE MARGIN · 80%+ RAKE FLOOR FOR COMPANY',
                     tone: HigBadgeTone.emerald,
                   ),
                 ],
               ),
               const SizedBox(height: 4),
               Text(
-                'Customers pay 100% of Kopo Kopo M-PESA and Crossmint processing fees upfront at deposit and withdrawal. Playverzus absorbs KES 0 / \$0.00 in gateway drag and collects strictly from its 10% match & tournament rake.',
+                'Customers pay 100% of Kopo Kopo M-PESA and Crossmint processing fees upfront at deposit and withdrawal. Playverzus absorbs KES 0 / \$0.00 in gateway drag and collects differentiated 12.5%–22.0% match/Blitz/tournament rakes (with 80%+ locked for Company Cost of Production & Profit first before paying Ground Agents).',
                 style: HigTypography.footnote(),
               ),
               const SizedBox(height: 12),
@@ -1035,8 +1037,8 @@ class _AdminConsoleScreenState extends ConsumerState<AdminConsoleScreen> {
               ),
               const Divider(height: 14),
               _feeRuleRow(
-                'Playverzus Company Earning Model',
-                '10.0% platform rake on settled cash 1v1 duels, squad matches, 5-player Blitz pools & tournaments (winner receives 90.0% of pot).',
+                'Playverzus Differentiated Company Earning Model',
+                '1v1/Squad Duels: 15.0% Starter / 12.5% Pro rake · 5-Player Blitz Sit & Go: Tier 1 (16%), Tier 2 (18%), Tier 3 & 4 (20%), Tier 5 (22%) · Tournaments & Cups: 20.0%. First 80%–82% of all rake is locked for Company Cost of Production & Profit before Field Agent commission.',
               ),
             ],
           ),

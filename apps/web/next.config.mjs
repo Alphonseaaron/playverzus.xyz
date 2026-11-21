@@ -82,6 +82,7 @@ const nextConfig = {
       '/privacy',
       '/terms',
       '/responsible-gaming',
+      '/agent',
       '/developer',
       '/developer/:path*',
       '/admin',

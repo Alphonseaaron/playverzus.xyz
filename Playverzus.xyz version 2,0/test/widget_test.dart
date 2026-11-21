@@ -40,16 +40,17 @@ void main() {
     expect(HigColors.canvas, const Color(0xFF0B0C10));
   });
 
-  test('Granular Staff RBAC covers all 10 admin modules and enforces per-role scopes', () {
-    expect(allAdminModules.length, 10);
-    expect(allowedAdminModulesForRole('ADMIN').length, 10);
-    expect(allowedAdminModulesForRole('SUPER_ADMIN').length, 10);
+  test('Granular Staff RBAC covers all 11 admin modules and enforces per-role scopes', () {
+    expect(allAdminModules.length, 11);
+    expect(allowedAdminModulesForRole('ADMIN').length, 11);
+    expect(allowedAdminModulesForRole('SUPER_ADMIN').length, 11);
     expect(allowedAdminModulesForRole('PLAYER'), isEmpty);
 
     // Scoped clearances
     expect(canRoleAccessAdminPath('REVIEWER', '/admin/review'), isTrue);
     expect(canRoleAccessAdminPath('REVIEWER', '/admin/treasury'), isFalse);
     expect(canRoleAccessAdminPath('FINANCE_AUDITOR', '/admin/treasury'), isTrue);
+    expect(canRoleAccessAdminPath('FINANCE_AUDITOR', '/admin/agents'), isTrue);
     expect(canRoleAccessAdminPath('FINANCE_AUDITOR', '/admin/users'), isFalse);
     expect(canRoleAccessAdminPath('SECURITY_ENGINEER', '/admin/security'), isTrue);
     expect(canRoleAccessAdminPath('SECURITY_ENGINEER', '/admin/sponsors'), isFalse);
@@ -310,5 +311,23 @@ void main() {
       // Total cash leaving company (netToMpesaKes + 50 Kopo Kopo fee) == walletDeductionKes
       expect(w.netToMpesaKes + 50, w.walletDeductionKes);
     }
+
+    // 3. Differentiated Platform Rake & 2-Tier Agent Split locks >= 80% of rake for Company Production first
+    expect(PlatformRakeSchedule.duelRakeRate(5.0), 0.15);
+    expect(PlatformRakeSchedule.duelRakeRate(10.0), 0.125);
+    expect(PlatformRakeSchedule.blitzRakeRate(1), 0.16);
+    expect(PlatformRakeSchedule.blitzRakeRate(3), 0.20);
+    expect(PlatformRakeSchedule.blitzRakeRate(5), 0.22);
+
+    final subWingSplit = PlatformRakeSchedule.splitMatchRakeKes(
+      totalPotKes: 6500,
+      rakeRate: PlatformRakeSchedule.blitzRakeRate(3), // 20% = KES 1300 rake
+      hasAgent: true,
+      isSubAgentUnderWing: true,
+    );
+    expect(subWingSplit.totalRakeKes, 1300);
+    expect(subWingSplit.companyProductionAndProfitKes, 1040); // 80% locked for company
+    expect(subWingSplit.directAgentCommissionKes, 195); // 15% to Sub-Agent
+    expect(subWingSplit.leadAgentWingOverrideKes, 65); // 5% to Lead Agent
   });
 }

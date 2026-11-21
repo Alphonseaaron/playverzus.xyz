@@ -5,6 +5,13 @@ import path from 'node:path';
 import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import { handleDeveloperApiRequest } from './developer_api_engine.mjs';
+import {
+  buildAgentsOverview,
+  registerFieldAgent,
+  attributePlayerConversion,
+  settleAgentPayout,
+  requestAgentPayout,
+} from './agent_referral_engine.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, 'build', 'web');
@@ -483,6 +490,80 @@ const server = http.createServer((req, res) => {
         res.end(JSON.stringify({ message: err.message || 'Developer API error' }));
       }
     });
+    return;
+  }
+
+  // Ground Force / Field Agent & 2-Tier Commission Ledger Engine
+  if (rawUrl.startsWith('/api/agents/')) {
+    (async () => {
+      try {
+        const parsed = new URL(rawUrl, `http://localhost:${port}`);
+        const p = parsed.pathname;
+
+        if (p === '/api/agents/overview' && req.method === 'GET') {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(buildAgentsOverview()));
+          return;
+        }
+        if (p === '/api/agents/me' && req.method === 'GET') {
+          const overview = buildAgentsOverview();
+          const qUser = (parsed.searchParams.get('username') || '').toLowerCase();
+          const qEmail = (parsed.searchParams.get('email') || '').toLowerCase();
+          const qCode = (parsed.searchParams.get('code') || '').toUpperCase();
+          const found =
+            overview.agents.find(
+              (a) =>
+                (qCode && a.referralCode.toUpperCase() === qCode) ||
+                (qEmail && a.email.toLowerCase() === qEmail) ||
+                (qUser && a.username.toLowerCase() === qUser),
+            ) || overview.agents[0];
+          const subAgents = overview.agents.filter((a) => a.parentAgentId === found?.id);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(
+            JSON.stringify({
+              agent: found,
+              subAgents,
+              schedule: overview.schedule,
+            }),
+          );
+          return;
+        }
+        if (p === '/api/agents/register' && req.method === 'POST') {
+          const body = await readJsonBody(req);
+          const created = registerFieldAgent(body);
+          res.writeHead(201, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: true, agent: created, overview: buildAgentsOverview() }));
+          return;
+        }
+        if (p === '/api/agents/attribute' && req.method === 'POST') {
+          const body = await readJsonBody(req);
+          const result = attributePlayerConversion(body);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ...result, overview: buildAgentsOverview() }));
+          return;
+        }
+        if (p === '/api/agents/settle-payout' && req.method === 'POST') {
+          const body = await readJsonBody(req);
+          const result = settleAgentPayout(body);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ...result, overview: buildAgentsOverview() }));
+          return;
+        }
+        if (p === '/api/agents/request-payout' && req.method === 'POST') {
+          const body = await readJsonBody(req);
+          const result = requestAgentPayout(body);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ...result, overview: buildAgentsOverview() }));
+          return;
+        }
+
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: 'Agent endpoint not found' }));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: err.message || 'Field Agent engine error' }));
+      }
+    })();
     return;
   }
 

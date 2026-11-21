@@ -187,6 +187,7 @@ class _AdaptiveScaffoldState extends ConsumerState<AdaptiveScaffold> {
   }
 
   String _secondaryTitle(String path) {
+    if (path == '/agent') return 'Ground Agent Hub';
     if (path == '/developer') return 'Developer Studio';
     if (path == '/developer/games/new') return 'Add Game API';
     if (path.startsWith('/developer/games/') && path.endsWith('/edit')) {
@@ -514,6 +515,12 @@ class _AdaptiveScaffoldState extends ConsumerState<AdaptiveScaffold> {
                           subtitle: 'Manage platform Stats APIs & test live fetches',
                           onTap: () => nav('/developer'),
                         ),
+                      _menuTile(
+                        icon: CupertinoIcons.person_2_square_stack,
+                        title: 'Ground Agent & Staff Hub',
+                        subtitle: 'Your referral codes, wing sub-agents & owed payouts',
+                        onTap: () => nav('/agent'),
+                      ),
                       _menuTile(
                         icon: CupertinoIcons.person_crop_circle,
                         title: 'My Profile',

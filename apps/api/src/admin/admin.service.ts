@@ -245,9 +245,9 @@ export class AdminService {
 
       const netRetainedEarningsEur = Math.max(0, Math.round((grossCashEur - playerLiabilitiesEur) * 100) / 100);
 
-      // 5. Segregated Income Books
+      // 5. Segregated Income Books (Differentiated by Mode: 12.5%-15% Duels, 16%-22% Blitz, 20% Tournaments; 80%+ Locked for Company Production & Profit First)
       if (totalPlatformRakeEur === 0 && matchVolumeEur > 0) {
-        totalPlatformRakeEur = Math.round(matchVolumeEur * 0.05 * 100) / 100;
+        totalPlatformRakeEur = Math.round(matchVolumeEur * 0.15 * 100) / 100;
       }
       const tournamentMarginEur = Math.max(0, Math.round((tournamentEntryVolumeEur - tournamentPrizesDisbursedEur) * 100) / 100);
       const paymentRailSpreadEur = Math.round(totalDepositedEur * 0.008 * 100) / 100;
@@ -255,25 +255,25 @@ export class AdminService {
       const incomeBooks = [
         {
           id: 'match_rake',
-          name: '1v1 Arena Matches & Duels (5% Platform Rake)',
+          name: '1v1 & Squad Arena Duels (15.0% Starter / 12.5% Pro Rake — 80% Company Production Floor)',
           category: 'CORE_GAMING',
           grossVolumeEur: Math.round(matchVolumeEur * 100) / 100,
           netRevenueEur: Math.round(totalPlatformRakeEur * 100) / 100,
-          takeRatePercent: 5.0,
-          marginPercent: 100.0,
+          takeRatePercent: 15.0,
+          marginPercent: 82.0,
           status: totalPlatformRakeEur > 0 ? 'ACTIVE_EARNING' : 'AWAITING_MATCHES',
-          description: 'Automated 5% commission charged upon final victory settlement in 1v1 challenges.',
+          description: '15.0% rake on Starter Duels (≤ KES 650 / $5) and 12.5% on Pro Duels (> KES 650 / $5). First 80% of rake is locked for Playverzus Cost of Production & Net Profit before Field Agent commission.',
         },
         {
           id: 'tournament_margins',
-          name: '5-Player Sit & Go Blitz Pools & Cup Margins (10% - 20% Rake)',
+          name: '5-Player Sit & Go Blitz Pools & Tournaments (16% – 22% Tiered Rake)',
           category: 'COMPETITIVE_EVENTS',
           grossVolumeEur: Math.round(tournamentEntryVolumeEur * 100) / 100,
           netRevenueEur: tournamentMarginEur,
-          takeRatePercent: tournamentEntryVolumeEur > 0 ? Math.round((tournamentMarginEur / tournamentEntryVolumeEur) * 1000) / 10 : 15.0,
-          marginPercent: 85.0,
+          takeRatePercent: tournamentEntryVolumeEur > 0 ? Math.round((tournamentMarginEur / tournamentEntryVolumeEur) * 1000) / 10 : 20.0,
+          marginPercent: 80.0,
           status: tournamentEntryVolumeEur > 0 ? 'ACTIVE_EARNING' : 'AWAITING_TOURNAMENTS',
-          description: 'Tiered platform rakes retained from 5-player Sit & Go blitz pools: Tier 1 ($10, 10%), Tier 2 ($50, 15%), Tier 3 ($100, 20%), Tier 4 ($200, 20%), and Tier 5 ($500, 20%).',
+          description: 'Tiered rakes: Blitz Tier 1 (16%), Tier 2 (18%), Tier 3 & 4 (20%), Tier 5 (22%), and Scheduled Multi-Bracket Cups (20%). First 80% of rake is locked for Company Cost of Production & Profit.',
         },
         {
           id: 'brand_sponsorships',

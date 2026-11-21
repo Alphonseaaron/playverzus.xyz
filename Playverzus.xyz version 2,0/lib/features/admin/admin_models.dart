@@ -5,6 +5,7 @@ enum AdminModule {
   overview,
   security,
   treasury,
+  agents,
   support,
   polls,
   review,
@@ -56,6 +57,14 @@ const List<AdminModuleMeta> allAdminModules = [
     shortLabel: 'Treasury',
     description: 'M-PESA / Crossmint rail switch, reserves, income books, and withdrawals.',
     icon: CupertinoIcons.creditcard,
+  ),
+  AdminModuleMeta(
+    module: AdminModule.agents,
+    route: '/admin/agents',
+    label: 'Ground Agents',
+    shortLabel: 'Agents',
+    description: '2-tier ground force referral tracking, sub-agent wings, company profit floor, and owed payouts.',
+    icon: CupertinoIcons.person_2_square_stack,
   ),
   AdminModuleMeta(
     module: AdminModule.support,
@@ -117,6 +126,7 @@ const List<AdminModuleMeta> allAdminModules = [
 
 const List<String> allPlayverzusRoles = [
   'PLAYER',
+  'FIELD_AGENT',
   'SUPPORT',
   'REVIEWER',
   'TOURNAMENT_ADMIN',
@@ -136,8 +146,8 @@ List<AdminModuleMeta> allowedAdminModulesForRole(String rawRole) {
     'REVIEWER' => {AdminModule.review},
     'SUPPORT' => {AdminModule.support, AdminModule.polls},
     'TOURNAMENT_ADMIN' => {AdminModule.seasons, AdminModule.profiles},
-    'FINANCE_AUDITOR' => {AdminModule.treasury},
-    'COMMUNITY_MANAGER' => {AdminModule.polls, AdminModule.sponsors},
+    'FINANCE_AUDITOR' => {AdminModule.treasury, AdminModule.agents},
+    'COMMUNITY_MANAGER' => {AdminModule.polls, AdminModule.sponsors, AdminModule.agents},
     _ => <AdminModule>{},
   };
   return allAdminModules.where((m) => allowed.contains(m.module)).toList();

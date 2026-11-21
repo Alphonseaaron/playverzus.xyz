@@ -159,3 +159,89 @@ class PaymentFeeSchedule {
     );
   }
 }
+
+/// Differentiated Platform Rake & 2-Tier Field Agent Commission Schedule.
+/// Guarantees Playverzus locks the first 80%+ of all collected rake for
+/// Cost of Production, Server/API Infrastructure & Company Net Profit
+/// before allocating Direct Agent & Lead Agent Wing Override commissions.
+class PlatformRakeSchedule {
+  /// 1v1 & Squad Duels:
+  /// - Starter Duels (≤ $5.00 / KES 650 stake): 15.0% of Total Pot (Winner gets 85.0%)
+  /// - Standard & Pro Duels (> $5.00 / KES 650 stake): 12.5% of Total Pot (Winner gets 87.5%)
+  static double duelRakeRate(double stakeUsdPerPlayer) {
+    if (stakeUsdPerPlayer <= 0) return 0.0;
+    return stakeUsdPerPlayer <= 5.0 ? 0.15 : 0.125;
+  }
+
+  static double duelWinnerPayoutUsd(double stakeUsdPerPlayer) {
+    if (stakeUsdPerPlayer <= 0) return 0.0;
+    final totalPot = stakeUsdPerPlayer * 2.0;
+    final rake = duelRakeRate(stakeUsdPerPlayer);
+    return ((totalPot * (1.0 - rake)) * 100).roundToDouble() / 100.0;
+  }
+
+  /// 5-Player Blitz Sit & Go Pools (Tiered 16% -> 22% Rake):
+  /// - Tier 1 ($2.50 / KES 325): 16.0% Rake (84.0% Prize Pool)
+  /// - Tier 2 ($5.00 / KES 650): 18.0% Rake (82.0% Prize Pool)
+  /// - Tier 3 ($10.00 / KES 1,300): 20.0% Rake (80.0% Prize Pool)
+  /// - Tier 4 ($25.00 / KES 3,250): 20.0% Rake (80.0% Prize Pool)
+  /// - Tier 5 ($50.00 / KES 6,500): 22.0% Rake (78.0% Prize Pool)
+  static double blitzRakeRate(int tier) {
+    return switch (tier) {
+      1 => 0.16,
+      2 => 0.18,
+      3 => 0.20,
+      4 => 0.20,
+      _ => 0.22,
+    };
+  }
+
+  /// Multi-Bracket Tournaments & Championships (8–64 Players): 20.0% Rake (80.0% Prize Pool)
+  static const double tournamentCupRakeRate = 0.20;
+
+  /// Company Cost-of-Production Protection Split:
+  /// - Organic Player (No Agent): Playverzus keeps 100% of collected rake.
+  /// - Direct Lead Agent Player: Playverzus keeps 82% of rake; Lead Agent gets 18% of rake.
+  /// - Sub-Agent Player (Under a Lead Agent's Wing): Playverzus keeps 80% of rake;
+  ///   Sub-Agent gets 15% of rake; Lead Agent gets 5% wing override.
+  static ({
+    int totalRakeKes,
+    int companyProductionAndProfitKes,
+    int directAgentCommissionKes,
+    int leadAgentWingOverrideKes,
+  }) splitMatchRakeKes({
+    required int totalPotKes,
+    required double rakeRate,
+    required bool hasAgent,
+    required bool isSubAgentUnderWing,
+  }) {
+    final totalRake = (totalPotKes * rakeRate).round();
+    if (!hasAgent) {
+      return (
+        totalRakeKes: totalRake,
+        companyProductionAndProfitKes: totalRake,
+        directAgentCommissionKes: 0,
+        leadAgentWingOverrideKes: 0,
+      );
+    }
+    if (isSubAgentUnderWing) {
+      final direct = (totalRake * 0.15).round();
+      final override = (totalRake * 0.05).round();
+      final company = totalRake - direct - override;
+      return (
+        totalRakeKes: totalRake,
+        companyProductionAndProfitKes: company,
+        directAgentCommissionKes: direct,
+        leadAgentWingOverrideKes: override,
+      );
+    }
+    final direct = (totalRake * 0.18).round();
+    final company = totalRake - direct;
+    return (
+      totalRakeKes: totalRake,
+      companyProductionAndProfitKes: company,
+      directAgentCommissionKes: direct,
+      leadAgentWingOverrideKes: 0,
+    );
+  }
+}

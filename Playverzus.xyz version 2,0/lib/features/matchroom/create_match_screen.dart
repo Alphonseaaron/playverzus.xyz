@@ -113,7 +113,12 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
     final activeGame = ref.watch(activeGameProvider);
     final gateway = ref.watch(paymentGatewayProvider);
     const presets = [0.0, 1.0, 2.5, 5.0, 10.0, 25.0];
-    final winnerPrize = _effectiveStakeUsd * 2 * 0.90;
+    final winnerPrize =
+        PlatformRakeSchedule.duelWinnerPayoutUsd(_effectiveStakeUsd);
+    final winnerSharePct =
+        ((1.0 - PlatformRakeSchedule.duelRakeRate(_effectiveStakeUsd)) * 100)
+            .toStringAsFixed(1)
+            .replaceAll('.0', '');
 
     return ListView(
       padding: const EdgeInsets.only(bottom: 100),
@@ -357,7 +362,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Guaranteed Winner Payout (90%)',
+                        Text('Guaranteed Winner Payout ($winnerSharePct%)',
                             style: HigTypography.footnote(
                                 color: HigColors.labelPrimary)),
                         Text(
