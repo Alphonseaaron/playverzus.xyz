@@ -15,7 +15,13 @@ services:
       - key: ALLOWED_ORIGINS
         value: https://playverzus.xyz,https://www.playverzus.xyz
       - key: WALLET_MODE
-        value: demo
+        value: live
+      - key: NEXT_PUBLIC_WALLET_MODE
+        value: live
+      - key: CROSSMINT_ENVIRONMENT
+        value: production
+      - key: NEXT_PUBLIC_CROSSMINT_ENVIRONMENT
+        value: production
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_ANON_KEY
@@ -34,6 +40,20 @@ services:
         sync: false
       - key: CROSSMINT_WEBHOOK_SECRET
         sync: false
+      - key: KOPOKOPO_ENV
+        value: live
+      - key: KOPOKOPO_BASE_URL
+        value: https://api.kopokopo.com
+      - key: KOPOKOPO_CLIENT_ID
+        sync: false
+      - key: KOPOKOPO_CLIENT_SECRET
+        sync: false
+      - key: KOPOKOPO_API_KEY
+        sync: false
+      - key: KOPOKOPO_TILL_NUMBER
+        sync: false
+      - key: KOPOKOPO_CALLBACK_URL
+        value: https://playverzus-api.onrender.com/api/webhooks/mpesa
       - key: VAPID_PUBLIC_KEY
         sync: false
       - key: VAPID_PRIVATE_KEY

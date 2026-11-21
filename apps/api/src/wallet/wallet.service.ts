@@ -101,7 +101,16 @@ export class WalletService {
       if (txs) {
         for (const tx of txs) {
           const meta = tx.metadata as Record<string, unknown> | null;
-          if (meta?.currency === 'USDC' || meta?.currency === 'USD' || meta?.currency === 'EUR' || meta?.provider === 'CROSSMINT' || meta?.provider === 'PAYSAFE') {
+          if (
+            meta?.currency === 'USDC' ||
+            meta?.currency === 'USD' ||
+            meta?.currency === 'EUR' ||
+            meta?.currency === 'KES' ||
+            meta?.provider === 'CROSSMINT' ||
+            meta?.provider === 'PAYSAFE' ||
+            meta?.provider === 'MPESA' ||
+            meta?.provider === 'KOPOKOPO'
+          ) {
             balanceCents += Number(tx.amount);
           }
         }

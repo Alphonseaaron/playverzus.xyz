@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/config/app_config.dart';
 import '../../core/network/api_client.dart';
 import '../../core/storage/app_state.dart';
@@ -114,10 +115,18 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
     try {
       if (session.accessToken != null && session.accessToken!.isNotEmpty) {
         if (!isMpesa) {
-          await ApiClient.post('/crossmint/order', data: {
+          final cmRes = await ApiClient.post('/crossmint/order', data: {
             'amount': amountUsd,
             'currency': 'USD',
+            'email': session.email,
           });
+          if (cmRes is Map && cmRes['checkoutUrl'] != null) {
+            final checkoutUrl = cmRes['checkoutUrl'].toString().trim();
+            final uri = Uri.tryParse(checkoutUrl);
+            if (uri != null && checkoutUrl.isNotEmpty) {
+              await launchUrl(uri, mode: LaunchMode.externalApplication);
+            }
+          }
         } else {
           final stkRes = await ApiClient.post('/mpesa/stk-push', data: {
             'amountKes': rawInputAmount.round(),

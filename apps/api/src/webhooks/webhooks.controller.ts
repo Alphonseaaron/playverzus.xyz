@@ -13,6 +13,14 @@ export class WebhooksController {
     return this.webhooksService.handleCrossmint(body, headers);
   }
 
+  @Post('mpesa')
+  mpesa(
+    @Body() body: any,
+    @Headers() headers: Record<string, string>,
+  ) {
+    return this.webhooksService.handleMpesa(body, headers);
+  }
+
   @Post('paystack')
   paystack() {
     return this.webhooksService.handlePaystack();

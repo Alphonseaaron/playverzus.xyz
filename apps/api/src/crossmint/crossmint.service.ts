@@ -18,7 +18,12 @@ export class CrossmintService {
   private readonly clientApiKey = process.env.NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY || '';
   private readonly webhookSecret = process.env.CROSSMINT_WEBHOOK_SECRET || '';
   private readonly treasuryAddress = process.env.CROSSMINT_TREASURY_ADDRESS || 'playverzus_master_treasury';
-  private readonly isProd = process.env.NODE_ENV === 'production' || process.env.CROSSMINT_ENVIRONMENT === 'production';
+  private readonly isProd =
+    process.env.NODE_ENV === 'production' ||
+    process.env.CROSSMINT_ENVIRONMENT === 'production' ||
+    process.env.WALLET_MODE === 'live' ||
+    this.serverApiKey.startsWith('sk_production_') ||
+    this.clientApiKey.startsWith('ck_production_');
   private readonly baseUrl = 'https://www.crossmint.com/api';
 
   constructor(private readonly walletService: WalletService) {}
