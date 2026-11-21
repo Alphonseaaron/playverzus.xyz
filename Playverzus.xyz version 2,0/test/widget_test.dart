@@ -126,12 +126,16 @@ void main() {
     // 3. Expanded Laptop (1280x800)
     tester.view.physicalSize = const Size(1280, 800);
     await tester.pump(const Duration(milliseconds: 200));
-    expect(find.text('How a match settles'), findsOneWidget);
+    expect(find.text('MORE THAN\nMATCHMAKING.'), findsOneWidget);
 
     // 4. Ultra-Wide Monitor (1600x900)
     tester.view.physicalSize = const Size(1600, 900);
     await tester.pump(const Duration(milliseconds: 200));
-    expect(find.text('Supported games (21)'), findsOneWidget);
+    expect(
+      find.text('THE SPORT OF\nGAMING IS BIGGER\nTHAN ONE TITLE.'),
+      findsOneWidget,
+    );
+    expect(find.text('GET STARTED NOW'), findsOneWidget);
   });
 
   test('Game Developer role & platform-aware Stats API model conversion', () {

@@ -1,12 +1,10 @@
+import 'dart:async';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../core/catalog/official_games.dart';
-import '../../core/config/app_config.dart';
-import '../../core/storage/app_state.dart';
 import '../../design_system/layout/responsive.dart';
 import '../../design_system/tokens/hig_tokens.dart';
 import '../../design_system/widgets/brand_logo.dart';
@@ -14,9 +12,9 @@ import '../../design_system/widgets/country_flag.dart';
 import '../../design_system/widgets/hig_primitives.dart';
 import '../developer/developer_repository.dart';
 
-/// FACEIT-Architecture Public Landing Page (`/`).
-/// Built in Playverzus's authentic Electric Purple (#8B5CF6) & Deep Obsidian (#0B0C10) palette.
-/// Strictly public: contains ZERO logged-in user data and ZERO redundant/sheepish buttons.
+/// Public Playverzus v2.0 Landing Page modeled on FACEIT's low-noise,
+/// high-clarity vertical architecture tuned for Playverzus's Obsidian & Purple
+/// identity and Kenya-first M-PESA / global Crossmint USDC competitive rails.
 class LandingScreen extends ConsumerStatefulWidget {
   const LandingScreen({super.key});
 
@@ -25,325 +23,113 @@ class LandingScreen extends ConsumerStatefulWidget {
 }
 
 class _LandingScreenState extends ConsumerState<LandingScreen> {
-  static const List<String> _heroRibbonGameIds = [
+  static const List<String> _heroKeywords = ['GAME.', 'SKILL.', 'RANK.', 'SQUAD.'];
+  static const List<String> _showcaseGameIds = [
     'eafc',
+    'eafcm',
     'cs2',
     'cod',
     'tekken8',
-    'pubgm',
     'val',
-    'dota2',
-    'chess',
+    'pubgm',
+  ];
+  static const List<String> _rankingGameIds = [
+    'eafc',
+    'eafcm',
+    'cs2',
+    'tekken8',
   ];
 
-  final ScrollController _scrollCtrl = ScrollController();
-  final TextEditingController _roomCodeCtrl = TextEditingController();
-  final GlobalKey _gamesSectionKey = GlobalKey();
-  final GlobalKey _skillLevelsKey = GlobalKey();
-  final GlobalKey _howItWorksKey = GlobalKey();
-  final GlobalKey _rolloutKey = GlobalKey();
-  final GlobalKey _pillarsKey = GlobalKey();
-  final GlobalKey _faqKey = GlobalKey();
+  final ScrollController _galleryController = ScrollController();
+  Timer? _keywordTimer;
+  int _keywordIndex = 0;
+  String _selectedFormatGameId = 'eafc';
+  String _selectedRankingGameId = 'eafc';
+  bool _showSquadRankings = false;
+  bool _gamesMenuOpen = false;
 
-  String _spotlightId = 'eafc';
-  String _searchQuery = '';
-  GamePlatformFilter _platformFilter = GamePlatformFilter.all;
-  int? _openFaq = 0;
+  @override
+  void initState() {
+    super.initState();
+    _keywordTimer = Timer.periodic(const Duration(milliseconds: 2800), (_) {
+      if (!mounted) return;
+      setState(() => _keywordIndex = (_keywordIndex + 1) % _heroKeywords.length);
+    });
+  }
 
   @override
   void dispose() {
-    _scrollCtrl.dispose();
-    _roomCodeCtrl.dispose();
+    _keywordTimer?.cancel();
+    _galleryController.dispose();
     super.dispose();
   }
 
-  void _scrollToSection(GlobalKey key) {
-    final ctx = key.currentContext;
-    if (ctx != null) {
-      HapticFeedback.selectionClick();
-      Scrollable.ensureVisible(
-        ctx,
-        duration: const Duration(milliseconds: 280),
-        curve: Curves.easeOutCubic,
-      );
-    }
+  OfficialGame _findGame(List<OfficialGame> catalog, String id) {
+    return catalog.firstWhere(
+      (g) => g.id == id,
+      orElse: () => catalog.firstWhere(
+        (g) => g.id == 'eafc',
+        orElse: () => catalog.first,
+      ),
+    );
   }
 
-  void _handleRoomCodeJoin() {
-    final code = _roomCodeCtrl.text.trim().toUpperCase();
-    HapticFeedback.mediumImpact();
-    if (code.isEmpty) {
-      ref.read(toastProvider.notifier).show(
-            'Enter a Match Room Code',
-            body:
-                'Paste the room code shared by your opponent (e.g. PVZ-8F2A) to jump into their matchroom.',
-            tone: ToastTone.info,
-          );
-      return;
-    }
-    ref.read(toastProvider.notifier).show(
-          'Room $code Ready',
-          body: 'Sign in or create an account to take Side B in room $code.',
-          tone: ToastTone.info,
-        );
-    context.go('/login');
+  void _openGamesSearch(BuildContext context, List<OfficialGame> allGames) {
+    setState(() => _gamesMenuOpen = false);
+    showDialog<void>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.72),
+      builder: (_) => _QuickGamesDialog(
+        games: allGames,
+        onSelectGame: (game) {
+          Navigator.of(context).pop();
+          _openGameQuickSheet(context, game);
+        },
+      ),
+    );
   }
 
-  List<String> _stakeTierLabels(PaymentGatewayMode gateway) {
-    const usdTiers = [0.0, 2.5, 5.0, 10.0, 25.0];
-    return usdTiers.map((usd) {
-      if (usd == 0) return 'FREE PTS';
-      if (gateway == PaymentGatewayMode.kopokopo) {
-        return 'KES ${(usd * AppConfig.usdToKesRate).round()}';
-      }
-      return '\$${usd.toStringAsFixed(2)}';
-    }).toList();
-  }
-
-  void _showGameArenaPreviewSheet(
-    BuildContext context,
-    OfficialGame game,
-    PaymentGatewayMode gateway,
-  ) {
-    HapticFeedback.selectionClick();
-    final tiers = _stakeTierLabels(gateway);
-
+  void _openGameQuickSheet(BuildContext context, OfficialGame game) {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (ctx) {
-        return Container(
-          constraints: const BoxConstraints(maxWidth: 640),
-          decoration: const BoxDecoration(
-            color: HigColors.surfacePrimary,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-            border: Border(
-              top: BorderSide(color: HigColors.separator, width: 1),
-            ),
-          ),
-          child: SafeArea(
-            top: false,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 36,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: HigColors.separator,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: SizedBox(
-                      height: 170,
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          GamePosterView(
-                            game: game,
-                            useBanner: true,
-                            borderRadius: 0,
-                          ),
-                          DecoratedBox(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  Colors.black.withValues(alpha: 0.2),
-                                  HigColors.surfacePrimary,
-                                ],
-                              ),
-                            ),
-                          ),
-                          Positioned(
-                            left: 16,
-                            right: 16,
-                            bottom: 14,
-                            child: Row(
-                              children: [
-                                SizedBox(
-                                  width: 52,
-                                  height: 68,
-                                  child: GamePosterView(
-                                    game: game,
-                                    borderRadius: 10,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Wrap(
-                                        spacing: 6,
-                                        runSpacing: 4,
-                                        children: [
-                                          HigBadge(
-                                            label: game.platformSummary,
-                                            tone: HigBadgeTone.copper,
-                                          ),
-                                          HigBadge(
-                                            label: game.gameType
-                                                .replaceAll('_', ' '),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        game.displayName,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: HigTypography.title2(),
-                                      ),
-                                      Text(
-                                        game.tagline,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: HigTypography.caption(),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: HigColors.surfaceGrouped,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: HigColors.separator),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _specRow(
-                          'Required Handle',
-                          '${game.gamertagLabel} (${game.gamertagPlaceholder})',
-                        ),
-                        const Divider(height: 18),
-                        _specRow(
-                          'Match Formats',
-                          '1v1 Room Code · Open Duels · 5-Player Blitz Brackets',
-                        ),
-                        const Divider(height: 18),
-                        _specRow(
-                          'Skill Ladder',
-                          'Independent ${game.shortName} ELO (Level 1–10)',
-                        ),
-                        const Divider(height: 18),
-                        _specRow(
-                          'Verification',
-                          game.isDeveloperApiGame
-                              ? 'Live Studio Stats API (${game.studioName ?? 'Verified Studio'})'
-                              : game.effectiveLaunchUri != null
-                                  ? 'Native Companion Auto-Launch & Scoreboard Lock'
-                                  : 'Console Stream / Match Telemetry Verification',
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Text('Official Stake Tiers', style: HigTypography.caption()),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: tiers.map((t) {
-                      return Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: HigColors.surfaceGrouped,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: HigColors.separator),
-                        ),
-                        child: Text(
-                          t,
-                          style: HigTypography.mono(
-                            size: 11,
-                            color: HigColors.labelPrimary,
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 18),
-                  HigButton(
-                    label: 'Compete in ${game.shortName}',
-                    icon: CupertinoIcons.bolt_fill,
-                    size: HigButtonSize.large,
-                    fullWidth: true,
-                    onPressed: () {
-                      Navigator.of(ctx).pop();
-                      context.go('/signup');
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
+      builder: (ctx) => _GamePreviewModal(
+        game: game,
+        onPlayNow: () {
+          Navigator.of(ctx).pop();
+          context.go('/signup');
+        },
+      ),
     );
   }
 
-  Widget _specRow(String label, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 120,
-          child: Text(label, style: HigTypography.caption()),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            value,
-            style: HigTypography.footnote(color: HigColors.labelPrimary)
-                .copyWith(fontWeight: FontWeight.w600),
-          ),
-        ),
-      ],
+  void _scrollGalleryBy(double delta) {
+    if (!_galleryController.hasClients) return;
+    final target = (_galleryController.offset + delta).clamp(
+      0.0,
+      _galleryController.position.maxScrollExtent,
+    );
+    _galleryController.animateTo(
+      target,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final isCompact = Responsive.isCompact(context);
-    final tier = Responsive.tierOf(context);
-    final isDesktop =
-        tier == ScreenTier.expanded || tier == ScreenTier.ultraWide;
-    final gateway = ref.watch(paymentGatewayProvider);
     final allGames = ref.watch(allCatalogGamesProvider);
-
-    final spotlightGame = findAnyCatalogGame(allGames, _spotlightId);
-    final stakeTiers = _stakeTierLabels(gateway);
-
-    final filteredGames = allGames.where((g) {
-      if (!g.matchesPlatformFilter(_platformFilter)) return false;
-      if (_searchQuery.trim().isEmpty) return true;
-      final q = _searchQuery.toLowerCase();
-      return g.displayName.toLowerCase().contains(q) ||
-          g.shortName.toLowerCase().contains(q) ||
-          g.platformSummary.toLowerCase().contains(q);
-    }).toList();
+    final selectedFormatGame = _findGame(allGames, _selectedFormatGameId);
+    final selectedRankingGame = _findGame(allGames, _selectedRankingGameId);
+    final showcaseGames = _showcaseGameIds
+        .map((id) => _findGame(allGames, id))
+        .toSet()
+        .toList();
+    final rankingGames = _rankingGameIds
+        .map((id) => _findGame(allGames, id))
+        .toSet()
+        .toList();
 
     return Scaffold(
       backgroundColor: HigColors.canvas,
@@ -351,1467 +137,355 @@ class _LandingScreenState extends ConsumerState<LandingScreen> {
         children: [
           Column(
             children: [
-              // ── FACEIT-STYLE STICKY TOP NAVIGATION BAR ──
-              Container(
-                decoration: const BoxDecoration(
-                  color: HigColors.surfacePrimary,
-                  border: Border(
-                    bottom: BorderSide(color: HigColors.separator, width: 1),
-                  ),
-                ),
-                child: SafeArea(
-                  bottom: false,
-                  child: SizedBox(
-                    height: 60,
-                    child: HigMaxWidthContainer(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: isCompact ? 14 : 24,
-                      ),
-                      child: Row(
-                        children: [
-                          isCompact
-                              ? const BrandLogo.mark(height: 26)
-                              : const BrandLogo.full(height: 26),
-                          if (isDesktop) ...[
-                            const SizedBox(width: 18),
-                            Expanded(
-                              child: SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                child: Row(
-                                  children: [
-                                    _headerAnchorButton(
-                                      'GAMES (${allGames.length})',
-                                      () => _scrollToSection(_gamesSectionKey),
-                                    ),
-                                    _headerAnchorButton(
-                                      'SKILL LEVELS',
-                                      () => _scrollToSection(_skillLevelsKey),
-                                    ),
-                                    _headerAnchorButton(
-                                      'HOW IT WORKS',
-                                      () => _scrollToSection(_howItWorksKey),
-                                    ),
-                                    _headerAnchorButton(
-                                      'GLOBAL ROLLOUT',
-                                      () => _scrollToSection(_rolloutKey),
-                                    ),
-                                    _headerAnchorButton(
-                                      'ANTI-CHEAT & API',
-                                      () => _scrollToSection(_pillarsKey),
-                                    ),
-                                    _headerAnchorButton(
-                                      'FAQ',
-                                      () => _scrollToSection(_faqKey),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                          ] else
-                            const Spacer(),
-                          HigButton(
-                            label: 'Sign In',
-                            size: HigButtonSize.small,
-                            variant: HigButtonVariant.ghost,
-                            onPressed: () => context.go('/login'),
-                          ),
-                          const SizedBox(width: 8),
-                          HigButton(
-                            label: isCompact ? 'Sign Up' : 'Create Account',
-                            size: HigButtonSize.small,
-                            onPressed: () => context.go('/signup'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
+              _LandingNavBar(
+                gamesMenuOpen: _gamesMenuOpen,
+                onToggleGamesMenu: () =>
+                    setState(() => _gamesMenuOpen = !_gamesMenuOpen),
+                onOpenSearch: () => _openGamesSearch(context, allGames),
+                onDownload: () => context.go('/download'),
+                onSignIn: () => context.go('/login'),
+                onPlayNow: () => context.go('/signup'),
               ),
-
               Expanded(
-                child: ListView(
-                  controller: _scrollCtrl,
-                  cacheExtent: 2600,
-                  children: [
-                    HigMaxWidthContainer(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SizedBox(height: isCompact ? 16 : 28),
-
-                          // ── 1. FACEIT CINEMATIC FULL-BLEED KEY-ART HERO ──
-                          _buildFaceitHeroBanner(
-                            context,
-                            spotlightGame: spotlightGame,
-                            allGames: allGames,
-                            stakeTiers: stakeTiers,
-                            gateway: gateway,
-                            isCompact: isCompact,
-                            isDesktop: isDesktop,
-                          ),
-
-                          const SizedBox(height: 44),
-
-                          // ── 2. FACEIT "CHOOSE YOUR GAME" ROSTER (Front & Center below Hero) ──
-                          KeyedSubtree(
-                            key: _gamesSectionKey,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Wrap(
-                                  alignment: WrapAlignment.spaceBetween,
-                                  crossAxisAlignment: WrapCrossAlignment.end,
-                                  spacing: 14,
-                                  runSpacing: 12,
-                                  children: [
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'CHOOSE YOUR ARENA',
-                                          style: HigTypography.mono(
-                                            size: 11,
-                                            color: HigColors.brandBright,
-                                          ).copyWith(
-                                            fontWeight: FontWeight.w800,
-                                            letterSpacing: 1.0,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          'Supported games (${allGames.length})',
-                                          style: HigTypography.title2(),
-                                        ),
-                                        const SizedBox(height: 3),
-                                        Text(
-                                          'Every title runs its own dedicated matchmaking queue, brackets, and Level 1–10 ELO ladder.',
-                                          style: HigTypography.footnote(),
-                                        ),
-                                      ],
-                                    ),
-                                    Wrap(
-                                      spacing: 10,
-                                      runSpacing: 10,
-                                      crossAxisAlignment:
-                                          WrapCrossAlignment.center,
-                                      children: [
-                                        SizedBox(
-                                          width:
-                                              isCompact ? double.infinity : 220,
-                                          child: HigTextField(
-                                            placeholder: 'Search games...',
-                                            prefixIcon: CupertinoIcons.search,
-                                            onChanged: (v) => setState(
-                                                () => _searchQuery = v),
-                                          ),
-                                        ),
-                                        SizedBox(
-                                          width:
-                                              isCompact ? double.infinity : 310,
-                                          child: HigSegmentedControl<
-                                              GamePlatformFilter>(
-                                            groupValue: _platformFilter,
-                                            onChanged: (v) => setState(
-                                                () => _platformFilter = v),
-                                            segments: {
-                                              for (final t
-                                                  in GamePlatformFilter.values)
-                                                t: t == GamePlatformFilter.all
-                                                    ? 'All'
-                                                    : t == GamePlatformFilter.pc
-                                                        ? 'PC'
-                                                        : t ==
-                                                                GamePlatformFilter
-                                                                    .console
-                                                            ? 'Console'
-                                                            : 'Mobile',
-                                            },
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 16),
-                                GridView.builder(
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  gridDelegate:
-                                      SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount:
-                                        Responsive.posterGridColumns(context),
-                                    crossAxisSpacing: 12,
-                                    mainAxisSpacing: 12,
-                                    childAspectRatio: 0.72,
-                                  ),
-                                  itemCount: filteredGames.length,
-                                  itemBuilder: (context, idx) {
-                                    final g = filteredGames[idx];
-                                    return GlassCard(
-                                      padding: EdgeInsets.zero,
-                                      radius: 14,
-                                      onTap: () => context.go('/signup'),
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(13),
-                                        child: Stack(
-                                          fit: StackFit.expand,
-                                          children: [
-                                            GamePosterView(
-                                                game: g, borderRadius: 0),
-                                            DecoratedBox(
-                                              decoration: BoxDecoration(
-                                                gradient: LinearGradient(
-                                                  begin: Alignment.topCenter,
-                                                  end: Alignment.bottomCenter,
-                                                  colors: [
-                                                    Colors.transparent,
-                                                    Colors.black.withValues(
-                                                        alpha: 0.90),
-                                                  ],
-                                                  stops: const [0.45, 1.0],
-                                                ),
-                                              ),
-                                            ),
-                                            Positioned(
-                                              left: 10,
-                                              right: 10,
-                                              bottom: 10,
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    g.displayName,
-                                                    maxLines: 2,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                    style:
-                                                        HigTypography.headline()
-                                                            .copyWith(
-                                                                fontSize: 13.5),
-                                                  ),
-                                                  const SizedBox(height: 2),
-                                                  Text(
-                                                    g.platformSummary,
-                                                    maxLines: 1,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                    style:
-                                                        HigTypography.caption(),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          const SizedBox(height: 48),
-
-                          // ── 3. FACEIT SKILL PROGRESSION: LEVEL 1 TO LEVEL 10 + NATIONAL LADDERS ──
-                          KeyedSubtree(
-                            key: _skillLevelsKey,
-                            child: _buildFaceitSkillProgressionSection(
-                              context,
-                              spotlightGame: spotlightGame,
-                              isCompact: isCompact,
-                            ),
-                          ),
-
-                          const SizedBox(height: 48),
-
-                          // ── 4. HOW A MATCH SETTLES (4-Stage Matchroom Pipeline) ──
-                          KeyedSubtree(
-                            key: _howItWorksKey,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'MATCHROOM PIPELINE',
-                                  style: HigTypography.mono(
-                                    size: 11,
-                                    color: HigColors.brandBright,
-                                  ).copyWith(
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 1.0,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'How a match settles',
-                                  style: HigTypography.title2(),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Deterministic four-stage escrow flow from room creation to wallet credit.',
-                                  style: HigTypography.footnote(),
-                                ),
-                                const SizedBox(height: 16),
-                                _buildStepsGrid(),
-                              ],
-                            ),
-                          ),
-
-                          const SizedBox(height: 48),
-
-                          // ── 4.5. REGIONAL ROLLOUT: PILOTING IN KENYA FIRST · ARCHITECTED FOR THE WORLD ──
-                          KeyedSubtree(
-                            key: _rolloutKey,
-                            child: _buildGlobalRolloutSection(
-                              context,
-                              isCompact: isCompact,
-                            ),
-                          ),
-
-                          const SizedBox(height: 48),
-
-                          // ── 5. FACEIT 3-PILLAR BENTO GRID (Tournaments · Hardware Anti-Smurf · Developer Stats API) ──
-                          KeyedSubtree(
-                            key: _pillarsKey,
-                            child: _buildFaceitThreePillarsGrid(
-                              context,
-                              stakeTiers: stakeTiers,
-                            ),
-                          ),
-
-                          const SizedBox(height: 48),
-
-                          // ── 6. FREQUENTLY ASKED QUESTIONS ──
-                          KeyedSubtree(
-                            key: _faqKey,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Frequently asked questions',
-                                    style: HigTypography.title2()),
-                                const SizedBox(height: 14),
-                                _buildFaqList(),
-                              ],
-                            ),
-                          ),
-
-                          const SizedBox(height: 48),
-                          const Divider(height: 1),
-                          const SizedBox(height: 22),
-
-                          // Strictly Public Footer
-                          Wrap(
-                            alignment: WrapAlignment.spaceBetween,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            spacing: 20,
-                            runSpacing: 12,
-                            children: [
-                              const BrandLogo.full(height: 22),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 4,
-                                children: [
-                                  if (kIsWeb)
-                                    _footerLink('Download App', '/download'),
-                                  _footerLink('Sign In', '/login'),
-                                  _footerLink('Create Account', '/signup'),
-                                  _footerLink('Game Developers',
-                                      '/signup?type=developer'),
-                                  _footerLink('Privacy', '/privacy'),
-                                  _footerLink('Terms', '/terms'),
-                                  _footerLink('Responsible Gaming',
-                                      '/responsible-gaming'),
-                                ],
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 36),
-                        ],
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _HeroStageSection(
+                        keyword: _heroKeywords[_keywordIndex],
+                        leftGame: _findGame(allGames, 'eafc'),
+                        rightGame: _findGame(allGames, 'cs2'),
+                        onPlayNow: () => context.go('/signup'),
                       ),
-                    ),
-                  ],
+                      _MoreThanMatchmakingSection(
+                        showcaseGames: showcaseGames,
+                        selectedGame: selectedFormatGame,
+                        onSelectGame: (id) =>
+                            setState(() => _selectedFormatGameId = id),
+                        onPlayNow: () => context.go('/signup'),
+                        onDownload: () => context.go('/download'),
+                        onDeveloper: () => context.go('/signup?type=developer'),
+                      ),
+                      _RankingsSection(
+                        rankingGames: rankingGames,
+                        selectedGame: selectedRankingGame,
+                        showSquads: _showSquadRankings,
+                        onSelectGame: (id) =>
+                            setState(() => _selectedRankingGameId = id),
+                        onToggleMode: (squads) =>
+                            setState(() => _showSquadRankings = squads),
+                        onViewAll: () => context.go('/login'),
+                      ),
+                      _BiggerThanOneTitleSection(
+                        games: allGames,
+                        scrollController: _galleryController,
+                        onScrollLeft: () => _scrollGalleryBy(-380),
+                        onScrollRight: () => _scrollGalleryBy(380),
+                        onTapGame: (g) => _openGameQuickSheet(context, g),
+                        onGetStarted: () => context.go('/signup'),
+                      ),
+                      _FinalConversionBanner(
+                        onPlayNow: () => context.go('/signup'),
+                      ),
+                      _LandingFooter(
+                        onPlayNow: () => context.go('/signup'),
+                        onSignIn: () => context.go('/login'),
+                        onDownload: () => context.go('/download'),
+                        onDeveloper: () => context.go('/signup?type=developer'),
+                        onPrivacy: () => context.go('/privacy'),
+                        onTerms: () => context.go('/terms'),
+                        onResponsibleGaming: () =>
+                            context.go('/responsible-gaming'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
           ),
-          const FrostedToastOverlay(),
+          if (_gamesMenuOpen)
+            Positioned(
+              top: 64 + MediaQuery.paddingOf(context).top,
+              left: 0,
+              right: 0,
+              child: _GamesMegaMenu(
+                games: showcaseGames,
+                totalCount: allGames.length,
+                onDismiss: () => setState(() => _gamesMenuOpen = false),
+                onSelectGame: (game) {
+                  setState(() {
+                    _gamesMenuOpen = false;
+                    _selectedFormatGameId = game.id;
+                  });
+                  _openGameQuickSheet(context, game);
+                },
+                onBrowseAll: () => _openGamesSearch(context, allGames),
+              ),
+            ),
         ],
       ),
     );
   }
+}
 
-  Widget _headerAnchorButton(String label, VoidCallback onTap) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 4),
-      child: CupertinoButton(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        minimumSize: const Size(28, 28),
-        onPressed: onTap,
-        child: Text(
-          label,
-          style: HigTypography.mono(
-            size: 11,
-            color: HigColors.labelSecondary,
-          ).copyWith(fontWeight: FontWeight.w700, letterSpacing: 0.5),
-        ),
-      ),
-    );
-  }
+TextStyle _displayStyle({
+  required double size,
+  Color color = HigColors.labelPrimary,
+  double height = 1.04,
+}) {
+  return GoogleFonts.inter(
+    fontSize: size,
+    fontWeight: FontWeight.w900,
+    letterSpacing: -1.1,
+    height: height,
+    color: color,
+  );
+}
 
-  /// FACEIT Signature Full-Bleed Cinematic Split Hero with Interactive Game Ribbon.
-  Widget _buildFaceitHeroBanner(
-    BuildContext context, {
-    required OfficialGame spotlightGame,
-    required List<OfficialGame> allGames,
-    required List<String> stakeTiers,
-    required PaymentGatewayMode gateway,
-    required bool isCompact,
-    required bool isDesktop,
-  }) {
-    final ribbonGames = _heroRibbonGameIds
-        .map((id) => findAnyCatalogGame(allGames, id))
-        .toList();
+class _LandingNavBar extends StatelessWidget {
+  final bool gamesMenuOpen;
+  final VoidCallback onToggleGamesMenu;
+  final VoidCallback onOpenSearch;
+  final VoidCallback onDownload;
+  final VoidCallback onSignIn;
+  final VoidCallback onPlayNow;
+
+  const _LandingNavBar({
+    required this.gamesMenuOpen,
+    required this.onToggleGamesMenu,
+    required this.onOpenSearch,
+    required this.onDownload,
+    required this.onSignIn,
+    required this.onPlayNow,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final showCenterNav = width >= 860;
+    final ultraNarrow = width < 420;
 
     return Container(
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: HigColors.surfacePrimary,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: HigColors.separator, width: 1),
+        border: Border(bottom: BorderSide(color: HigColors.separator, width: 1)),
       ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Main Cinematic Split Stage
-          Stack(
-            children: [
-              // Right-aligned Full-Bleed Key Art Backdrop with directional dark obsidian fade
-              Positioned.fill(
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: FractionallySizedBox(
-                    widthFactor: isDesktop ? 0.64 : 1.0,
-                    heightFactor: 1.0,
-                    child: Opacity(
-                      opacity: isDesktop ? 0.36 : 0.22,
-                      child: GamePosterView(
-                        game: spotlightGame,
-                        useBanner: true,
-                        borderRadius: 0,
-                      ),
+      child: SafeArea(
+        bottom: false,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1240),
+            child: SizedBox(
+              height: 62,
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: ultraNarrow ? 12 : 24),
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: onPlayNow,
+                      child: ultraNarrow
+                          ? const BrandLogo.mark(height: 26)
+                          : const BrandLogo.full(height: 24),
                     ),
-                  ),
-                ),
-              ),
-              Positioned.fill(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                      colors: [
-                        HigColors.surfacePrimary,
-                        HigColors.surfacePrimary.withValues(alpha: 0.94),
-                        HigColors.surfacePrimary.withValues(alpha: 0.55),
-                        HigColors.surfacePrimary.withValues(alpha: 0.85),
-                      ],
-                      stops: const [0.0, 0.42, 0.78, 1.0],
-                    ),
-                  ),
-                ),
-              ),
-
-              Padding(
-                padding: EdgeInsets.all(isCompact ? 18 : 30),
-                child: isDesktop
-                    ? Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Expanded(
-                            flex: 12,
-                            child: _buildFaceitHeroPitch(
-                              context,
-                              spotlightGame: spotlightGame,
-                              gateway: gateway,
-                              totalGames: allGames.length,
-                              isCompact: false,
-                            ),
-                          ),
-                          const SizedBox(width: 28),
-                          Expanded(
-                            flex: 9,
-                            child: _buildFaceitHeroMatchroomPreview(
-                              context,
-                              game: spotlightGame,
-                              stakeTiers: stakeTiers,
-                              gateway: gateway,
-                            ),
-                          ),
-                        ],
-                      )
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          _buildFaceitHeroPitch(
-                            context,
-                            spotlightGame: spotlightGame,
-                            gateway: gateway,
-                            totalGames: allGames.length,
-                            isCompact: isCompact,
-                          ),
-                          const SizedBox(height: 20),
-                          _buildFaceitHeroMatchroomPreview(
-                            context,
-                            game: spotlightGame,
-                            stakeTiers: stakeTiers,
-                            gateway: gateway,
-                          ),
-                        ],
+                    const Spacer(),
+                    if (showCenterNav) ...[
+                      _NavBarItem(
+                        label: 'GAMES',
+                        trailingIcon: gamesMenuOpen
+                            ? CupertinoIcons.chevron_up
+                            : CupertinoIcons.chevron_down,
+                        active: gamesMenuOpen,
+                        onTap: onToggleGamesMenu,
                       ),
-              ),
-            ],
-          ),
-
-          // Bottom Interactive Game Switcher Ribbon (FACEIT Game Selector Bar)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: const BoxDecoration(
-              color: HigColors.surfaceGrouped,
-              border: Border(
-                top: BorderSide(color: HigColors.separator, width: 1),
-              ),
-            ),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  Text(
-                    'FEATURED ARENAS:',
-                    style: HigTypography.mono(
-                      size: 10.5,
-                      color: HigColors.labelTertiary,
-                    ).copyWith(fontWeight: FontWeight.w800),
-                  ),
-                  const SizedBox(width: 12),
-                  ...ribbonGames.map((g) {
-                    final selected = g.id == spotlightGame.id;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: GestureDetector(
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          setState(() => _spotlightId = g.id);
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: selected
-                                ? HigColors.brand
-                                : HigColors.surfacePrimary,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: selected
-                                  ? HigColors.brandBright
-                                  : HigColors.separator,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              SizedBox(
-                                width: 18,
-                                height: 22,
-                                child: GamePosterView(
-                                  game: g,
-                                  borderRadius: 4,
-                                ),
-                              ),
-                              const SizedBox(width: 7),
-                              Text(
-                                g.shortName,
-                                style: HigTypography.mono(
-                                  size: 11,
-                                  color: selected
-                                      ? Colors.white
-                                      : HigColors.labelPrimary,
-                                ).copyWith(fontWeight: FontWeight.w700),
-                              ),
-                            ],
-                          ),
+                      const SizedBox(width: 24),
+                      _NavBarItem(label: 'DOWNLOAD', onTap: onDownload),
+                      const SizedBox(width: 24),
+                      _NavBarItem(
+                        label: 'SEARCH',
+                        leadingIcon: CupertinoIcons.search,
+                        onTap: onOpenSearch,
+                      ),
+                      const Spacer(),
+                    ] else ...[
+                      IconButton(
+                        onPressed: onOpenSearch,
+                        tooltip: 'Search Games',
+                        icon: const Icon(
+                          CupertinoIcons.search,
+                          size: 19,
+                          color: HigColors.labelSecondary,
                         ),
                       ),
-                    );
-                  }),
-                ],
+                      const SizedBox(width: 4),
+                    ],
+                    HigButton(
+                      label: 'Sign In',
+                      size: HigButtonSize.small,
+                      variant: HigButtonVariant.ghost,
+                      onPressed: onSignIn,
+                    ),
+                    const SizedBox(width: 8),
+                    HigButton(
+                      label: 'Play Now',
+                      size: HigButtonSize.small,
+                      variant: HigButtonVariant.primary,
+                      onPressed: onPlayNow,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }
+}
 
-  Widget _buildFaceitHeroPitch(
-    BuildContext context, {
-    required OfficialGame spotlightGame,
-    required PaymentGatewayMode gateway,
-    required int totalGames,
-    required bool isCompact,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Wrap(
-          spacing: 8,
-          runSpacing: 6,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            const HigBadge(
-              label: 'COMPETITIVE MATCHMAKING',
-              tone: HigBadgeTone.copper,
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-              decoration: BoxDecoration(
-                color: HigColors.emerald.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(
-                  color: HigColors.emerald.withValues(alpha: 0.35),
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const CountryFlag(code: 'KE', width: 15, height: 10),
-                  const SizedBox(width: 6),
-                  Flexible(
-                    child: Text(
-                      'PILOTING IN KENYA FIRST · READY FOR THE WORLD',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: HigTypography.mono(
-                        size: 10,
-                        color: HigColors.emerald,
-                      ).copyWith(fontWeight: FontWeight.w800),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            HigBadge(
-              label: '${spotlightGame.displayName.toUpperCase()} SPOTLIGHT',
-              tone: HigBadgeTone.neutral,
-            ),
-          ],
-        ),
-        const SizedBox(height: 14),
-        Text(
-          'CHALLENGE YOUR GAME.',
-          style: HigTypography.mono(
-            size: isCompact ? 12 : 13,
-            color: HigColors.brandBright,
-          ).copyWith(fontWeight: FontWeight.w800, letterSpacing: 1.4),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          'Head-to-head matches and brackets across $totalGames games.',
-          style: isCompact
-              ? HigTypography.largeTitle().copyWith(
-                  fontSize: 28,
-                  height: 1.12,
-                )
-              : HigTypography.largeTitle().copyWith(
-                  fontSize: 42,
-                  height: 1.07,
-                  letterSpacing: -0.9,
-                ),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          'Queue into 1v1 duels, share a private room code, or enter 5-player Blitz tournaments. Climb Level 1–10 per-game skill ratings with escrow-backed payouts.',
-          style: HigTypography.body(
-            color: HigColors.labelSecondary,
-          ).copyWith(fontSize: isCompact ? 14 : 15.5, height: 1.45),
-        ),
-        const SizedBox(height: 20),
+class _NavBarItem extends StatelessWidget {
+  final String label;
+  final IconData? leadingIcon;
+  final IconData? trailingIcon;
+  final bool active;
+  final VoidCallback onTap;
 
-        // Purposeful FACEIT Action Row: Primary Create Account + Room Code Join Bar
-        LayoutBuilder(
-          builder: (ctx, c) {
-            final roomCodeBar = Container(
-              height: 44,
-              padding: const EdgeInsets.only(left: 12, right: 5),
-              decoration: BoxDecoration(
-                color: HigColors.canvas,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: HigColors.separator),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    CupertinoIcons.tag,
-                    size: 15,
-                    color: HigColors.labelTertiary,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: CupertinoTextField(
-                      controller: _roomCodeCtrl,
-                      placeholder: 'Room code (e.g. PVZ-8F2A)',
-                      placeholderStyle: HigTypography.footnote(
-                        color: HigColors.labelTertiary,
-                      ),
-                      style: HigTypography.mono(
-                        size: 12,
-                        color: HigColors.labelPrimary,
-                      ),
-                      decoration: const BoxDecoration(
-                        color: Colors.transparent,
-                      ),
-                      padding: EdgeInsets.zero,
-                      onSubmitted: (_) => _handleRoomCodeJoin(),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  HigButton(
-                    label: 'Join',
-                    size: HigButtonSize.small,
-                    variant: HigButtonVariant.secondary,
-                    onPressed: _handleRoomCodeJoin,
-                  ),
-                ],
-              ),
-            );
+  const _NavBarItem({
+    required this.label,
+    required this.onTap,
+    this.leadingIcon,
+    this.trailingIcon,
+    this.active = false,
+  });
 
-            if (c.maxWidth >= 500) {
-              return Row(
-                children: [
-                  HigButton(
-                    label: 'Create Account',
-                    icon: CupertinoIcons.bolt_fill,
-                    size: HigButtonSize.large,
-                    onPressed: () => context.go('/signup'),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(child: roomCodeBar),
-                ],
-              );
-            }
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                HigButton(
-                  label: 'Create Account',
-                  icon: CupertinoIcons.bolt_fill,
-                  size: HigButtonSize.large,
-                  fullWidth: true,
-                  onPressed: () => context.go('/signup'),
-                ),
-                const SizedBox(height: 10),
-                roomCodeBar,
+  @override
+  Widget build(BuildContext context) {
+    final color = active ? HigColors.labelPrimary : HigColors.labelSecondary;
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (leadingIcon != null) ...[
+                Icon(leadingIcon, size: 15, color: color),
+                const SizedBox(width: 6),
               ],
-            );
-          },
+              Text(
+                label,
+                style: GoogleFonts.inter(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.7,
+                  color: color,
+                ),
+              ),
+              if (trailingIcon != null) ...[
+                const SizedBox(width: 5),
+                Icon(trailingIcon, size: 12, color: color),
+              ],
+            ],
+          ),
         ),
-
-        const SizedBox(height: 18),
-
-        // Grounded Settlement & Platform Facts Strip
-        Wrap(
-          spacing: 12,
-          runSpacing: 8,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            const BrandLogo.kopokopo(height: 19),
-            Text(
-              'Kenya Phase 1: Instant M-PESA STK & Payouts',
-              style: HigTypography.caption(color: HigColors.labelPrimary)
-                  .copyWith(fontWeight: FontWeight.w600),
-            ),
-            const BrandLogo.crossmint(height: 15),
-            Text(
-              'Global Ready: Card & USDC Escrow',
-              style: HigTypography.caption(color: HigColors.labelPrimary)
-                  .copyWith(fontWeight: FontWeight.w600),
-            ),
-            Text(
-              '· 10,000 Free Practice PTS',
-              style: HigTypography.caption(color: HigColors.labelSecondary),
-            ),
-          ],
-        ),
-      ],
+      ),
     );
   }
+}
 
-  /// FACEIT-style Matchroom Lobby & Telemetry Spec Card inside the Right Hero Column.
-  Widget _buildFaceitHeroMatchroomPreview(
-    BuildContext context, {
-    required OfficialGame game,
-    required List<String> stakeTiers,
-    required PaymentGatewayMode gateway,
-  }) {
+class _GamesMegaMenu extends StatelessWidget {
+  final List<OfficialGame> games;
+  final int totalCount;
+  final VoidCallback onDismiss;
+  final ValueChanged<OfficialGame> onSelectGame;
+  final VoidCallback onBrowseAll;
+
+  const _GamesMegaMenu({
+    required this.games,
+    required this.totalCount,
+    required this.onDismiss,
+    required this.onSelectGame,
+    required this.onBrowseAll,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: HigColors.canvas.withValues(alpha: 0.92),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: HigColors.separator),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Matchroom Top Header
-          Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 8,
-            runSpacing: 6,
-            children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    width: 24,
-                    height: 30,
-                    child: GamePosterView(game: game, borderRadius: 5),
-                  ),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      '${game.shortName} MATCHROOM SPEC',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: HigTypography.mono(
-                        size: 11.5,
-                        color: HigColors.labelPrimary,
-                      ).copyWith(fontWeight: FontWeight.w800),
-                    ),
-                  ),
-                ],
-              ),
-              const HigBadge(
-                label: 'DUAL-READY ESCROW',
-                tone: HigBadgeTone.emerald,
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // FACEIT Side A vs Side B Matchroom Architecture Visual
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: HigColors.surfacePrimary,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: HigColors.separator),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('SIDE A (HOST)', style: HigTypography.caption()),
-                      const SizedBox(height: 6),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 4,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: const [
-                          EloLevelBadge(elo: 1900, size: 22),
-                          HigBadge(
-                            label: 'READY',
-                            tone: HigBadgeTone.emerald,
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Text(
-                    'VS',
-                    style: HigTypography.mono(
-                      size: 12,
-                      color: HigColors.brandBright,
-                    ).copyWith(fontWeight: FontWeight.w800),
-                  ),
-                ),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text('SIDE B (CHALLENGER)',
-                          textAlign: TextAlign.right,
-                          style: HigTypography.caption()),
-                      const SizedBox(height: 6),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 4,
-                        alignment: WrapAlignment.end,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: const [
-                          HigBadge(
-                            label: 'READY',
-                            tone: HigBadgeTone.emerald,
-                          ),
-                          EloLevelBadge(elo: 1860, size: 22),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          // Game-Specific Technical Requirements
-          _kvRow('Platform', game.platformSummary, HigColors.labelPrimary),
-          const SizedBox(height: 6),
-          _kvRow('Required ID', game.gamertagLabel, HigColors.labelSecondary),
-          const SizedBox(height: 6),
-          _kvRow(
-            'Ready Action',
-            game.isDeveloperApiGame
-                ? 'Studio Stats API Sync'
-                : game.effectiveLaunchUri != null
-                    ? 'Force Auto-Launch (${game.primaryPlatform})'
-                    : 'Console Stream Telemetry',
-            HigColors.emerald,
-          ),
-
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 5,
-            runSpacing: 5,
-            children: stakeTiers.map((t) {
-              return Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: HigColors.surfacePrimary,
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: HigColors.separator),
-                ),
-                child: Text(
-                  t,
-                  style: HigTypography.mono(
-                    size: 10,
-                    color: HigColors.labelSecondary,
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-
-          const SizedBox(height: 14),
-          HigButton(
-            label: 'Inspect ${game.shortName} Arena Rules',
-            icon: CupertinoIcons.info,
-            size: HigButtonSize.small,
-            variant: HigButtonVariant.secondary,
-            fullWidth: true,
-            onPressed: () =>
-                _showGameArenaPreviewSheet(context, game, gateway),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _kvRow(String label, String value, Color valueColor) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: HigTypography.caption()),
-        const SizedBox(width: 8),
-        Flexible(
-          child: Text(
-            value,
-            textAlign: TextAlign.right,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: HigTypography.mono(size: 11, color: valueColor),
-          ),
+      decoration: const BoxDecoration(
+        color: HigColors.surfacePrimary,
+        border: Border(
+          bottom: BorderSide(color: HigColors.separator, width: 1),
         ),
-      ],
-    );
-  }
-
-  /// FACEIT Signature Skill Progression Section: Visual Level 1 to Level 10 ELO Ladder + Country Ladders.
-  Widget _buildFaceitSkillProgressionSection(
-    BuildContext context, {
-    required OfficialGame spotlightGame,
-    required bool isCompact,
-  }) {
-    const levelSamples = [
-      (1, 750, '< 800'),
-      (2, 900, '800–949'),
-      (3, 1000, '950–1099'),
-      (4, 1200, '1100–1249'),
-      (5, 1300, '1250–1399'),
-      (6, 1450, '1400–1549'),
-      (7, 1600, '1550–1699'),
-      (8, 1750, '1700–1849'),
-      (9, 1900, '1850–2000'),
-      (10, 2100, '2001+'),
-    ];
-    const sampleFlags = ['KE', 'NG', 'ZA', 'GH', 'UG', 'GB', 'US', 'DE', 'BR'];
-
-    return GlassCard(
-      radius: 20,
-      padding: EdgeInsets.all(isCompact ? 18 : 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 12,
-            runSpacing: 8,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'SKILL PROGRESSION & NATIONAL STANDINGS',
-                    style: HigTypography.mono(
-                      size: 11,
-                      color: HigColors.brandBright,
-                    ).copyWith(fontWeight: FontWeight.w800, letterSpacing: 1.0),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Climb Level 1 to Level 10 — Independently Per Game',
-                    style: HigTypography.title2(),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Your ELO rating in ${spotlightGame.displayName} is tracked separately from every other title, with national & global leaderboards.',
-                    style: HigTypography.footnote(),
-                  ),
-                ],
-              ),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: sampleFlags
-                    .map((code) => CountryFlag(
-                          code: code,
-                          width: 22,
-                          height: 15,
-                        ))
-                    .toList(),
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-
-          // Visual Level 1 -> Level 10 Badge Ladder
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: levelSamples.map((lvl) {
-                final isTopTier = lvl.$1 >= 8;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 10),
-                  child: Container(
-                    width: 106,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: HigColors.surfaceGrouped,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: isTopTier
-                            ? HigColors.brand.withValues(alpha: 0.45)
-                            : HigColors.separator,
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        EloLevelBadge(elo: lvl.$2, size: 30),
-                        const SizedBox(height: 8),
-                        Text(
-                          'LEVEL ${lvl.$1}',
-                          style: HigTypography.mono(
-                            size: 11,
-                            color: HigColors.labelPrimary,
-                          ).copyWith(fontWeight: FontWeight.w800),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '${lvl.$3} ELO',
-                          style: HigTypography.mono(
-                            size: 10,
-                            color: HigColors.labelSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-        ],
       ),
-    );
-  }
-
-  Widget _buildStepsGrid() {
-    const steps = [
-      (
-        '01',
-        'ROOM CODE OR QUEUE',
-        'Create or join a match',
-        'Select any supported title to post an open 1v1 challenge, invite a friend by room code, or take a seat in a 5-player Blitz bracket.',
-      ),
-      (
-        '02',
-        'DUAL-READY ESCROW',
-        'Lock stakes on Ready',
-        'Entry stakes remain in your wallet until both sides confirm Ready in the matchroom. Practice Points mode is always free.',
-      ),
-      (
-        '03',
-        'AUTO-LAUNCH & SYNC',
-        'Play on your device',
-        'Our native companion app scans your installed titles and auto-launches the game when both players lock Ready.',
-      ),
-      (
-        '04',
-        'VERIFIED SETTLEMENT',
-        'Automatic wallet payout',
-        'Final scores verify via native scoreboard telemetry, console stream sync, or the studio Stats API and credit the winner immediately.',
-      ),
-    ];
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final cols = constraints.maxWidth >= 920
-            ? 4
-            : constraints.maxWidth >= 560
-                ? 2
-                : 1;
-        const spacing = 12.0;
-        final itemWidth =
-            (constraints.maxWidth - (spacing * (cols - 1))) / cols;
-
-        return Wrap(
-          spacing: spacing,
-          runSpacing: spacing,
-          children: steps.map((s) {
-            return SizedBox(
-              width: itemWidth,
-              child: GlassCard(
-                radius: 16,
-                padding: const EdgeInsets.all(18),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Wrap(
-                      alignment: WrapAlignment.spaceBetween,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      spacing: 6,
-                      runSpacing: 4,
-                      children: [
-                        Text(
-                          s.$1,
-                          style: HigTypography.mono(
-                            size: 13,
-                            color: HigColors.brandBright,
-                          ).copyWith(fontWeight: FontWeight.w800),
-                        ),
-                        HigBadge(
-                          label: s.$2,
-                          tone: HigBadgeTone.neutral,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Text(s.$3, style: HigTypography.headline()),
-                    const SizedBox(height: 6),
-                    Text(s.$4, style: HigTypography.footnote()),
-                  ],
-                ),
-              ),
-            );
-          }).toList(),
-        );
-      },
-    );
-  }
-
-  /// Regional Rollout Section: Piloting Live in Kenya First · Architected for the World.
-  Widget _buildGlobalRolloutSection(
-    BuildContext context, {
-    required bool isCompact,
-  }) {
-    const globalFlags = ['KE', 'NG', 'ZA', 'GH', 'UG', 'GB', 'US', 'DE', 'BR'];
-
-    return GlassCard(
-      radius: 20,
-      padding: EdgeInsets.all(isCompact ? 18 : 24),
-      borderColor: HigColors.brand.withValues(alpha: 0.35),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 14,
-            runSpacing: 10,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'REGIONAL ROLLOUT & GLOBAL INFRASTRUCTURE',
-                    style: HigTypography.mono(
-                      size: 11,
-                      color: HigColors.brandBright,
-                    ).copyWith(fontWeight: FontWeight.w800, letterSpacing: 1.0),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Piloting Live in Kenya First. Architected for the World.',
-                    style: HigTypography.title2(),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'We launched Phase 1 in Kenya — the world\'s premier mobile-money proving ground — to stress-test sub-second escrow and anti-cheat verification under live match conditions while keeping our global Card & USDC settlement engine ready for worldwide queues.',
-                    style: HigTypography.footnote(),
-                  ),
-                ],
-              ),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: globalFlags
-                    .map(
-                      (code) => CountryFlag(
-                        code: code,
-                        width: 22,
-                        height: 15,
-                      ),
-                    )
-                    .toList(),
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final cols = constraints.maxWidth >= 900 ? 3 : 1;
-              const spacing = 12.0;
-              final itemWidth =
-                  (constraints.maxWidth - (spacing * (cols - 1))) / cols;
-
-              final phase1Kenya = Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: HigColors.surfaceGrouped,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: HigColors.emerald.withValues(alpha: 0.38),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Wrap(
-                      alignment: WrapAlignment.spaceBetween,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      spacing: 8,
-                      runSpacing: 6,
-                      children: [
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const CountryFlag(code: 'KE', width: 18, height: 12),
-                            const SizedBox(width: 8),
-                            const BrandLogo.kopokopo(height: 18),
-                          ],
-                        ),
-                        const HigBadge(
-                          label: 'PHASE 1 · LIVE IN KENYA',
-                          tone: HigBadgeTone.emerald,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Kenya First: Real-World Proving Ground',
-                      style: HigTypography.headline(),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Live KES match stakes, instant M-PESA STK Push deposits, and automated Safaricom B2C payouts. Built to prove deterministic match settlement at high daily match volume across East Africa.',
-                      style: HigTypography.footnote(),
-                    ),
-                  ],
-                ),
-              );
-
-              final phase2World = Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: HigColors.surfaceGrouped,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: HigColors.brand.withValues(alpha: 0.38),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Wrap(
-                      alignment: WrapAlignment.spaceBetween,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      spacing: 8,
-                      runSpacing: 6,
-                      children: const [
-                        BrandLogo.crossmint(height: 18),
-                        HigBadge(
-                          label: 'GLOBAL RAIL · ARMED & READY',
-                          tone: HigBadgeTone.indigo,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Ready for the World: Card & USDC Rails',
-                      style: HigTypography.headline(),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Our global settlement layer is pre-integrated with Crossmint for Visa, Mastercard, Apple Pay, Google Pay, and on-chain USDC escrow — ready to scale across Europe, the Americas, Asia, and pan-African arenas.',
-                      style: HigTypography.footnote(),
-                    ),
-                  ],
-                ),
-              );
-
-              final unifiedCore = Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: HigColors.surfaceGrouped,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: HigColors.separator),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Wrap(
-                      alignment: WrapAlignment.spaceBetween,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      spacing: 8,
-                      runSpacing: 6,
-                      children: const [
-                        HigBadge(
-                          label: 'UNIFIED CORE ENGINE',
-                          tone: HigBadgeTone.copper,
-                        ),
-                        HigBadge(
-                          label: 'ZERO RE-ARCHITECTURE',
-                          tone: HigBadgeTone.neutral,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'One Switch From Regional Pilot to Global',
-                      style: HigTypography.headline(),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Whether a match settles in KES during our Kenya rollout or USD/USDC globally, players compete on the same 5-pillar anti-fraud engine, Level 1–10 ELO progression, and developer Stats APIs.',
-                      style: HigTypography.footnote(),
-                    ),
-                  ],
-                ),
-              );
-
-              return Wrap(
-                spacing: spacing,
-                runSpacing: spacing,
-                children: [
-                  SizedBox(width: itemWidth, child: phase1Kenya),
-                  SizedBox(width: itemWidth, child: phase2World),
-                  SizedBox(width: itemWidth, child: unifiedCore),
-                ],
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// FACEIT 3-Pillar Bento Grid:
-  /// 1. 5-Player Blitz Brackets & Cups
-  /// 2. Hardware Anti-Smurf & Companion Auto-Launch
-  /// 3. Game Developer Platform Stats APIs
-  Widget _buildFaceitThreePillarsGrid(
-    BuildContext context, {
-    required List<String> stakeTiers,
-  }) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final cols = constraints.maxWidth >= 960 ? 3 : 1;
-        const spacing = 14.0;
-        final itemWidth =
-            (constraints.maxWidth - (spacing * (cols - 1))) / cols;
-
-        final blitzCard = GlassCard(
-          radius: 18,
-          padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1180),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const HigBadge(
-                label: 'TOURNAMENTS & BLITZ CUPS',
-                tone: HigBadgeTone.indigo,
-              ),
-              const SizedBox(height: 12),
-              Text('5-Player Instant Brackets',
-                  style: HigTypography.title3()),
-              const SizedBox(height: 6),
-              Text(
-                'Pick your game and entry tier. As soon as 5 players lock into the queue, the bracket seeds automatically and settles upon final verification.',
-                style: HigTypography.footnote(),
+              Row(
+                children: [
+                  Text(
+                    'FEATURED ARENA TITLES ($totalCount)',
+                    style: HigTypography.caption(color: HigColors.labelSecondary)
+                        .copyWith(fontWeight: FontWeight.w700, letterSpacing: 1),
+                  ),
+                  const Spacer(),
+                  HigButton(
+                    label: 'Browse All ($totalCount)',
+                    size: HigButtonSize.small,
+                    variant: HigButtonVariant.secondary,
+                    onPressed: onBrowseAll,
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    onPressed: onDismiss,
+                    icon: const Icon(
+                      CupertinoIcons.xmark,
+                      size: 16,
+                      color: HigColors.labelSecondary,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 14),
-              _featureBullet('Five standardized entry tiers across all titles'),
-              const SizedBox(height: 8),
-              _featureBullet('Live bracket tree & room-code match generation'),
-              const SizedBox(height: 12),
               Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: stakeTiers.map((t) {
-                  return Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: HigColors.surfaceGrouped,
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: HigColors.separator),
-                    ),
-                    child: Text(
-                      t,
-                      style: HigTypography.mono(
-                        size: 10,
-                        color: HigColors.labelPrimary,
+                spacing: 12,
+                runSpacing: 12,
+                children: games.map((g) {
+                  return InkWell(
+                    borderRadius: BorderRadius.circular(10),
+                    onTap: () => onSelectGame(g),
+                    child: Container(
+                      width: 148,
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: HigColors.surfaceGrouped,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: HigColors.separator),
+                      ),
+                      child: Row(
+                        children: [
+                          SizedBox(
+                            width: 34,
+                            height: 46,
+                            child: GamePosterView(game: g, borderRadius: 6),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              g.shortName,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: HigTypography.footnote(
+                                color: HigColors.labelPrimary,
+                              ).copyWith(fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   );
@@ -1819,183 +493,1812 @@ class _LandingScreenState extends ConsumerState<LandingScreen> {
               ),
             ],
           ),
-        );
+        ),
+      ),
+    );
+  }
+}
 
-        final antiCheatCard = GlassCard(
-          radius: 18,
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const HigBadge(
-                label: 'ANTI-SMURF & AUTO-LAUNCH',
-                tone: HigBadgeTone.emerald,
-              ),
-              const SizedBox(height: 12),
-              Text('Windows & Android Companion Client',
-                  style: HigTypography.title3()),
-              const SizedBox(height: 6),
-              Text(
-                'Your account binds to your device fingerprint on sign-in. The companion client auto-scans installed games and launches your title on Ready.',
-                style: HigTypography.footnote(),
-              ),
-              const SizedBox(height: 14),
-              _featureBullet('Hardware fingerprint binding prevents multi-accounting'),
-              const SizedBox(height: 8),
-              _featureBullet('Auto-syncs installed games & force-launches on Ready'),
-              const SizedBox(height: 16),
-              HigButton(
-                label: 'Download Companion App',
-                icon: CupertinoIcons.arrow_down_circle,
-                size: HigButtonSize.small,
-                variant: HigButtonVariant.secondary,
-                onPressed: () => context.go('/download'),
-              ),
-            ],
+class _HeroStageSection extends StatelessWidget {
+  final String keyword;
+  final OfficialGame leftGame;
+  final OfficialGame rightGame;
+  final VoidCallback onPlayNow;
+
+  const _HeroStageSection({
+    required this.keyword,
+    required this.leftGame,
+    required this.rightGame,
+    required this.onPlayNow,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final compact = Responsive.isCompact(context);
+    final width = MediaQuery.sizeOf(context).width;
+    final desktopSplit = width >= 940;
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFF0E1017),
+        border: Border(bottom: BorderSide(color: HigColors.separator, width: 1)),
+      ),
+      child: CustomPaint(
+        painter: _HeroGeometricPainter(),
+        child: HigMaxWidthContainer(
+          maxWidth: 1200,
+          padding: EdgeInsets.symmetric(
+            horizontal: compact ? 20 : 32,
+            vertical: compact ? 44 : 84,
           ),
-        );
+          child: desktopSplit
+              ? Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      flex: 5,
+                      child: _HeroCopyColumn(
+                        keyword: keyword,
+                        compact: false,
+                        onPlayNow: onPlayNow,
+                      ),
+                    ),
+                    const SizedBox(width: 48),
+                    Expanded(
+                      flex: 6,
+                      child: _HeroShowcaseTriad(
+                        leftGame: leftGame,
+                        rightGame: rightGame,
+                        onTapCard: onPlayNow,
+                      ),
+                    ),
+                  ],
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _HeroCopyColumn(
+                      keyword: keyword,
+                      compact: compact,
+                      onPlayNow: onPlayNow,
+                    ),
+                    SizedBox(height: compact ? 36 : 48),
+                    _HeroShowcaseTriad(
+                      leftGame: leftGame,
+                      rightGame: rightGame,
+                      onTapCard: onPlayNow,
+                    ),
+                  ],
+                ),
+        ),
+      ),
+    );
+  }
+}
 
-        final developerCard = GlassCard(
-          radius: 18,
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const HigBadge(
-                label: 'FOR GAME DEVELOPERS',
-                tone: HigBadgeTone.copper,
-              ),
-              const SizedBox(height: 12),
-              Text('Onboard Games via Platform Stats APIs',
-                  style: HigTypography.title3()),
-              const SizedBox(height: 6),
-              Text(
-                'Register as a Game Developer and connect your PC, Console, Mobile, or Web Stats APIs so Playverzus fetches live player stats & match results.',
-                style: HigTypography.footnote(),
-              ),
-              const SizedBox(height: 14),
-              _featureBullet('Steamworks, Epic EOS, PSN/Xbox, PlayFab, Unity & REST'),
-              const SizedBox(height: 8),
-              _featureBullet('Server-side API key vault & live JSON dot-path mapper'),
-              const SizedBox(height: 16),
-              HigButton(
-                label: 'Register as Game Developer',
-                icon: CupertinoIcons.gear_solid,
-                size: HigButtonSize.small,
-                variant: HigButtonVariant.secondary,
-                onPressed: () => context.go('/signup?type=developer'),
-              ),
-            ],
+class _HeroCopyColumn extends StatelessWidget {
+  final String keyword;
+  final bool compact;
+  final VoidCallback onPlayNow;
+
+  const _HeroCopyColumn({
+    required this.keyword,
+    required this.compact,
+    required this.onPlayNow,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final headlineSize = compact ? 36.0 : 54.0;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'CHALLENGE\nYOUR',
+          style: _displayStyle(size: headlineSize),
+        ),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 220),
+          child: Text(
+            keyword,
+            key: ValueKey(keyword),
+            style: _displayStyle(size: headlineSize, color: HigColors.brand),
           ),
-        );
-
-        return Wrap(
-          spacing: spacing,
-          runSpacing: spacing,
+        ),
+        const SizedBox(height: 18),
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 460),
+          child: Text(
+            'Players come to Playverzus for competitive gaming at its best. Queue 1v1 duels, Blitz pools, or team rankings with zero ceiling.',
+            style: HigTypography.body(color: HigColors.labelSecondary)
+                .copyWith(fontSize: compact ? 14.5 : 15.5, height: 1.5),
+          ),
+        ),
+        const SizedBox(height: 28),
+        Wrap(
+          spacing: 18,
+          runSpacing: 14,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            SizedBox(width: itemWidth, child: blitzCard),
-            SizedBox(width: itemWidth, child: antiCheatCard),
-            SizedBox(width: itemWidth, child: developerCard),
+            HigButton(
+              label: 'PLAY NOW',
+              size: HigButtonSize.large,
+              variant: HigButtonVariant.primary,
+              onPressed: onPlayNow,
+            ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                    color: HigColors.emerald,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    'Kenya Phase 1 (M-PESA) · Ready Worldwide',
+                    style: HigTypography.footnote(color: HigColors.labelPrimary)
+                        .copyWith(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
           ],
+        ),
+      ],
+    );
+  }
+}
+
+class _HeroShowcaseTriad extends StatelessWidget {
+  final OfficialGame leftGame;
+  final OfficialGame rightGame;
+  final VoidCallback onTapCard;
+
+  const _HeroShowcaseTriad({
+    required this.leftGame,
+    required this.rightGame,
+    required this.onTapCard,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final w = constraints.maxWidth;
+        final cardHeight = (w * 0.42).clamp(176.0, 260.0);
+        return SizedBox(
+          height: cardHeight + 34,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 26),
+                  child: _HeroContenderCard(
+                    game: leftGame,
+                    handle: 'ziyad_ke',
+                    accent: HigColors.brand,
+                    onTap: onTapCard,
+                  ),
+                ),
+              ),
+              SizedBox(width: w < 420 ? 10 : 16),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 26),
+                  child: _HeroYouCard(onTap: onTapCard),
+                ),
+              ),
+              SizedBox(width: w < 420 ? 10 : 16),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 26),
+                  child: _HeroContenderCard(
+                    game: rightGame,
+                    handle: 'kuro_gg',
+                    accent: const Color(0xFF06B6D4),
+                    onTap: onTapCard,
+                  ),
+                ),
+              ),
+            ],
+          ),
         );
       },
     );
   }
+}
 
-  Widget _featureBullet(String text) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.only(top: 2),
-          child: Icon(
-            CupertinoIcons.checkmark_alt_circle_fill,
-            size: 14,
-            color: HigColors.brandBright,
+class _HeroContenderCard extends StatelessWidget {
+  final OfficialGame game;
+  final String handle;
+  final Color accent;
+  final VoidCallback onTap;
+
+  const _HeroContenderCard({
+    required this.game,
+    required this.handle,
+    required this.accent,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: onTap,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(14),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              GamePosterView(game: game, borderRadius: 14),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withValues(alpha: 0.12),
+                      Colors.black.withValues(alpha: 0.78),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.12),
+                    width: 1,
+                  ),
+                ),
+              ),
+              Positioned(
+                left: 10,
+                right: 10,
+                bottom: 14,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        handle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.inter(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      CupertinoIcons.checkmark_seal_fill,
+                      size: 13,
+                      color: accent,
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(width: 8),
-        Expanded(
+      ),
+    );
+  }
+}
+
+class _HeroYouCard extends StatelessWidget {
+  final VoidCallback onTap;
+  const _HeroYouCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF131622),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: HigColors.brand.withValues(alpha: 0.55),
+              width: 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: HigColors.brand.withValues(alpha: 0.16),
+                blurRadius: 24,
+                offset: const Offset(0, 12),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 58,
+                height: 58,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF202536),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.person_rounded,
+                  size: 32,
+                  color: Color(0xFF8B95A5),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'You',
+                style: GoogleFonts.inter(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HeroGeometricPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final facetPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.024)
+      ..style = PaintingStyle.fill;
+
+    final p1 = Path()
+      ..moveTo(size.width * 0.52, 0)
+      ..lineTo(size.width * 0.72, 0)
+      ..lineTo(size.width * 0.48, size.height)
+      ..lineTo(size.width * 0.28, size.height)
+      ..close();
+    canvas.drawPath(p1, facetPaint);
+
+    final p2 = Path()
+      ..moveTo(size.width * 0.76, 0)
+      ..lineTo(size.width, 0)
+      ..lineTo(size.width, size.height * 0.65)
+      ..lineTo(size.width * 0.62, size.height)
+      ..lineTo(size.width * 0.54, size.height)
+      ..close();
+    canvas.drawPath(p2, facetPaint);
+
+    final glowPaint = Paint()
+      ..shader = RadialGradient(
+        center: const Alignment(0.65, -0.35),
+        radius: 0.8,
+        colors: [
+          HigColors.brand.withValues(alpha: 0.14),
+          Colors.transparent,
+        ],
+      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), glowPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _MoreThanMatchmakingSection extends StatelessWidget {
+  final List<OfficialGame> showcaseGames;
+  final OfficialGame selectedGame;
+  final ValueChanged<String> onSelectGame;
+  final VoidCallback onPlayNow;
+  final VoidCallback onDownload;
+  final VoidCallback onDeveloper;
+
+  const _MoreThanMatchmakingSection({
+    required this.showcaseGames,
+    required this.selectedGame,
+    required this.onSelectGame,
+    required this.onPlayNow,
+    required this.onDownload,
+    required this.onDeveloper,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final compact = Responsive.isCompact(context);
+    final twoColumns = MediaQuery.sizeOf(context).width >= 760;
+
+    final cards = [
+      _FormatFeatureCard(
+        badgeLabel: 'LIVE',
+        badgeTone: HigBadgeTone.emerald,
+        badgeDot: true,
+        title: '1v1 & Squad Matchmaking',
+        description:
+            'Solo duels or squad lobbies in ${selectedGame.shortName} protected by Playverzus verification.',
+        primaryActionLabel: 'PLAY NOW',
+        onPrimaryAction: onPlayNow,
+      ),
+      _FormatFeatureCard(
+        badgeLabel: '5-PLAYER PODS',
+        badgeTone: HigBadgeTone.copper,
+        title: 'Blitz Instant Pools',
+        description:
+            'Fill a 5-player sit-and-go bracket for ${selectedGame.shortName} and win 1st & 2nd cash payouts.',
+        primaryActionLabel: 'JOIN BLITZ',
+        onPrimaryAction: onPlayNow,
+      ),
+      _FormatFeatureCard(
+        badgeLabel: 'KENYA FIRST · GLOBAL READY',
+        badgeTone: HigBadgeTone.emerald,
+        title: 'M-PESA & Global USDC',
+        description:
+            'Testing first in Kenya with instant M-PESA STK & withdrawals, ready worldwide via Visa, Apple Pay & USDC.',
+        primaryActionLabel: 'Create Account',
+        onPrimaryAction: onPlayNow,
+      ),
+      _FormatFeatureCard(
+        badgeLabel: 'COMPANION & DEVELOPERS',
+        badgeTone: HigBadgeTone.indigo,
+        title: 'Verified Cups & Game APIs',
+        description:
+            'Native PC & Android companion telemetry paired with automated developer Stats APIs.',
+        primaryActionLabel: 'DOWNLOAD CLIENT',
+        onPrimaryAction: onDownload,
+        secondaryActionLabel: 'DEVELOPER API',
+        onSecondaryAction: onDeveloper,
+      ),
+    ];
+
+    return HigMaxWidthContainer(
+      maxWidth: 1200,
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 20 : 32,
+        vertical: compact ? 52 : 84,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'MORE THAN\nMATCHMAKING.',
+            style: _displayStyle(size: compact ? 30 : 42),
+          ),
+          const SizedBox(height: 14),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 500),
+            child: Text(
+              'Playverzus is home to every ambition, offering distinct competitive formats across supported titles for every player and squad.',
+              style: HigTypography.body(color: HigColors.labelSecondary)
+                  .copyWith(fontSize: 14.5),
+            ),
+          ),
+          const SizedBox(height: 28),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: showcaseGames.map((g) {
+              final selected = g.id == selectedGame.id;
+              return _PureCoverPill(
+                game: g,
+                width: compact ? 48 : 58,
+                height: compact ? 66 : 80,
+                selected: selected,
+                onTap: () => onSelectGame(g.id),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 28),
+          if (twoColumns) ...[
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(child: cards[0]),
+                  const SizedBox(width: 18),
+                  Expanded(child: cards[1]),
+                ],
+              ),
+            ),
+            const SizedBox(height: 18),
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(child: cards[2]),
+                  const SizedBox(width: 18),
+                  Expanded(child: cards[3]),
+                ],
+              ),
+            ),
+          ] else ...[
+            cards[0],
+            const SizedBox(height: 14),
+            cards[1],
+            const SizedBox(height: 14),
+            cards[2],
+            const SizedBox(height: 14),
+            cards[3],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _FormatFeatureCard extends StatelessWidget {
+  final String badgeLabel;
+  final HigBadgeTone badgeTone;
+  final bool badgeDot;
+  final String title;
+  final String description;
+  final String primaryActionLabel;
+  final VoidCallback onPrimaryAction;
+  final String? secondaryActionLabel;
+  final VoidCallback? onSecondaryAction;
+
+  const _FormatFeatureCard({
+    required this.badgeLabel,
+    required this.badgeTone,
+    required this.title,
+    required this.description,
+    required this.primaryActionLabel,
+    required this.onPrimaryAction,
+    this.badgeDot = false,
+    this.secondaryActionLabel,
+    this.onSecondaryAction,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: HigColors.surfacePrimary,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: HigColors.separator, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              HigBadge(
+                label: badgeLabel,
+                tone: badgeTone,
+                icon: badgeDot ? Icons.circle : null,
+              ),
+              const SizedBox(height: 14),
+              Text(title, style: HigTypography.title3()),
+              const SizedBox(height: 8),
+              Text(
+                description,
+                style: HigTypography.footnote(color: HigColors.labelSecondary)
+                    .copyWith(fontSize: 13.5, height: 1.48),
+              ),
+            ],
+          ),
+          const SizedBox(height: 22),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              _OutlinedAccentButton(
+                label: primaryActionLabel,
+                onTap: onPrimaryAction,
+              ),
+              if (secondaryActionLabel != null && onSecondaryAction != null)
+                _OutlinedAccentButton(
+                  label: secondaryActionLabel!,
+                  onTap: onSecondaryAction!,
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OutlinedAccentButton extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+
+  const _OutlinedAccentButton({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+          decoration: BoxDecoration(
+            color: HigColors.brand.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: HigColors.brand.withValues(alpha: 0.65),
+              width: 1,
+            ),
+          ),
           child: Text(
-            text,
-            style: HigTypography.footnote(color: HigColors.labelPrimary),
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.7,
+              color: HigColors.brandBright,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PureCoverPill extends StatelessWidget {
+  final OfficialGame game;
+  final double width;
+  final double height;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _PureCoverPill({
+    required this.game,
+    required this.width,
+    required this.height,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: game.displayName,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 140),
+            width: width,
+            height: height,
+            padding: const EdgeInsets.all(2),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: selected ? HigColors.brand : Colors.transparent,
+                width: 2,
+              ),
+              boxShadow: selected
+                  ? [
+                      BoxShadow(
+                        color: HigColors.brand.withValues(alpha: 0.28),
+                        blurRadius: 12,
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Opacity(
+              opacity: selected ? 1.0 : 0.72,
+              child: GamePosterView(game: game, borderRadius: 7),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RankingsSection extends StatelessWidget {
+  final List<OfficialGame> rankingGames;
+  final OfficialGame selectedGame;
+  final bool showSquads;
+  final ValueChanged<String> onSelectGame;
+  final ValueChanged<bool> onToggleMode;
+  final VoidCallback onViewAll;
+
+  const _RankingsSection({
+    required this.rankingGames,
+    required this.selectedGame,
+    required this.showSquads,
+    required this.onSelectGame,
+    required this.onToggleMode,
+    required this.onViewAll,
+  });
+
+  static List<_SamplePlayerRow> _playerRowsFor(String gameId) {
+    if (gameId == 'cs2') {
+      return const [
+        _SamplePlayerRow(1, 'maverick_ke', 'KE', 2410),
+        _SamplePlayerRow(2, 'kuro_gg', 'GB', 2285),
+        _SamplePlayerRow(3, 'donk_nbo', 'KE', 2140),
+        _SamplePlayerRow(4, 'nexa_za', 'ZA', 1980),
+        _SamplePlayerRow(5, 'ryze_eu', 'DE', 1875),
+      ];
+    }
+    if (gameId == 'tekken8') {
+      return const [
+        _SamplePlayerRow(1, 'jin_nairobi', 'KE', 2290),
+        _SamplePlayerRow(2, 'kazuya_ke', 'KE', 2120),
+        _SamplePlayerRow(3, 'devil_uk', 'GB', 1995),
+        _SamplePlayerRow(4, 'reina_ng', 'NG', 1860),
+        _SamplePlayerRow(5, 'law_us', 'US', 1730),
+      ];
+    }
+    return const [
+      _SamplePlayerRow(1, 'ziyad_fc', 'KE', 2380),
+      _SamplePlayerRow(2, 'otieno_10', 'KE', 2190),
+      _SamplePlayerRow(3, 'salim_pro', 'TZ', 2045),
+      _SamplePlayerRow(4, 'wellington', 'GB', 1910),
+      _SamplePlayerRow(5, 'khalid_fc', 'AE', 1785),
+    ];
+  }
+
+  static const List<_SampleSquadRow> _squadRows = [
+    _SampleSquadRow(1, 'Nairobi Wolves', 'KE', 14, 12, 2, 36),
+    _SampleSquadRow(2, 'Mombasa Apex', 'KE', 14, 11, 3, 33),
+    _SampleSquadRow(3, 'Eldoret Five', 'KE', 13, 10, 3, 30),
+    _SampleSquadRow(4, 'Lagos Legion', 'NG', 14, 10, 4, 30),
+    _SampleSquadRow(5, 'London Royals', 'GB', 13, 9, 4, 27),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final compact = Responsive.isCompact(context);
+    final playerRows = _playerRowsFor(selectedGame.id);
+
+    return HigMaxWidthContainer(
+      maxWidth: 1200,
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 20 : 32,
+        vertical: compact ? 44 : 76,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 680),
+            child: Text(
+              'RANKINGS FOR BOTH\nINDIVIDUAL PLAYERS\nAND TEAMS.',
+              style: _displayStyle(size: compact ? 28 : 40),
+            ),
+          ),
+          const SizedBox(height: 14),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: Text(
+              'Climb Level 1–10 ELO rankings in ${selectedGame.displayName} as a solo player or squad, tracked first across Kenya and built for global seasons.',
+              style: HigTypography.body(color: HigColors.labelSecondary)
+                  .copyWith(fontSize: 14.5),
+            ),
+          ),
+          const SizedBox(height: 26),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final narrow = constraints.maxWidth < 560;
+              final pills = Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: rankingGames.map((g) {
+                  return _PureCoverPill(
+                    game: g,
+                    width: 44,
+                    height: 62,
+                    selected: g.id == selectedGame.id,
+                    onTap: () => onSelectGame(g.id),
+                  );
+                }).toList(),
+              );
+              final switcher = SizedBox(
+                width: narrow ? double.infinity : 210,
+                child: HigSegmentedControl<bool>(
+                  groupValue: showSquads,
+                  segments: const {false: 'Players', true: 'Teams'},
+                  onChanged: onToggleMode,
+                ),
+              );
+
+              if (narrow) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [pills, const SizedBox(height: 16), switcher],
+                );
+              }
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(child: pills),
+                  const SizedBox(width: 16),
+                  switcher,
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 22),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final dense = constraints.maxWidth < 620;
+              return Container(
+                decoration: BoxDecoration(
+                  color: HigColors.surfacePrimary,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: HigColors.separator, width: 1),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Column(
+                  children: [
+                    _RankTableHeader(
+                      showSquads: showSquads,
+                      dense: dense,
+                    ),
+                    if (!showSquads)
+                      ...playerRows.map(
+                        (r) => _PlayerRankRowView(
+                          row: r,
+                          dense: dense,
+                          onTap: onViewAll,
+                        ),
+                      )
+                    else
+                      ..._squadRows.map(
+                        (r) => _SquadRankRowView(
+                          row: r,
+                          dense: dense,
+                          onTap: onViewAll,
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Illustrative Division 1–10 tiers · Sign in to inspect live player standings.',
+                  style: HigTypography.caption(color: HigColors.labelTertiary),
+                ),
+              ),
+              TextButton(
+                onPressed: onViewAll,
+                child: Text(
+                  'Leaderboards →',
+                  style: HigTypography.footnote(color: HigColors.brandBright)
+                      .copyWith(fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RankTableHeader extends StatelessWidget {
+  final bool showSquads;
+  final bool dense;
+  const _RankTableHeader({required this.showSquads, required this.dense});
+
+  @override
+  Widget build(BuildContext context) {
+    final style = HigTypography.caption(color: HigColors.labelTertiary)
+        .copyWith(fontWeight: FontWeight.w700);
+    return Container(
+      color: HigColors.surfaceGrouped,
+      padding: EdgeInsets.symmetric(horizontal: dense ? 14 : 20, vertical: 13),
+      child: Row(
+        children: [
+          SizedBox(width: dense ? 34 : 52, child: Text('Rank', style: style)),
+          Expanded(
+            flex: 3,
+            child: Text(showSquads ? 'Team' : 'Player', style: style),
+          ),
+          if (!dense) ...[
+            Expanded(
+              flex: 2,
+              child: Text('Country', style: style),
+            ),
+            if (!showSquads) ...[
+              SizedBox(width: 96, child: Text('Skill level', style: style)),
+              SizedBox(
+                width: 72,
+                child: Text('ELO', textAlign: TextAlign.right, style: style),
+              ),
+            ] else ...[
+              SizedBox(
+                width: 68,
+                child: Text('Matches', textAlign: TextAlign.center, style: style),
+              ),
+              SizedBox(
+                width: 52,
+                child: Text('Win', textAlign: TextAlign.center, style: style),
+              ),
+              SizedBox(
+                width: 52,
+                child: Text('Loss', textAlign: TextAlign.center, style: style),
+              ),
+              SizedBox(
+                width: 64,
+                child: Text('Points', textAlign: TextAlign.right, style: style),
+              ),
+            ],
+          ] else ...[
+            SizedBox(width: 34, child: Text('Flag', style: style)),
+            SizedBox(
+              width: 72,
+              child: Text(
+                showSquads ? 'Pts' : 'ELO',
+                textAlign: TextAlign.right,
+                style: style,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _PlayerRankRowView extends StatelessWidget {
+  final _SamplePlayerRow row;
+  final bool dense;
+  final VoidCallback onTap;
+
+  const _PlayerRankRowView({
+    required this.row,
+    required this.dense,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: dense ? 14 : 20, vertical: 15),
+        decoration: const BoxDecoration(
+          border: Border(top: BorderSide(color: HigColors.separator, width: 0.7)),
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              width: dense ? 34 : 52,
+              child: Text(
+                '${row.rank}',
+                style: HigTypography.mono(
+                  size: 13.5,
+                  color: HigColors.labelPrimary,
+                ),
+              ),
+            ),
+            Expanded(
+              flex: 3,
+              child: Row(
+                children: [
+                  Container(
+                    width: dense ? 30 : 36,
+                    height: dense ? 30 : 36,
+                    decoration: BoxDecoration(
+                      color: HigColors.surfaceElevated,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      row.handle.substring(0, 1).toUpperCase(),
+                      style: HigTypography.headline(color: HigColors.brandBright),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Flexible(
+                    child: Text(
+                      row.handle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: HigTypography.subheadline(
+                        color: HigColors.labelPrimary,
+                      ).copyWith(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                  const SizedBox(width: 5),
+                  const Icon(
+                    CupertinoIcons.checkmark_seal_fill,
+                    size: 13,
+                    color: HigColors.brand,
+                  ),
+                ],
+              ),
+            ),
+            if (!dense) ...[
+              Expanded(
+                flex: 2,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: CountryFlag(code: row.countryCode, width: 22, height: 15),
+                ),
+              ),
+              SizedBox(
+                width: 96,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: EloLevelBadge(elo: row.elo, showNumeric: true, size: 22),
+                ),
+              ),
+              SizedBox(
+                width: 72,
+                child: Text(
+                  '${row.elo}',
+                  textAlign: TextAlign.right,
+                  style: HigTypography.mono(
+                    size: 13.5,
+                    weight: FontWeight.w700,
+                    color: HigColors.labelPrimary,
+                  ),
+                ),
+              ),
+            ] else ...[
+              SizedBox(
+                width: 34,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: CountryFlag(code: row.countryCode, width: 20, height: 14),
+                ),
+              ),
+              SizedBox(
+                width: 72,
+                child: Text(
+                  '${row.elo}',
+                  textAlign: TextAlign.right,
+                  style: HigTypography.mono(size: 13, weight: FontWeight.w700),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SquadRankRowView extends StatelessWidget {
+  final _SampleSquadRow row;
+  final bool dense;
+  final VoidCallback onTap;
+
+  const _SquadRankRowView({
+    required this.row,
+    required this.dense,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: dense ? 14 : 20, vertical: 15),
+        decoration: const BoxDecoration(
+          border: Border(top: BorderSide(color: HigColors.separator, width: 0.7)),
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              width: dense ? 34 : 52,
+              child: Text('${row.rank}', style: HigTypography.mono(size: 13.5)),
+            ),
+            Expanded(
+              flex: 3,
+              child: Row(
+                children: [
+                  Container(
+                    width: dense ? 30 : 36,
+                    height: dense ? 30 : 36,
+                    decoration: BoxDecoration(
+                      color: HigColors.brand.withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    alignment: Alignment.center,
+                    child: const Icon(
+                      Icons.shield_rounded,
+                      size: 16,
+                      color: HigColors.brandBright,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Flexible(
+                    child: Text(
+                      row.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: HigTypography.subheadline(
+                        color: HigColors.labelPrimary,
+                      ).copyWith(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (!dense) ...[
+              Expanded(
+                flex: 2,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: CountryFlag(code: row.countryCode, width: 22, height: 15),
+                ),
+              ),
+              SizedBox(
+                width: 68,
+                child: Text(
+                  '${row.matches}',
+                  textAlign: TextAlign.center,
+                  style: HigTypography.mono(size: 13),
+                ),
+              ),
+              SizedBox(
+                width: 52,
+                child: Text(
+                  '${row.wins}',
+                  textAlign: TextAlign.center,
+                  style: HigTypography.mono(size: 13, color: HigColors.emerald),
+                ),
+              ),
+              SizedBox(
+                width: 52,
+                child: Text(
+                  '${row.losses}',
+                  textAlign: TextAlign.center,
+                  style: HigTypography.mono(
+                    size: 13,
+                    color: HigColors.labelSecondary,
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 64,
+                child: Text(
+                  '${row.points}',
+                  textAlign: TextAlign.right,
+                  style: HigTypography.mono(size: 13.5, weight: FontWeight.w700),
+                ),
+              ),
+            ] else ...[
+              SizedBox(
+                width: 34,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: CountryFlag(code: row.countryCode, width: 20, height: 14),
+                ),
+              ),
+              SizedBox(
+                width: 72,
+                child: Text(
+                  '${row.points} pts',
+                  textAlign: TextAlign.right,
+                  style: HigTypography.mono(size: 13, weight: FontWeight.w700),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BiggerThanOneTitleSection extends StatelessWidget {
+  final List<OfficialGame> games;
+  final ScrollController scrollController;
+  final VoidCallback onScrollLeft;
+  final VoidCallback onScrollRight;
+  final ValueChanged<OfficialGame> onTapGame;
+  final VoidCallback onGetStarted;
+
+  const _BiggerThanOneTitleSection({
+    required this.games,
+    required this.scrollController,
+    required this.onScrollLeft,
+    required this.onScrollRight,
+    required this.onTapGame,
+    required this.onGetStarted,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final compact = Responsive.isCompact(context);
+    return HigMaxWidthContainer(
+      maxWidth: 1120,
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 20 : 32,
+        vertical: compact ? 52 : 84,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 640),
+            child: Text(
+              'THE SPORT OF\nGAMING IS BIGGER\nTHAN ONE TITLE.',
+              textAlign: TextAlign.center,
+              style: _displayStyle(size: compact ? 30 : 42),
+            ),
+          ),
+          const SizedBox(height: 16),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 580),
+            child: Text(
+              'Every game on Playverzus carries its own competitive formats: 1v1 duels, 5-player Blitz pools, and Cups across ${games.length}+ PC, console, and mobile titles — rolling out first in Kenya with M-PESA and ready for the world.',
+              textAlign: TextAlign.center,
+              style: HigTypography.footnote(color: HigColors.labelSecondary)
+                  .copyWith(fontSize: 14, height: 1.55),
+            ),
+          ),
+          const SizedBox(height: 36),
+          SizedBox(
+            height: compact ? 156 : 182,
+            child: Stack(
+              children: [
+                ListView.separated(
+                  controller: scrollController,
+                  scrollDirection: Axis.horizontal,
+                  padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 44),
+                  itemCount: games.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 14),
+                  itemBuilder: (context, index) {
+                    final game = games[index];
+                    return Tooltip(
+                      message: game.displayName,
+                      child: MouseRegion(
+                        cursor: SystemMouseCursors.click,
+                        child: GestureDetector(
+                          onTap: () => onTapGame(game),
+                          child: AspectRatio(
+                            aspectRatio: 0.72,
+                            child: GamePosterView(game: game, borderRadius: 10),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                Positioned(
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: compact ? 28 : 72,
+                  child: IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                          colors: [
+                            HigColors.canvas,
+                            HigColors.canvas.withValues(alpha: 0),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  right: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: compact ? 28 : 72,
+                  child: IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.centerRight,
+                          end: Alignment.centerLeft,
+                          colors: [
+                            HigColors.canvas,
+                            HigColors.canvas.withValues(alpha: 0),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                if (!compact) ...[
+                  Positioned(
+                    left: 4,
+                    top: 66,
+                    child: _GalleryArrowButton(
+                      icon: CupertinoIcons.chevron_left,
+                      onTap: onScrollLeft,
+                    ),
+                  ),
+                  Positioned(
+                    right: 4,
+                    top: 66,
+                    child: _GalleryArrowButton(
+                      icon: CupertinoIcons.chevron_right,
+                      onTap: onScrollRight,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 36),
+          _OutlinedAccentButton(
+            label: 'GET STARTED NOW',
+            onTap: onGetStarted,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GalleryArrowButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _GalleryArrowButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: HigColors.surfacePrimary.withValues(alpha: 0.92),
+      shape: const CircleBorder(side: BorderSide(color: HigColors.separator)),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: SizedBox(
+          width: 36,
+          height: 36,
+          child: Icon(icon, size: 16, color: HigColors.labelPrimary),
+        ),
+      ),
+    );
+  }
+}
+
+class _FinalConversionBanner extends StatelessWidget {
+  final VoidCallback onPlayNow;
+
+  const _FinalConversionBanner({required this.onPlayNow});
+
+  @override
+  Widget build(BuildContext context) {
+    final compact = Responsive.isCompact(context);
+    final size = compact ? 30.0 : 44.0;
+    return HigMaxWidthContainer(
+      maxWidth: 920,
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 20 : 32,
+        vertical: compact ? 56 : 92,
+      ),
+      child: Column(
+        children: [
+          RichText(
+            textAlign: TextAlign.center,
+            text: TextSpan(
+              children: [
+                TextSpan(
+                  text: 'READY TO CHALLENGE\nYOUR ',
+                  style: _displayStyle(size: size),
+                ),
+                TextSpan(
+                  text: 'GAME?',
+                  style: _displayStyle(size: size, color: HigColors.brand),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 28),
+          HigButton(
+            label: 'PLAY NOW',
+            size: HigButtonSize.large,
+            variant: HigButtonVariant.primary,
+            onPressed: onPlayNow,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LandingFooter extends StatelessWidget {
+  final VoidCallback onPlayNow;
+  final VoidCallback onSignIn;
+  final VoidCallback onDownload;
+  final VoidCallback onDeveloper;
+  final VoidCallback onPrivacy;
+  final VoidCallback onTerms;
+  final VoidCallback onResponsibleGaming;
+
+  const _LandingFooter({
+    required this.onPlayNow,
+    required this.onSignIn,
+    required this.onDownload,
+    required this.onDeveloper,
+    required this.onPrivacy,
+    required this.onTerms,
+    required this.onResponsibleGaming,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final compact = Responsive.isCompact(context);
+    final wide = MediaQuery.sizeOf(context).width >= 820;
+
+    final brandUtilityColumn = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const BrandLogo.full(height: 24),
+        const SizedBox(height: 18),
+        Text(
+          'Playverzus Companion',
+          style: HigTypography.caption(color: HigColors.labelTertiary),
+        ),
+        const SizedBox(height: 8),
+        HigButton(
+          label: 'DOWNLOAD THE CLIENT',
+          size: HigButtonSize.small,
+          variant: HigButtonVariant.primary,
+          onPressed: onDownload,
+        ),
+        const SizedBox(height: 18),
+        const Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            CountryFlag(code: 'KE', width: 20, height: 14),
+            BrandLogo.kopokopo(height: 20),
+            BrandLogo.crossmintMark(height: 18),
+          ],
+        ),
+      ],
+    );
+
+    final platformLinks = _FooterLinkColumn(
+      heading: 'Platform',
+      items: [
+        _FooterLinkItem('Play 1v1 & Blitz', onPlayNow),
+        _FooterLinkItem('Leaderboards', onSignIn),
+        _FooterLinkItem('Download Client', onDownload),
+        _FooterLinkItem('Sign In', onSignIn),
+      ],
+    );
+    final ecosystemLinks = _FooterLinkColumn(
+      heading: 'Ecosystem',
+      items: [
+        _FooterLinkItem('Game Developers', onDeveloper),
+        _FooterLinkItem('Ground Agents', onSignIn),
+        _FooterLinkItem('5-Pillar Anti-Cheat', onDownload),
+        _FooterLinkItem('Cashier & Payouts', onSignIn),
+      ],
+    );
+    final legalLinks = _FooterLinkColumn(
+      heading: 'Support & Info',
+      items: [
+        _FooterLinkItem('Privacy Policy', onPrivacy),
+        _FooterLinkItem('Terms of Service', onTerms),
+        _FooterLinkItem('Responsible Gaming', onResponsibleGaming),
+      ],
+    );
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: HigColors.canvas,
+        border: Border(top: BorderSide(color: HigColors.separator, width: 1)),
+      ),
+      child: HigMaxWidthContainer(
+        maxWidth: 1200,
+        padding: EdgeInsets.symmetric(
+          horizontal: compact ? 20 : 32,
+          vertical: compact ? 40 : 56,
+        ),
+        child: wide
+            ? Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(flex: 3, child: brandUtilityColumn),
+                  const SizedBox(width: 40),
+                  Expanded(flex: 2, child: platformLinks),
+                  Expanded(flex: 2, child: ecosystemLinks),
+                  Expanded(flex: 2, child: legalLinks),
+                ],
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  brandUtilityColumn,
+                  const SizedBox(height: 36),
+                  Wrap(
+                    spacing: 40,
+                    runSpacing: 28,
+                    children: [
+                      platformLinks,
+                      ecosystemLinks,
+                      legalLinks,
+                    ],
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+}
+
+class _FooterLinkColumn extends StatelessWidget {
+  final String heading;
+  final List<_FooterLinkItem> items;
+
+  const _FooterLinkColumn({required this.heading, required this.items});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          heading,
+          style: HigTypography.caption(color: HigColors.labelTertiary)
+              .copyWith(fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 12),
+        ...items.map(
+          (item) => Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: InkWell(
+              onTap: item.onTap,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Text(
+                  item.label,
+                  style: HigTypography.footnote(color: HigColors.labelSecondary)
+                      .copyWith(fontSize: 13.5),
+                ),
+              ),
+            ),
           ),
         ),
       ],
     );
   }
+}
 
-  Widget _buildFaqList() {
-    const faqs = [
-      (
-        'How do opponents join a private match?',
-        'Each match creates a short room code and shareable link. Your opponent signs in, enters the code in the hero bar or Duels lobby, and takes Side B.'
-      ),
-      (
-        'How do 5-player Blitz brackets work?',
-        'Blitz brackets run across five entry tiers. Once 5 players join a queue for a specific game, the bracket starts automatically and settles the payout after the final.'
-      ),
-      (
-        'How are rankings and ELO handled across the 21 games?',
-        'Every game maintains its own independent ELO rating (Level 1–10) and leaderboard. Your rating in EA Sports FC 27 never mixes with Counter-Strike 2 or Chess.'
-      ),
-      (
-        'Why is Playverzus piloting in Kenya first, and is it ready for global players?',
-        'Kenya leads the world in instant mobile-money adoption, making it the ideal live proving ground for real-time competitive escrow. While our Phase 1 pilot settles in KES via M-PESA, our global Visa/Mastercard and USDC settlement rails via Crossmint are already built and ready to activate worldwide.'
-      ),
-      (
-        'How can game developers integrate their own games?',
-        'Register a Game Developer account, select your game\'s target platforms (PC, Console, Mobile, Web), and provide your Stats API endpoint and JSON field paths. Playverzus fetches live player stats and match results server-side.'
-      ),
-    ];
+class _FooterLinkItem {
+  final String label;
+  final VoidCallback onTap;
+  const _FooterLinkItem(this.label, this.onTap);
+}
 
-    return Column(
-      children: List.generate(faqs.length, (i) {
-        final open = _openFaq == i;
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: GlassCard(
-            radius: 14,
-            padding: const EdgeInsets.all(15),
-            onTap: () => setState(() => _openFaq = open ? null : i),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(faqs[i].$1, style: HigTypography.headline()),
+class _QuickGamesDialog extends StatefulWidget {
+  final List<OfficialGame> games;
+  final ValueChanged<OfficialGame> onSelectGame;
+
+  const _QuickGamesDialog({required this.games, required this.onSelectGame});
+
+  @override
+  State<_QuickGamesDialog> createState() => _QuickGamesDialogState();
+}
+
+class _QuickGamesDialogState extends State<_QuickGamesDialog> {
+  String _query = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final q = _query.trim().toLowerCase();
+    final filtered = q.isEmpty
+        ? widget.games
+        : widget.games
+            .where(
+              (g) =>
+                  g.displayName.toLowerCase().contains(q) ||
+                  g.shortName.toLowerCase().contains(q) ||
+                  g.platforms.any((p) => p.toLowerCase().contains(q)),
+            )
+            .toList();
+
+    return Dialog(
+      backgroundColor: HigColors.surfacePrimary,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: const BorderSide(color: HigColors.separator),
+      ),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 520, maxHeight: 540),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: HigTextField(
+                      placeholder: 'Search ${widget.games.length} arena games...',
+                      prefixIcon: CupertinoIcons.search,
+                      autofocus: true,
+                      onChanged: (v) => setState(() => _query = v),
                     ),
-                    Icon(
-                      open
-                          ? CupertinoIcons.chevron_up
-                          : CupertinoIcons.chevron_down,
-                      size: 15,
-                      color: HigColors.labelTertiary,
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(
+                      CupertinoIcons.xmark,
+                      size: 16,
+                      color: HigColors.labelSecondary,
                     ),
-                  ],
-                ),
-                if (open) ...[
-                  const SizedBox(height: 8),
-                  Text(faqs[i].$2, style: HigTypography.footnote()),
+                  ),
                 ],
-              ],
-            ),
+              ),
+              const SizedBox(height: 14),
+              Expanded(
+                child: filtered.isEmpty
+                    ? Center(
+                        child: Text(
+                          'No matching games found',
+                          style: HigTypography.footnote(),
+                        ),
+                      )
+                    : ListView.separated(
+                        itemCount: filtered.length,
+                        separatorBuilder: (_, __) => const Divider(
+                          height: 1,
+                          color: HigColors.separator,
+                        ),
+                        itemBuilder: (_, index) {
+                          final g = filtered[index];
+                          return ListTile(
+                            contentPadding:
+                                const EdgeInsets.symmetric(vertical: 4),
+                            leading: SizedBox(
+                              width: 36,
+                              height: 48,
+                              child: GamePosterView(game: g, borderRadius: 6),
+                            ),
+                            title: Text(
+                              g.displayName,
+                              style: HigTypography.subheadline(
+                                color: HigColors.labelPrimary,
+                              ),
+                            ),
+                            subtitle: Text(
+                              g.platformSummary,
+                              style: HigTypography.caption(),
+                            ),
+                            trailing: const Icon(
+                              CupertinoIcons.chevron_right,
+                              size: 14,
+                              color: HigColors.labelTertiary,
+                            ),
+                            onTap: () => widget.onSelectGame(g),
+                          );
+                        },
+                      ),
+              ),
+            ],
           ),
-        );
-      }),
-    );
-  }
-
-  Widget _footerLink(String label, String route) {
-    return CupertinoButton(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-      minimumSize: const Size(28, 28),
-      onPressed: () => context.go(route),
-      child: Text(
-        label,
-        style: HigTypography.footnote(color: HigColors.labelSecondary),
+        ),
       ),
     );
   }
+}
+
+class _GamePreviewModal extends StatelessWidget {
+  final OfficialGame game;
+  final VoidCallback onPlayNow;
+
+  const _GamePreviewModal({required this.game, required this.onPlayNow});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: HigColors.surfacePrimary,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        border: Border(top: BorderSide(color: HigColors.separator)),
+      ),
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+      child: Center(
+        widthFactor: 1,
+        heightFactor: 1,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: HigColors.separator,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  SizedBox(
+                    width: 68,
+                    height: 92,
+                    child: GamePosterView(game: game, borderRadius: 10),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(game.displayName, style: HigTypography.title2()),
+                        const SizedBox(height: 4),
+                        Text(
+                          game.platformSummary,
+                          style: HigTypography.caption(
+                            color: HigColors.brandBright,
+                          ).copyWith(fontWeight: FontWeight.w700),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          game.tagline,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: HigTypography.footnote(),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 22),
+              HigButton(
+                label: 'Play ${game.shortName} Now',
+                fullWidth: true,
+                size: HigButtonSize.large,
+                onPressed: onPlayNow,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SamplePlayerRow {
+  final int rank;
+  final String handle;
+  final String countryCode;
+  final int elo;
+  const _SamplePlayerRow(this.rank, this.handle, this.countryCode, this.elo);
+}
+
+class _SampleSquadRow {
+  final int rank;
+  final String name;
+  final String countryCode;
+  final int matches;
+  final int wins;
+  final int losses;
+  final int points;
+  const _SampleSquadRow(
+    this.rank,
+    this.name,
+    this.countryCode,
+    this.matches,
+    this.wins,
+    this.losses,
+    this.points,
+  );
 }
