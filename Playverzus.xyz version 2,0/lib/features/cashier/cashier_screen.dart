@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -32,15 +33,41 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
   final TextEditingController _amountCtrl = TextEditingController();
   final TextEditingController _mpesaPhoneCtrl = TextEditingController();
   final TextEditingController _walletAddrCtrl = TextEditingController();
+  Timer? _stkPollTimer;
 
   @override
   void initState() {
     super.initState();
+    _amountCtrl.addListener(_onAmountChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadWalletData());
+  }
+
+  void _onAmountChanged() {
+    if (mounted) setState(() {});
+  }
+
+  void _startAutoStkPolling() {
+    _stkPollTimer?.cancel();
+    int checks = 0;
+    _stkPollTimer = Timer.periodic(const Duration(seconds: 4), (timer) async {
+      checks++;
+      if (!mounted || _pendingStkLocation == null || checks > 18) {
+        timer.cancel();
+        return;
+      }
+      final st = (_pendingStkStatus ?? '').toLowerCase();
+      if (st == 'success' || st == 'failed') {
+        timer.cancel();
+        return;
+      }
+      await _checkPendingStkStatus(silentPending: true);
+    });
   }
 
   @override
   void dispose() {
+    _stkPollTimer?.cancel();
+    _amountCtrl.removeListener(_onAmountChanged);
     _amountCtrl.dispose();
     _mpesaPhoneCtrl.dispose();
     _walletAddrCtrl.dispose();
@@ -96,12 +123,47 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
       return;
     }
 
-    if (isMpesa && _mpesaPhoneCtrl.text.trim().length < 9) {
-      ref.read(toastProvider.notifier).show(
-            'Enter a valid M-PESA phone number',
-            tone: ToastTone.error,
-          );
-      return;
+    final rawInputAmount =
+        double.parse(_amountCtrl.text.trim().replaceAll(',', ''));
+
+    if (isMpesa) {
+      final kes = rawInputAmount.round();
+      if (kes < PaymentFeeSchedule.mpesaMinDepositKes) {
+        ref.read(toastProvider.notifier).show(
+              'Minimum M-PESA deposit is KES ${PaymentFeeSchedule.mpesaMinDepositKes}',
+              tone: ToastTone.error,
+            );
+        return;
+      }
+      if (kes > PaymentFeeSchedule.mpesaMaxSingleDepositKes) {
+        ref.read(toastProvider.notifier).show(
+              'Maximum single M-PESA deposit is KES ${PaymentFeeSchedule.mpesaMaxSingleDepositKes}',
+              tone: ToastTone.error,
+            );
+        return;
+      }
+      if (_mpesaPhoneCtrl.text.trim().length < 9) {
+        ref.read(toastProvider.notifier).show(
+              'Enter a valid M-PESA phone number',
+              tone: ToastTone.error,
+            );
+        return;
+      }
+    } else {
+      if (rawInputAmount < PaymentFeeSchedule.crossmintMinDepositUsd) {
+        ref.read(toastProvider.notifier).show(
+              'Minimum deposit is \$${PaymentFeeSchedule.crossmintMinDepositUsd.toStringAsFixed(2)} USD',
+              tone: ToastTone.error,
+            );
+        return;
+      }
+      if (rawInputAmount > PaymentFeeSchedule.crossmintMaxSingleDepositUsd) {
+        ref.read(toastProvider.notifier).show(
+              'Maximum single deposit is \$${PaymentFeeSchedule.crossmintMaxSingleDepositUsd.toStringAsFixed(0)} USD',
+              tone: ToastTone.error,
+            );
+        return;
+      }
     }
 
     setState(() {
@@ -110,7 +172,10 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
     });
 
     final session = ref.read(playerSessionProvider);
-    final rawInputAmount = double.parse(_amountCtrl.text.trim().replaceAll(',', ''));
+    final mpesaBreak =
+        PaymentFeeSchedule.mpesaDepositBreakdown(rawInputAmount.round());
+    final cmBreak =
+        PaymentFeeSchedule.crossmintDepositBreakdown(rawInputAmount);
 
     try {
       if (session.accessToken != null && session.accessToken!.isNotEmpty) {
@@ -138,6 +203,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
           if (stkRes is Map && stkRes['location'] != null) {
             _pendingStkLocation = stkRes['location'].toString();
             _pendingStkStatus = 'STK_PUSH_SENT';
+            _startAutoStkPolling();
           }
         }
         await _loadWalletData();
@@ -148,10 +214,10 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
       if (!mounted) return;
       _amountCtrl.clear();
       ref.read(toastProvider.notifier).show(
-            isMpesa ? 'M-PESA STK prompt sent' : 'Deposit order created',
+            isMpesa ? 'M-PESA STK prompt sent' : 'Checkout opened',
             body: isMpesa
-                ? 'Check ${_mpesaPhoneCtrl.text.trim()} to approve KES ${rawInputAmount.toStringAsFixed(0)}'
-                : '\$${rawInputAmount.toStringAsFixed(2)} USDC',
+                ? 'Approve KES ${mpesaBreak.totalStkChargeKes} on ${_mpesaPhoneCtrl.text.trim()} (KES ${mpesaBreak.netCreditKes} wallet credit + KES ${mpesaBreak.feeKes} fee)'
+                : 'Total \$${cmBreak.totalCheckoutUsd.toStringAsFixed(2)} (\$${cmBreak.netCreditUsd.toStringAsFixed(2)} credit + \$${cmBreak.feeUsd.toStringAsFixed(2)} fee)',
             tone: ToastTone.success,
           );
     } on ApiException catch (e) {
@@ -162,7 +228,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
     }
   }
 
-  Future<void> _checkPendingStkStatus() async {
+  Future<void> _checkPendingStkStatus({bool silentPending = false}) async {
     final loc = _pendingStkLocation;
     if (loc == null || loc.isEmpty) return;
     setState(() => _checkingStk = true);
@@ -174,19 +240,21 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
         final st = (res['status'] ?? 'Pending').toString();
         setState(() => _pendingStkStatus = st);
         if (st.toLowerCase() == 'success') {
+          _stkPollTimer?.cancel();
           await _loadWalletData();
           if (!mounted) return;
           ref.read(toastProvider.notifier).show(
-                'M-PESA payment confirmed',
+                'M-PESA payment confirmed & credited',
                 tone: ToastTone.success,
               );
         } else if (st.toLowerCase() == 'failed') {
+          _stkPollTimer?.cancel();
           if (!mounted) return;
           ref.read(toastProvider.notifier).show(
                 'M-PESA payment failed or cancelled',
                 tone: ToastTone.error,
               );
-        } else {
+        } else if (!silentPending) {
           if (!mounted) return;
           ref.read(toastProvider.notifier).show(
                 'M-PESA status: $st',
@@ -196,7 +264,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
         }
       }
     } on ApiException catch (e) {
-      if (!mounted) return;
+      if (!mounted || silentPending) return;
       ref.read(toastProvider.notifier).show(e.message, tone: ToastTone.error);
     } finally {
       if (mounted) setState(() => _checkingStk = false);
@@ -211,6 +279,42 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
             tone: ToastTone.error,
           );
       return;
+    }
+
+    final rawInputAmount =
+        double.parse(_amountCtrl.text.trim().replaceAll(',', ''));
+
+    if (isMpesa) {
+      final kes = rawInputAmount.round();
+      if (kes < PaymentFeeSchedule.mpesaMinWithdrawalKes) {
+        ref.read(toastProvider.notifier).show(
+              'Minimum M-PESA withdrawal is KES ${PaymentFeeSchedule.mpesaMinWithdrawalKes} (KES ${PaymentFeeSchedule.mpesaMinNetPayoutKes} net + KES ${PaymentFeeSchedule.mpesaFlatPayoutFeeKes} payout fee)',
+              tone: ToastTone.error,
+            );
+        return;
+      }
+      if (kes > PaymentFeeSchedule.mpesaMaxSingleWithdrawalKes) {
+        ref.read(toastProvider.notifier).show(
+              'Maximum single M-PESA withdrawal is KES ${PaymentFeeSchedule.mpesaMaxSingleWithdrawalKes}',
+              tone: ToastTone.error,
+            );
+        return;
+      }
+    } else {
+      if (rawInputAmount < PaymentFeeSchedule.crossmintMinWithdrawalUsd) {
+        ref.read(toastProvider.notifier).show(
+              'Minimum withdrawal is \$${PaymentFeeSchedule.crossmintMinWithdrawalUsd.toStringAsFixed(2)} USDC',
+              tone: ToastTone.error,
+            );
+        return;
+      }
+      if (rawInputAmount > PaymentFeeSchedule.crossmintMaxSingleWithdrawalUsd) {
+        ref.read(toastProvider.notifier).show(
+              'Maximum single withdrawal is \$${PaymentFeeSchedule.crossmintMaxSingleWithdrawalUsd.toStringAsFixed(0)} USDC',
+              tone: ToastTone.error,
+            );
+        return;
+      }
     }
 
     final session = ref.read(playerSessionProvider);
@@ -240,7 +344,10 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
       _error = null;
     });
 
-    final rawInputAmount = double.parse(_amountCtrl.text.trim().replaceAll(',', ''));
+    final mpesaOut =
+        PaymentFeeSchedule.mpesaWithdrawalBreakdown(rawInputAmount.round());
+    final cmOut =
+        PaymentFeeSchedule.crossmintWithdrawalBreakdown(rawInputAmount);
 
     try {
       if (session.accessToken != null && session.accessToken!.isNotEmpty) {
@@ -270,10 +377,10 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
       if (!mounted) return;
       _amountCtrl.clear();
       ref.read(toastProvider.notifier).show(
-            'Withdrawal requested',
+            'Withdrawal initiated',
             body: isMpesa
-                ? 'KES ${rawInputAmount.toStringAsFixed(0)} to $dest'
-                : '\$${rawInputAmount.toStringAsFixed(2)} USDC to $dest',
+                ? 'KES ${mpesaOut.netToMpesaKes} net sent to $dest (KES ${mpesaOut.walletDeductionKes} - KES ${mpesaOut.feeKes} payout fee)'
+                : '\$${cmOut.netToWalletUsd.toStringAsFixed(2)} USDC net sent to $dest (\$${cmOut.feeUsd.toStringAsFixed(2)} payout fee)',
             tone: ToastTone.success,
           );
     } on ApiException catch (e) {
@@ -475,6 +582,11 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
 
                         const SizedBox(height: 12),
 
+                        // Live Upfront Customer-Paid Fee & Threshold Breakdown Box
+                        _buildLiveFeeBreakdownBox(isMpesa, _tab == 0),
+
+                        const SizedBox(height: 12),
+
                         if (isMpesa)
                           HigTextField(
                             controller: _mpesaPhoneCtrl,
@@ -485,7 +597,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                         else if (_tab == 1)
                           HigTextField(
                             controller: _walletAddrCtrl,
-                            placeholder: 'USDC wallet address',
+                            placeholder: 'USDC wallet address (Base / EVM)',
                             prefixIcon: CupertinoIcons.creditcard,
                           ),
 
@@ -536,7 +648,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                                   size: HigButtonSize.small,
                                   variant: HigButtonVariant.secondary,
                                   loading: _checkingStk,
-                                  onPressed: _checkPendingStkStatus,
+                                  onPressed: () => _checkPendingStkStatus(),
                                 ),
                               ],
                             ),
@@ -637,6 +749,188 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildLiveFeeBreakdownBox(bool isMpesa, bool isDeposit) {
+    final raw =
+        double.tryParse(_amountCtrl.text.trim().replaceAll(',', '')) ?? 0.0;
+
+    if (isMpesa && isDeposit) {
+      final kes = raw > 0 ? raw.round() : 500;
+      final b = PaymentFeeSchedule.mpesaDepositBreakdown(kes);
+      return Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: HigColors.surfaceGrouped,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: HigColors.separator),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _feeLine('Wallet Credit (Net)', 'KES ${b.netCreditKes}',
+                HigColors.labelPrimary),
+            const SizedBox(height: 5),
+            _feeLine(
+              'M-PESA Processing Fee (Customer Paid Upfront)',
+              b.feeKes == 0
+                  ? 'KES 0 (Free ≤ KES 200)'
+                  : '+KES ${b.feeKes} (0.55% · Capped at KES 200)',
+              HigColors.labelSecondary,
+            ),
+            const Divider(height: 14),
+            _feeLine(
+              'Total STK Push Prompt',
+              'KES ${b.totalStkChargeKes}',
+              HigColors.emerald,
+              bold: true,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Limits: Min KES ${PaymentFeeSchedule.mpesaMinDepositKes} · Max KES ${PaymentFeeSchedule.mpesaMaxSingleDepositKes} / transaction.',
+              style: HigTypography.caption(),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (isMpesa && !isDeposit) {
+      final kes = raw > 0 ? raw.round() : 500;
+      final b = PaymentFeeSchedule.mpesaWithdrawalBreakdown(kes);
+      return Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: HigColors.surfaceGrouped,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: HigColors.separator),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _feeLine('Wallet Deduction', 'KES ${b.walletDeductionKes}',
+                HigColors.labelPrimary),
+            const SizedBox(height: 5),
+            _feeLine(
+              'M-PESA Payout Fee (Flat · Customer Paid Upfront)',
+              '-KES ${b.feeKes}',
+              HigColors.labelSecondary,
+            ),
+            const Divider(height: 14),
+            _feeLine(
+              'Net Disbursed to Your M-PESA',
+              'KES ${b.netToMpesaKes}',
+              HigColors.emerald,
+              bold: true,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Thresholds: Min KES ${PaymentFeeSchedule.mpesaMinWithdrawalKes} (KES ${PaymentFeeSchedule.mpesaMinNetPayoutKes} net + KES ${PaymentFeeSchedule.mpesaFlatPayoutFeeKes} fee) · Max KES ${PaymentFeeSchedule.mpesaMaxSingleWithdrawalKes}/tx · Daily Limit KES ${PaymentFeeSchedule.mpesaMaxDailyWithdrawalKes} (max ${PaymentFeeSchedule.mpesaMaxDailyWithdrawalCount}/day).',
+              style: HigTypography.caption(),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (!isMpesa && isDeposit) {
+      final usd = raw > 0 ? raw : 10.0;
+      final b = PaymentFeeSchedule.crossmintDepositBreakdown(usd);
+      return Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: HigColors.surfaceGrouped,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: HigColors.separator),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _feeLine('Wallet Credit (Net)',
+                '\$${b.netCreditUsd.toStringAsFixed(2)} USDC', HigColors.labelPrimary),
+            const SizedBox(height: 5),
+            _feeLine(
+              'Gateway Processing Fee (Customer Paid Upfront)',
+              '+\$${b.feeUsd.toStringAsFixed(2)} (3.5% + \$0.30)',
+              HigColors.labelSecondary,
+            ),
+            const Divider(height: 14),
+            _feeLine(
+              'Total Checkout Charge',
+              '\$${b.totalCheckoutUsd.toStringAsFixed(2)} USD',
+              HigColors.emerald,
+              bold: true,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Limits: Min \$${PaymentFeeSchedule.crossmintMinDepositUsd.toStringAsFixed(2)} · Max \$${PaymentFeeSchedule.crossmintMaxSingleDepositUsd.toStringAsFixed(0)} / transaction.',
+              style: HigTypography.caption(),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final usd = raw > 0 ? raw : 10.0;
+    final b = PaymentFeeSchedule.crossmintWithdrawalBreakdown(usd);
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: HigColors.surfaceGrouped,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: HigColors.separator),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _feeLine('Wallet Deduction',
+              '\$${b.walletDeductionUsd.toStringAsFixed(2)} USDC', HigColors.labelPrimary),
+          const SizedBox(height: 5),
+          _feeLine(
+            'On-Chain Payout Fee (Flat · Customer Paid Upfront)',
+            '-\$${b.feeUsd.toStringAsFixed(2)} USDC',
+            HigColors.labelSecondary,
+          ),
+          const Divider(height: 14),
+          _feeLine(
+            'Net Disbursed to Your Wallet',
+            '\$${b.netToWalletUsd.toStringAsFixed(2)} USDC',
+            HigColors.emerald,
+            bold: true,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Thresholds: Min \$${PaymentFeeSchedule.crossmintMinWithdrawalUsd.toStringAsFixed(2)} · Max \$${PaymentFeeSchedule.crossmintMaxSingleWithdrawalUsd.toStringAsFixed(0)}/tx · Daily Limit \$${PaymentFeeSchedule.crossmintMaxDailyWithdrawalUsd.toStringAsFixed(0)} (max ${PaymentFeeSchedule.crossmintMaxDailyWithdrawalCount}/day).',
+            style: HigTypography.caption(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _feeLine(String label, String value, Color valueColor,
+      {bool bold = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Flexible(
+          child: Text(
+            label,
+            style: HigTypography.caption(
+              color: bold ? HigColors.labelPrimary : HigColors.labelSecondary,
+            ).copyWith(fontWeight: bold ? FontWeight.w700 : FontWeight.w500),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          value,
+          style: HigTypography.mono(
+            size: bold ? 13 : 11.5,
+            color: valueColor,
+          ).copyWith(fontWeight: bold ? FontWeight.w800 : FontWeight.w600),
+        ),
+      ],
     );
   }
 }

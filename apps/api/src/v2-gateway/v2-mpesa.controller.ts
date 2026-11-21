@@ -10,6 +10,7 @@ import {
   BadGatewayException,
 } from '@nestjs/common';
 import { RedisService } from '../redis/redis.service';
+import { WalletService } from '../wallet/wallet.service';
 
 @Controller('mpesa')
 export class V2MpesaController {
@@ -17,8 +18,37 @@ export class V2MpesaController {
   private cachedOAuthExpiry = 0;
   private activeGateway: 'kopokopo' | 'crossmint' =
     process.env.DEFAULT_PAYMENT_GATEWAY === 'crossmint' ? 'crossmint' : 'kopokopo';
+  private readonly dailyWithdrawals = new Map<string, Array<{ ts: number; amountKes: number }>>();
 
-  constructor(@Optional() private readonly redis?: RedisService) {}
+  constructor(
+    @Optional() private readonly redis?: RedisService,
+    @Optional() private readonly walletService?: WalletService,
+  ) {}
+
+  private computeMpesaDepositFeeKes(netKes: number): number {
+    if (netKes <= 200) return 0;
+    const grossed = Math.ceil(netKes / (1.0 - 0.0055));
+    return Math.min(200, Math.max(1, grossed - netKes));
+  }
+
+  private checkAndRecordDailyWithdrawal(userKey: string, amountKes: number) {
+    const now = Date.now();
+    const dayMs = 24 * 60 * 60 * 1000;
+    const recent = (this.dailyWithdrawals.get(userKey) || []).filter((e) => now - e.ts < dayMs);
+    const usedKes = recent.reduce((sum, e) => sum + e.amountKes, 0);
+    if (recent.length >= 3) {
+      throw new BadRequestException('Daily withdrawal limit reached (maximum 3 M-PESA payouts per 24 hours).');
+    }
+    if (usedKes + amountKes > 150000) {
+      throw new BadRequestException(
+        `Daily withdrawal limit exceeded (KES 150,000/day max; remaining today: KES ${Math.max(0, 150000 - usedKes)}).`,
+      );
+    }
+    return () => {
+      recent.push({ ts: now, amountKes });
+      this.dailyWithdrawals.set(userKey, recent);
+    };
+  }
 
   private getCrossmintReadiness() {
     const sk = process.env.CROSSMINT_SERVER_API_KEY || '';
@@ -181,10 +211,37 @@ export class V2MpesaController {
       });
       const json = (await statusRes.json().catch(() => ({}))) as Record<string, any>;
       const attrs = json?.data?.attributes || {};
+      const status = String(attrs.status || 'Pending');
+      const metadata = attrs.metadata || {};
+
+      // Idempotently credit the player's Real Cash wallet with exact netCreditKes upon Success
+      if (status.toLowerCase() === 'success' && this.walletService) {
+        const userId = String(metadata.customer_id || metadata.userId || '').trim();
+        const rawPaidKes = Number(
+          attrs?.event?.resource?.amount || attrs?.amount?.value || metadata?.total_charge_kes || 0,
+        );
+        const netCreditKes = Number(
+          metadata?.net_credit_kes || (rawPaidKes > 0 ? rawPaidKes - this.computeMpesaDepositFeeKes(rawPaidKes) : 0),
+        );
+        const refId = String(
+          attrs?.event?.resource?.reference || json?.data?.id || metadata?.reference || loc.split('/').pop(),
+        );
+        if (userId && netCreditKes > 0 && refId) {
+          const netUsd = Math.round((netCreditKes / 130) * 100) / 100;
+          await this.walletService.creditCrossmintDeposit(
+            userId,
+            netUsd,
+            'USD',
+            `mpesa-${refId}`,
+            { provider: 'MPESA', netCreditKes, totalPaidKes: rawPaidKes, reference: refId },
+          );
+        }
+      }
+
       return {
-        status: attrs.status || 'Pending',
+        status,
         event: attrs.event || null,
-        metadata: attrs.metadata || {},
+        metadata,
       };
     } catch (e: any) {
       throw new BadGatewayException(e?.message || 'Status query failed');
@@ -199,14 +256,20 @@ export class V2MpesaController {
         'Live M-PESA gateway requires KOPOKOPO_CLIENT_ID, KOPOKOPO_CLIENT_SECRET, and KOPOKOPO_TILL_NUMBER configured on the server.',
       );
     }
-    const amountKes = Math.round(Number(body?.amountKes || 0));
+    const netCreditKes = Math.round(Number(body?.amountKes || 0));
     const phone = this.normalizeKenyaPhone(body?.phone);
-    if (!amountKes || amountKes < 10) {
-      throw new BadRequestException('Minimum M-PESA deposit is KES 10.');
+    if (!netCreditKes || netCreditKes < 100) {
+      throw new BadRequestException('Minimum M-PESA deposit is KES 100.');
+    }
+    if (netCreditKes > 250000) {
+      throw new BadRequestException('Maximum single M-PESA deposit is KES 250,000.');
     }
     if (!/^\+254\d{9}$/.test(phone)) {
       throw new BadRequestException('Enter a valid Kenyan M-PESA phone number (+2547XXXXXXXX).');
     }
+
+    const feeKes = this.computeMpesaDepositFeeKes(netCreditKes);
+    const totalChargeKes = netCreditKes + feeKes;
 
     const token = await this.getKopoAccessToken(cfg);
     const payload = {
@@ -218,9 +281,12 @@ export class V2MpesaController {
         phone_number: phone,
         email: body?.email || undefined,
       },
-      amount: { currency: 'KES', value: amountKes },
+      amount: { currency: 'KES', value: totalChargeKes },
       metadata: {
         customer_id: String(body?.userId || ''),
+        net_credit_kes: String(netCreditKes),
+        fee_kes: String(feeKes),
+        total_charge_kes: String(totalChargeKes),
         reference: `PVZ-${Date.now()}`,
       },
       _links: { callback_url: cfg.callbackUrl },
@@ -242,9 +308,12 @@ export class V2MpesaController {
         ok: true,
         status: 'STK_PUSH_SENT',
         location,
-        amountKes,
+        amountKes: netCreditKes,
+        netCreditKes,
+        feeKes,
+        totalChargeKes,
         phone,
-        message: `M-PESA STK prompt sent to ${phone} for KES ${amountKes}. Enter your M-PESA PIN to complete.`,
+        message: `M-PESA STK prompt sent to ${phone} for KES ${totalChargeKes} (KES ${netCreditKes} wallet credit + KES ${feeKes} processing fee).`,
       };
     }
 
@@ -262,13 +331,36 @@ export class V2MpesaController {
         'Live M-PESA payouts require KOPOKOPO_CLIENT_ID and KOPOKOPO_CLIENT_SECRET configured on the server.',
       );
     }
-    const amountKes = Math.round(Number(body?.amountKes || 0));
+    const grossWithdrawalKes = Math.round(Number(body?.amountKes || 0));
     const phone = this.normalizeKenyaPhone(body?.phone);
-    if (!amountKes || amountKes < 50) {
-      throw new BadRequestException('Minimum M-PESA withdrawal is KES 50.');
+    if (!grossWithdrawalKes || grossWithdrawalKes < 150) {
+      throw new BadRequestException(
+        'Minimum M-PESA withdrawal is KES 150 (KES 100 net payout + KES 50 payout fee).',
+      );
+    }
+    if (grossWithdrawalKes > 70000) {
+      throw new BadRequestException('Maximum single M-PESA withdrawal is KES 70,000.');
     }
     if (!/^\+254\d{9}$/.test(phone)) {
       throw new BadRequestException('Enter a valid Kenyan M-PESA phone number (+2547XXXXXXXX).');
+    }
+
+    const userId = String(body?.userId || '').trim();
+    const userKey = userId || phone;
+    const commitDaily = this.checkAndRecordDailyWithdrawal(userKey, grossWithdrawalKes);
+    const feeKes = 50;
+    const netPayoutKes = grossWithdrawalKes - feeKes;
+
+    // Validate & deduct grossWithdrawalKes from player's Real Cash wallet on the server
+    if (userId && this.walletService) {
+      const grossUsd = Math.round((grossWithdrawalKes / 130) * 100) / 100;
+      await this.walletService.requestPayout(userId, grossUsd, {
+        type: 'MPESA',
+        phone,
+        grossWithdrawalKes,
+        feeKes,
+        netPayoutKes,
+      } as any);
     }
 
     const token = await this.getKopoAccessToken(cfg);
@@ -306,9 +398,12 @@ export class V2MpesaController {
       body: JSON.stringify({
         destination_reference: destRef.split('/').pop(),
         destination_type: 'mobile_wallet',
-        amount: { currency: 'KES', value: amountKes },
+        amount: { currency: 'KES', value: netPayoutKes },
         metadata: {
-          customer_id: String(body?.userId || ''),
+          customer_id: userId,
+          gross_withdrawal_kes: String(grossWithdrawalKes),
+          fee_kes: String(feeKes),
+          net_payout_kes: String(netPayoutKes),
           notes: 'Playverzus M-PESA withdrawal',
         },
         _links: { callback_url: cfg.callbackUrl },
@@ -316,12 +411,16 @@ export class V2MpesaController {
     });
 
     if (payRes.status === 201 || payRes.ok) {
+      commitDaily();
       return {
         ok: true,
         status: 'PAYOUT_INITIATED',
-        amountKes,
+        amountKes: grossWithdrawalKes,
+        grossWithdrawalKes,
+        feeKes,
+        netPayoutKes,
         phone,
-        message: `M-PESA payout of KES ${amountKes} to ${phone} initiated.`,
+        message: `M-PESA payout of KES ${netPayoutKes} net (KES ${grossWithdrawalKes} - KES ${feeKes} fee) to ${phone} initiated.`,
       };
     }
 

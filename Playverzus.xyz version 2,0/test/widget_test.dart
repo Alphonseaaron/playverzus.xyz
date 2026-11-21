@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:playverzus_v2/app.dart';
 import 'package:playverzus_v2/core/catalog/official_games.dart';
+import 'package:playverzus_v2/core/config/app_config.dart';
 import 'package:playverzus_v2/core/security/anti_fraud_engine.dart';
 import 'package:playverzus_v2/core/storage/app_state.dart';
 import 'package:playverzus_v2/design_system/tokens/hig_tokens.dart';
@@ -280,5 +281,34 @@ void main() {
     );
     expect(temporal.consecutiveStableFrames, 2);
     expect(temporal.effectiveConfidence, closeTo(0.96, 0.001));
+  });
+
+  test(
+      'Upfront customer-paid Kopo Kopo & Crossmint fee schedule guarantees zero negative margin',
+      () {
+    // 1. M-PESA Deposits across all Kopo Kopo Buy Goods tariff bands
+    for (final desiredKes in [100, 200, 201, 500, 1000, 5000, 36365, 50000, 250000]) {
+      final b = PaymentFeeSchedule.mpesaDepositBreakdown(desiredKes);
+      final kopoActualCut = b.totalStkChargeKes <= 200
+          ? 0.0
+          : (b.totalStkChargeKes * 0.0055).clamp(0.0, 200.0);
+      final netReceivedByCompany = b.totalStkChargeKes - kopoActualCut;
+      expect(
+        netReceivedByCompany >= b.netCreditKes,
+        isTrue,
+        reason:
+            'Deposit KES $desiredKes: company net $netReceivedByCompany must be >= wallet credit ${b.netCreditKes}',
+      );
+    }
+
+    // 2. M-PESA Withdrawals: Flat KES 50 Kopo Kopo PAY fee covered upfront by customer
+    for (final withdrawKes in [150, 500, 1000, 10000, 70000]) {
+      final w = PaymentFeeSchedule.mpesaWithdrawalBreakdown(withdrawKes);
+      expect(w.feeKes, 50);
+      expect(w.netToMpesaKes, withdrawKes - 50);
+      expect(w.netToMpesaKes >= 100, isTrue);
+      // Total cash leaving company (netToMpesaKes + 50 Kopo Kopo fee) == walletDeductionKes
+      expect(w.netToMpesaKes + 50, w.walletDeductionKes);
+    }
   });
 }

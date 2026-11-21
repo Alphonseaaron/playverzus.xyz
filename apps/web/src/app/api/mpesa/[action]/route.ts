@@ -178,6 +178,32 @@ export async function POST(
     });
   }
 
+function computeMpesaDepositFeeKes(netKes: number): number {
+  if (netKes <= 200) return 0;
+  const grossed = Math.ceil(netKes / (1.0 - 0.0055));
+  return Math.min(200, Math.max(1, grossed - netKes));
+}
+
+const dailyWithdrawalTracker = new Map<string, Array<{ ts: number; amountKes: number }>>();
+function checkAndRecordDailyWithdrawal(userKey: string, amountKes: number) {
+  const now = Date.now();
+  const dayMs = 24 * 60 * 60 * 1000;
+  const recent = (dailyWithdrawalTracker.get(userKey) || []).filter((e) => now - e.ts < dayMs);
+  const usedKes = recent.reduce((sum, e) => sum + e.amountKes, 0);
+  if (recent.length >= 3) {
+    throw new Error('Daily withdrawal limit reached (maximum 3 M-PESA payouts per 24 hours).');
+  }
+  if (usedKes + amountKes > 150000) {
+    throw new Error(
+      `Daily withdrawal limit exceeded (KES 150,000/day max; remaining today: KES ${Math.max(0, 150000 - usedKes)}).`,
+    );
+  }
+  return () => {
+    recent.push({ ts: now, amountKes });
+    dailyWithdrawalTracker.set(userKey, recent);
+  };
+}
+
   if (action === 'stk-push') {
     if (!cfg.clientId || !cfg.clientSecret || !cfg.tillNumber) {
       return NextResponse.json(
@@ -190,11 +216,17 @@ export async function POST(
     }
     try {
       const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
-      const amountKes = Math.round(Number(body.amountKes || 0));
+      const netCreditKes = Math.round(Number(body.amountKes || 0));
       const phone = normalizeKenyaPhone(body.phone);
-      if (!amountKes || amountKes < 10) {
+      if (!netCreditKes || netCreditKes < 100) {
         return NextResponse.json(
-          { message: 'Minimum M-PESA deposit is KES 10.' },
+          { message: 'Minimum M-PESA deposit is KES 100.' },
+          { status: 400 },
+        );
+      }
+      if (netCreditKes > 250000) {
+        return NextResponse.json(
+          { message: 'Maximum single M-PESA deposit is KES 250,000.' },
           { status: 400 },
         );
       }
@@ -204,6 +236,9 @@ export async function POST(
           { status: 400 },
         );
       }
+      const feeKes = computeMpesaDepositFeeKes(netCreditKes);
+      const totalChargeKes = netCreditKes + feeKes;
+
       const token = await getKopoAccessToken(cfg);
       const payload = {
         payment_channel: 'M-PESA STK Push',
@@ -214,9 +249,12 @@ export async function POST(
           phone_number: phone,
           email: body.email || undefined,
         },
-        amount: { currency: 'KES', value: amountKes },
+        amount: { currency: 'KES', value: totalChargeKes },
         metadata: {
           customer_id: String(body.userId || ''),
+          net_credit_kes: String(netCreditKes),
+          fee_kes: String(feeKes),
+          total_charge_kes: String(totalChargeKes),
           reference: `PVZ-${Date.now()}`,
         },
         _links: { callback_url: cfg.callbackUrl },
@@ -239,9 +277,12 @@ export async function POST(
             ok: true,
             status: 'STK_PUSH_SENT',
             location,
-            amountKes,
+            amountKes: netCreditKes,
+            netCreditKes,
+            feeKes,
+            totalChargeKes,
             phone,
-            message: `M-PESA STK prompt sent to ${phone} for KES ${amountKes}. Enter your M-PESA PIN to complete.`,
+            message: `M-PESA STK prompt sent to ${phone} for KES ${totalChargeKes} (KES ${netCreditKes} wallet credit + KES ${feeKes} processing fee).`,
           },
           { status: 201 },
         );
@@ -272,11 +313,17 @@ export async function POST(
     }
     try {
       const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
-      const amountKes = Math.round(Number(body.amountKes || 0));
+      const grossWithdrawalKes = Math.round(Number(body.amountKes || 0));
       const phone = normalizeKenyaPhone(body.phone);
-      if (!amountKes || amountKes < 50) {
+      if (!grossWithdrawalKes || grossWithdrawalKes < 150) {
         return NextResponse.json(
-          { message: 'Minimum M-PESA withdrawal is KES 50.' },
+          { message: 'Minimum M-PESA withdrawal is KES 150 (KES 100 net payout + KES 50 payout fee).' },
+          { status: 400 },
+        );
+      }
+      if (grossWithdrawalKes > 70000) {
+        return NextResponse.json(
+          { message: 'Maximum single M-PESA withdrawal is KES 70,000.' },
           { status: 400 },
         );
       }
@@ -286,6 +333,11 @@ export async function POST(
           { status: 400 },
         );
       }
+      const userKey = String(body.userId || phone);
+      const commitDaily = checkAndRecordDailyWithdrawal(userKey, grossWithdrawalKes);
+      const feeKes = 50;
+      const netPayoutKes = grossWithdrawalKes - feeKes;
+
       const token = await getKopoAccessToken(cfg);
       const recipRes = await fetch(`${cfg.baseUrl}/api/v1/pay_recipients`, {
         method: 'POST',
@@ -321,9 +373,12 @@ export async function POST(
         body: JSON.stringify({
           destination_reference: destRef.split('/').pop(),
           destination_type: 'mobile_wallet',
-          amount: { currency: 'KES', value: amountKes },
+          amount: { currency: 'KES', value: netPayoutKes },
           metadata: {
             customer_id: String(body.userId || ''),
+            gross_withdrawal_kes: String(grossWithdrawalKes),
+            fee_kes: String(feeKes),
+            net_payout_kes: String(netPayoutKes),
             notes: 'Playverzus M-PESA withdrawal',
           },
           _links: { callback_url: cfg.callbackUrl },
@@ -331,13 +386,17 @@ export async function POST(
       });
 
       if (payRes.status === 201 || payRes.ok) {
+        commitDaily();
         return NextResponse.json(
           {
             ok: true,
             status: 'PAYOUT_INITIATED',
-            amountKes,
+            amountKes: grossWithdrawalKes,
+            grossWithdrawalKes,
+            feeKes,
+            netPayoutKes,
             phone,
-            message: `M-PESA payout of KES ${amountKes} to ${phone} initiated.`,
+            message: `M-PESA payout of KES ${netPayoutKes} net (KES ${grossWithdrawalKes} - KES ${feeKes} fee) to ${phone} initiated.`,
           },
           { status: 201 },
         );

@@ -990,6 +990,60 @@ class _AdminConsoleScreenState extends ConsumerState<AdminConsoleScreen> {
 
         const SizedBox(height: 14),
 
+        // Upfront Customer-Paid Gateway Fee Schedule & Daily Thresholds (Zero Negative Margin Policy)
+        GlassCard(
+          radius: 16,
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 10,
+                runSpacing: 6,
+                children: [
+                  Text(
+                    'Upfront Customer-Paid Fee Pass-Through & Daily Thresholds',
+                    style: HigTypography.title3(),
+                  ),
+                  const HigBadge(
+                    label: 'ZERO NEGATIVE MARGIN · 10% RAKE 100% RETAINED',
+                    tone: HigBadgeTone.emerald,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Customers pay 100% of Kopo Kopo M-PESA and Crossmint processing fees upfront at deposit and withdrawal. Playverzus absorbs KES 0 / \$0.00 in gateway drag and collects strictly from its 10% match & tournament rake.',
+                style: HigTypography.footnote(),
+              ),
+              const SizedBox(height: 12),
+              _feeRuleRow(
+                'M-PESA Deposit (Buy Goods STK)',
+                'Min KES 100 · Max KES 250,000/tx · Customer pays +0.55% upfront above KES 200 (capped at KES 200 above KES 36,365; ≤ KES 200 is KES 0).',
+              ),
+              const Divider(height: 14),
+              _feeRuleRow(
+                'M-PESA Withdrawal (Move Money / PAY)',
+                'Min KES 150 (KES 100 net + flat KES 50 Kopo Kopo PAY fee paid upfront by customer) · Max KES 70,000/tx · Daily limit KES 150,000 (max 3/day).',
+              ),
+              const Divider(height: 14),
+              _feeRuleRow(
+                'Crossmint Global Deposit & Payout',
+                'Deposit: Min \$2.00 · Max \$2,000/tx (+3.5% + \$0.30 upfront card fee) · Withdrawal: Min \$5.00 (\$1.00 flat payout fee) · Max \$1,000/tx · \$2,500/day.',
+              ),
+              const Divider(height: 14),
+              _feeRuleRow(
+                'Playverzus Company Earning Model',
+                '10.0% platform rake on settled cash 1v1 duels, squad matches, 5-player Blitz pools & tournaments (winner receives 90.0% of pot).',
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 14),
+
         // Treasury Balance Sheet KPIs
         GridView.count(
           shrinkWrap: true,
@@ -1610,6 +1664,37 @@ class _AdminConsoleScreenState extends ConsumerState<AdminConsoleScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _feeRuleRow(String title, String detail) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(top: 2),
+          child: Icon(
+            CupertinoIcons.shield_fill,
+            size: 14,
+            color: HigColors.emerald,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: HigTypography.footnote(color: HigColors.labelPrimary)
+                    .copyWith(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 2),
+              Text(detail, style: HigTypography.caption()),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

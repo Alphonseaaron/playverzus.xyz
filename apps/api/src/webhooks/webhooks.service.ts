@@ -31,7 +31,7 @@ export class WebhooksService {
     const attrs = body?.data?.attributes || body?.attributes || {};
     const status = String(attrs?.status || body?.status || '').toLowerCase();
     const eventResource = attrs?.event?.resource || {};
-    const amountKes = Number(
+    const totalPaidKes = Number(
       eventResource?.amount ||
       attrs?.amount?.value ||
       body?.amount ||
@@ -46,16 +46,27 @@ export class WebhooksService {
       `mpesa-${Date.now()}`,
     );
 
-    if ((status === 'success' || status === 'received') && userId && amountKes > 0) {
-      const amountUsd = Math.round((amountKes / 130) * 100) / 100;
+    const computeDepositFeeKes = (netKes: number) => {
+      if (netKes <= 200) return 0;
+      const grossed = Math.ceil(netKes / (1.0 - 0.0055));
+      return Math.min(200, Math.max(1, grossed - netKes));
+    };
+
+    const netCreditKes = Number(
+      metadata?.net_credit_kes ||
+      (totalPaidKes > 0 ? totalPaidKes - computeDepositFeeKes(totalPaidKes) : 0),
+    );
+
+    if ((status === 'success' || status === 'received') && userId && netCreditKes > 0) {
+      const amountUsd = Math.round((netCreditKes / 130) * 100) / 100;
       const credit = await this.walletService.creditCrossmintDeposit(
         userId,
         amountUsd,
         'USD',
         `mpesa-${reference}`,
-        { provider: 'MPESA', amountKes, reference },
+        { provider: 'MPESA', netCreditKes, totalPaidKes, reference },
       );
-      return { ok: true, status: 'CREDITED', amountKes, amountUsd, credit };
+      return { ok: true, status: 'CREDITED', netCreditKes, totalPaidKes, amountUsd, credit };
     }
 
     return { ok: true, status: status || 'ACKNOWLEDGED', reference };

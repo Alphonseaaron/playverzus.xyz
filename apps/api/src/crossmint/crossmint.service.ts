@@ -47,10 +47,18 @@ export class CrossmintService {
     amount?: number,
     currency = 'USD',
   ): Promise<CrossmintOrderResult> {
-    const numAmount = Number(amount);
-    if (isNaN(numAmount) || numAmount < 1) {
-      throw new BadRequestException('Minimum deposit amount is $1.00');
+    const netCreditUsd = Math.round(Number(amount) * 100) / 100;
+    if (isNaN(netCreditUsd) || netCreditUsd < 2) {
+      throw new BadRequestException('Minimum Crossmint deposit amount is $2.00 USD');
     }
+    if (netCreditUsd > 2000) {
+      throw new BadRequestException('Maximum single Crossmint deposit amount is $2,000.00 USD');
+    }
+
+    // Customer pays Crossmint processing fee upfront (3.5% + $0.30, min $0.50)
+    const rawFee = netCreditUsd * 0.035 + 0.30;
+    const feeUsd = Math.ceil(Math.max(0.50, rawFee) * 100) / 100;
+    const numAmount = Math.round((netCreditUsd + feeUsd) * 100) / 100;
 
     const recipientEmail = email || `player_${userId.slice(0, 8)}@playverzus.xyz`;
     const orderPayload = {
@@ -71,6 +79,9 @@ export class CrossmintService {
       ],
       metadata: {
         userId,
+        netCreditUsd: netCreditUsd.toFixed(2),
+        feeUsd: feeUsd.toFixed(2),
+        totalChargeUsd: numAmount.toFixed(2),
         platform: 'playverzus.xyz',
         type: 'DEPOSIT',
       },
@@ -286,6 +297,8 @@ export class CrossmintService {
     const orderId = orderData.orderId || orderData.id || `cm-${Date.now()}`;
 
     const amount = Number(
+      orderData.metadata?.netCreditUsd ||
+      payload.metadata?.netCreditUsd ||
       orderData.payment?.amount ||
       orderData.amount ||
       orderData.lineItems?.[0]?.callData?.totalPrice ||

@@ -190,6 +190,30 @@ async function getKopoAccessToken(cfg) {
   return cachedOAuthToken;
 }
 
+function computeMpesaDepositFeeKes(netKes) {
+  if (netKes <= 200) return 0;
+  const grossed = Math.ceil(netKes / (1.0 - 0.0055));
+  return Math.min(200, Math.max(1, grossed - netKes));
+}
+
+const dailyWithdrawalTracker = new Map();
+function checkAndRecordDailyWithdrawal(userKey, amountKes) {
+  const now = Date.now();
+  const dayMs = 24 * 60 * 60 * 1000;
+  const recent = (dailyWithdrawalTracker.get(userKey) || []).filter((e) => now - e.ts < dayMs);
+  const usedKes = recent.reduce((sum, e) => sum + e.amountKes, 0);
+  if (recent.length >= 3) {
+    throw new Error('Daily withdrawal limit reached (maximum 3 M-PESA payouts per 24 hours).');
+  }
+  if (usedKes + amountKes > 150000) {
+    throw new Error(`Daily withdrawal limit exceeded (KES 150,000/day max; remaining today: KES ${Math.max(0, 150000 - usedKes)}).`);
+  }
+  return () => {
+    recent.push({ ts: now, amountKes });
+    dailyWithdrawalTracker.set(userKey, recent);
+  };
+}
+
 async function handleMpesaStkPush(req, res) {
   const cfg = getKopoConfig();
   if (!cfg.clientId || !cfg.clientSecret || !cfg.tillNumber) {
@@ -197,7 +221,7 @@ async function handleMpesaStkPush(req, res) {
     res.end(
       JSON.stringify({
         message:
-          'Live M-PESA gateway is not yet configured on this server. Add KOPOKOPO_CLIENT_ID, KOPOKOPO_CLIENT_SECRET, KOPOKOPO_API_KEY, and KOPOKOPO_TILL_NUMBER to Playverzus.xyz version 2,0/.env (or your Render server env) and restart.',
+          'Live M-PESA gateway is not yet configured on this server. Add KOPOKOPO_CLIENT_ID, KOPOKOPO_CLIENT_SECRET, KOPOKOPO_API_KEY, and KOPOKOPO_TILL_NUMBER to root .env and restart.',
       }),
     );
     return;
@@ -205,11 +229,16 @@ async function handleMpesaStkPush(req, res) {
 
   try {
     const body = await readJsonBody(req);
-    const amountKes = Math.round(Number(body.amountKes || 0));
+    const netCreditKes = Math.round(Number(body.amountKes || 0));
     const phone = normalizeKenyaPhone(body.phone);
-    if (!amountKes || amountKes < 10) {
+    if (!netCreditKes || netCreditKes < 100) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ message: 'Minimum M-PESA deposit is KES 10.' }));
+      res.end(JSON.stringify({ message: 'Minimum M-PESA deposit is KES 100.' }));
+      return;
+    }
+    if (netCreditKes > 250000) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ message: 'Maximum single M-PESA deposit is KES 250,000.' }));
       return;
     }
     if (!/^\+254\d{9}$/.test(phone)) {
@@ -217,6 +246,9 @@ async function handleMpesaStkPush(req, res) {
       res.end(JSON.stringify({ message: 'Enter a valid Kenyan M-PESA phone number (+2547XXXXXXXX).' }));
       return;
     }
+
+    const feeKes = computeMpesaDepositFeeKes(netCreditKes);
+    const totalChargeKes = netCreditKes + feeKes;
 
     const token = await getKopoAccessToken(cfg);
     const payload = {
@@ -228,9 +260,12 @@ async function handleMpesaStkPush(req, res) {
         phone_number: phone,
         email: body.email || undefined,
       },
-      amount: { currency: 'KES', value: amountKes },
+      amount: { currency: 'KES', value: totalChargeKes },
       metadata: {
         customer_id: String(body.userId || ''),
+        net_credit_kes: String(netCreditKes),
+        fee_kes: String(feeKes),
+        total_charge_kes: String(totalChargeKes),
         reference: `PVZ-${Date.now()}`,
       },
       _links: { callback_url: cfg.callbackUrl },
@@ -254,9 +289,12 @@ async function handleMpesaStkPush(req, res) {
           ok: true,
           status: 'STK_PUSH_SENT',
           location,
-          amountKes,
+          amountKes: netCreditKes,
+          netCreditKes,
+          feeKes,
+          totalChargeKes,
           phone,
-          message: `M-PESA STK prompt sent to ${phone} for KES ${amountKes}. Enter your M-PESA PIN to complete.`,
+          message: `M-PESA STK prompt sent to ${phone} for KES ${totalChargeKes} (KES ${netCreditKes} wallet credit + KES ${feeKes} processing fee).`,
         }),
       );
       return;
@@ -290,11 +328,16 @@ async function handleMpesaPayout(req, res) {
 
   try {
     const body = await readJsonBody(req);
-    const amountKes = Math.round(Number(body.amountKes || 0));
+    const grossWithdrawalKes = Math.round(Number(body.amountKes || 0));
     const phone = normalizeKenyaPhone(body.phone);
-    if (!amountKes || amountKes < 50) {
+    if (!grossWithdrawalKes || grossWithdrawalKes < 150) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ message: 'Minimum M-PESA withdrawal is KES 50.' }));
+      res.end(JSON.stringify({ message: 'Minimum M-PESA withdrawal is KES 150 (KES 100 net payout + KES 50 payout fee).' }));
+      return;
+    }
+    if (grossWithdrawalKes > 70000) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ message: 'Maximum single M-PESA withdrawal is KES 70,000.' }));
       return;
     }
     if (!/^\+254\d{9}$/.test(phone)) {
@@ -302,6 +345,11 @@ async function handleMpesaPayout(req, res) {
       res.end(JSON.stringify({ message: 'Enter a valid Kenyan M-PESA phone number (+2547XXXXXXXX).' }));
       return;
     }
+
+    const userKey = String(body.userId || phone);
+    const commitDaily = checkAndRecordDailyWithdrawal(userKey, grossWithdrawalKes);
+    const feeKes = 50;
+    const netPayoutKes = grossWithdrawalKes - feeKes;
 
     const token = await getKopoAccessToken(cfg);
     // 1. Register mobile_wallet recipient
@@ -329,7 +377,7 @@ async function handleMpesaPayout(req, res) {
       throw new Error(errBody.error_message || 'Could not verify M-PESA payout recipient.');
     }
 
-    // 2. Initiate live M-PESA Pay disbursement
+    // 2. Initiate live M-PESA Pay disbursement for exact netPayoutKes (retaining KES 50 upfront fee)
     const payRes = await fetch(`${cfg.baseUrl}/api/v1/payments`, {
       method: 'POST',
       headers: {
@@ -340,9 +388,12 @@ async function handleMpesaPayout(req, res) {
       body: JSON.stringify({
         destination_reference: destRef.split('/').pop(),
         destination_type: 'mobile_wallet',
-        amount: { currency: 'KES', value: amountKes },
+        amount: { currency: 'KES', value: netPayoutKes },
         metadata: {
           customer_id: String(body.userId || ''),
+          gross_withdrawal_kes: String(grossWithdrawalKes),
+          fee_kes: String(feeKes),
+          net_payout_kes: String(netPayoutKes),
           notes: 'Playverzus M-PESA withdrawal',
         },
         _links: { callback_url: cfg.callbackUrl },
@@ -350,14 +401,18 @@ async function handleMpesaPayout(req, res) {
     });
 
     if (payRes.status === 201 || payRes.ok) {
+      commitDaily();
       res.writeHead(201, { 'Content-Type': 'application/json' });
       res.end(
         JSON.stringify({
           ok: true,
           status: 'PAYOUT_INITIATED',
-          amountKes,
+          amountKes: grossWithdrawalKes,
+          grossWithdrawalKes,
+          feeKes,
+          netPayoutKes,
           phone,
-          message: `M-PESA payout of KES ${amountKes} to ${phone} initiated.`,
+          message: `M-PESA payout of KES ${netPayoutKes} net (KES ${grossWithdrawalKes} - KES ${feeKes} fee) to ${phone} initiated.`,
         }),
       );
       return;
