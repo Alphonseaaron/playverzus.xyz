@@ -63,7 +63,8 @@ const nextConfig = {
         source,
         destination: '/v2_index.html',
       })),
-      afterFiles: [
+      afterFiles: [],
+      fallback: [
         {
           source: '/api/:path*',
           destination: 'https://playverzus-api.onrender.com/api/:path*',
