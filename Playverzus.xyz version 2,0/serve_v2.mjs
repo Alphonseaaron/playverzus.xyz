@@ -71,6 +71,53 @@ const MAX_COMPRESSED_CACHE = 40;
 let cachedOAuthToken = null;
 let cachedOAuthExpiry = 0;
 
+const gatewayStateFile = path.join(__dirname, '.data', 'platform_gateway.json');
+function readActiveGateway() {
+  try {
+    if (fs.existsSync(gatewayStateFile)) {
+      const parsed = JSON.parse(fs.readFileSync(gatewayStateFile, 'utf8'));
+      if (parsed?.activeGateway === 'crossmint' || parsed?.activeGateway === 'kopokopo') {
+        return parsed.activeGateway;
+      }
+    }
+  } catch {}
+  return process.env.DEFAULT_PAYMENT_GATEWAY === 'crossmint' ? 'crossmint' : 'kopokopo';
+}
+
+function writeActiveGateway(mode) {
+  const normalized = mode === 'crossmint' ? 'crossmint' : 'kopokopo';
+  try {
+    const dir = path.dirname(gatewayStateFile);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(
+      gatewayStateFile,
+      JSON.stringify({ activeGateway: normalized, updatedAt: new Date().toISOString() }, null, 2),
+      'utf8',
+    );
+  } catch {}
+  return normalized;
+}
+
+function getCrossmintReadiness() {
+  const sk = process.env.CROSSMINT_SERVER_API_KEY || '';
+  const ck = process.env.NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY || '';
+  const wh = process.env.CROSSMINT_WEBHOOK_SECRET || '';
+  const serverKeyLive = sk.startsWith('sk_production_');
+  const clientKeyLive = ck.startsWith('ck_production_');
+  const isProd =
+    serverKeyLive ||
+    clientKeyLive ||
+    process.env.CROSSMINT_ENVIRONMENT === 'production' ||
+    process.env.NODE_ENV === 'production';
+  return {
+    configured: Boolean(sk && ck),
+    mode: isProd ? 'production' : 'staging',
+    serverKeyLive,
+    clientKeyLive,
+    webhookSecretConfigured: Boolean(wh),
+  };
+}
+
 function getKopoConfig() {
   const env = (process.env.KOPOKOPO_ENV || 'live').toLowerCase();
   const baseUrl =
@@ -431,7 +478,7 @@ const server = http.createServer((req, res) => {
     })();
     return;
   }
-  if (rawUrl.startsWith('/api/mpesa/status') && req.method === 'GET') {
+  if ((rawUrl.startsWith('/api/mpesa/status') || rawUrl.startsWith('/api/mpesa/gateway')) && req.method === 'GET') {
     (async () => {
       const cfg = getKopoConfig();
       const configured = Boolean(cfg.clientId && cfg.clientSecret && cfg.tillNumber);
@@ -446,15 +493,53 @@ const server = http.createServer((req, res) => {
           oauthError = e.message;
         }
       }
+      const crossmint = getCrossmintReadiness();
+      const activeGateway = readActiveGateway();
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(
         JSON.stringify({
+          activeGateway,
           configured,
           mode: cfg.baseUrl.includes('sandbox') ? 'sandbox' : 'live',
           tillConfigured: Boolean(cfg.tillNumber),
           ...(verify ? { oauthLive, ...(oauthError ? { oauthError } : {}) } : {}),
+          kopokopo: {
+            configured,
+            mode: cfg.baseUrl.includes('sandbox') ? 'sandbox' : 'live',
+            tillConfigured: Boolean(cfg.tillNumber),
+            ...(verify ? { oauthLive, ...(oauthError ? { oauthError } : {}) } : {}),
+          },
+          crossmint,
         }),
       );
+    })();
+    return;
+  }
+  if (rawUrl.startsWith('/api/mpesa/gateway') && req.method === 'POST') {
+    (async () => {
+      try {
+        const body = await readJsonBody(req);
+        const activeGateway = writeActiveGateway(body?.activeGateway);
+        const cfg = getKopoConfig();
+        const configured = Boolean(cfg.clientId && cfg.clientSecret && cfg.tillNumber);
+        const crossmint = getCrossmintReadiness();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(
+          JSON.stringify({
+            ok: true,
+            activeGateway,
+            kopokopo: {
+              configured,
+              mode: cfg.baseUrl.includes('sandbox') ? 'sandbox' : 'live',
+              tillConfigured: Boolean(cfg.tillNumber),
+            },
+            crossmint,
+          }),
+        );
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message: err.message || 'Invalid gateway request' }));
+      }
     })();
     return;
   }

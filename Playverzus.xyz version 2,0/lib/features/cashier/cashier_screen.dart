@@ -255,7 +255,11 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
         } else {
           await ApiClient.post('/wallet/payout', data: {
             'amount': amountUsd,
-            'method': 'USDC',
+            'method': {
+              'type': 'CROSSMINT_USDC',
+              'destinationAddress': dest,
+              'chain': 'base',
+            },
           });
         }
         await _loadWalletData();

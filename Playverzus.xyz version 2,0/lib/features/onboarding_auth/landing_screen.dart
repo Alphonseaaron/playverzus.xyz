@@ -41,6 +41,7 @@ class _LandingScreenState extends ConsumerState<LandingScreen> {
   final GlobalKey _gamesSectionKey = GlobalKey();
   final GlobalKey _skillLevelsKey = GlobalKey();
   final GlobalKey _howItWorksKey = GlobalKey();
+  final GlobalKey _rolloutKey = GlobalKey();
   final GlobalKey _pillarsKey = GlobalKey();
   final GlobalKey _faqKey = GlobalKey();
 
@@ -372,29 +373,43 @@ class _LandingScreenState extends ConsumerState<LandingScreen> {
                               ? const BrandLogo.mark(height: 26)
                               : const BrandLogo.full(height: 26),
                           if (isDesktop) ...[
-                            const SizedBox(width: 24),
-                            _headerAnchorButton(
-                              'GAMES (${allGames.length})',
-                              () => _scrollToSection(_gamesSectionKey),
+                            const SizedBox(width: 18),
+                            Expanded(
+                              child: SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Row(
+                                  children: [
+                                    _headerAnchorButton(
+                                      'GAMES (${allGames.length})',
+                                      () => _scrollToSection(_gamesSectionKey),
+                                    ),
+                                    _headerAnchorButton(
+                                      'SKILL LEVELS',
+                                      () => _scrollToSection(_skillLevelsKey),
+                                    ),
+                                    _headerAnchorButton(
+                                      'HOW IT WORKS',
+                                      () => _scrollToSection(_howItWorksKey),
+                                    ),
+                                    _headerAnchorButton(
+                                      'GLOBAL ROLLOUT',
+                                      () => _scrollToSection(_rolloutKey),
+                                    ),
+                                    _headerAnchorButton(
+                                      'ANTI-CHEAT & API',
+                                      () => _scrollToSection(_pillarsKey),
+                                    ),
+                                    _headerAnchorButton(
+                                      'FAQ',
+                                      () => _scrollToSection(_faqKey),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
-                            _headerAnchorButton(
-                              'SKILL LEVELS',
-                              () => _scrollToSection(_skillLevelsKey),
-                            ),
-                            _headerAnchorButton(
-                              'HOW IT WORKS',
-                              () => _scrollToSection(_howItWorksKey),
-                            ),
-                            _headerAnchorButton(
-                              'ANTI-CHEAT & API',
-                              () => _scrollToSection(_pillarsKey),
-                            ),
-                            _headerAnchorButton(
-                              'FAQ',
-                              () => _scrollToSection(_faqKey),
-                            ),
-                          ],
-                          const Spacer(),
+                            const SizedBox(width: 8),
+                          ] else
+                            const Spacer(),
                           HigButton(
                             label: 'Sign In',
                             size: HigButtonSize.small,
@@ -642,6 +657,17 @@ class _LandingScreenState extends ConsumerState<LandingScreen> {
                                 const SizedBox(height: 16),
                                 _buildStepsGrid(),
                               ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 48),
+
+                          // ── 4.5. REGIONAL ROLLOUT: PILOTING IN KENYA FIRST · ARCHITECTED FOR THE WORLD ──
+                          KeyedSubtree(
+                            key: _rolloutKey,
+                            child: _buildGlobalRolloutSection(
+                              context,
+                              isCompact: isCompact,
                             ),
                           ),
 
@@ -948,6 +974,34 @@ class _LandingScreenState extends ConsumerState<LandingScreen> {
               label: 'COMPETITIVE MATCHMAKING',
               tone: HigBadgeTone.copper,
             ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+              decoration: BoxDecoration(
+                color: HigColors.emerald.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(
+                  color: HigColors.emerald.withValues(alpha: 0.35),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const CountryFlag(code: 'KE', width: 15, height: 10),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      'PILOTING IN KENYA FIRST · READY FOR THE WORLD',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: HigTypography.mono(
+                        size: 10,
+                        color: HigColors.emerald,
+                      ).copyWith(fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                ],
+              ),
+            ),
             HigBadge(
               label: '${spotlightGame.displayName.toUpperCase()} SPOTLIGHT',
               tone: HigBadgeTone.neutral,
@@ -1072,22 +1126,20 @@ class _LandingScreenState extends ConsumerState<LandingScreen> {
           runSpacing: 8,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            gateway == PaymentGatewayMode.kopokopo
-                ? const BrandLogo.kopokopo(height: 20)
-                : const BrandLogo.crossmint(height: 17),
+            const BrandLogo.kopokopo(height: 19),
             Text(
-              gateway == PaymentGatewayMode.kopokopo
-                  ? 'Instant M-PESA STK & Payouts'
-                  : 'Instant USDC & Card Escrow',
+              'Kenya Phase 1: Instant M-PESA STK & Payouts',
+              style: HigTypography.caption(color: HigColors.labelPrimary)
+                  .copyWith(fontWeight: FontWeight.w600),
+            ),
+            const BrandLogo.crossmint(height: 15),
+            Text(
+              'Global Ready: Card & USDC Escrow',
               style: HigTypography.caption(color: HigColors.labelPrimary)
                   .copyWith(fontWeight: FontWeight.w600),
             ),
             Text(
               '· 10,000 Free Practice PTS',
-              style: HigTypography.caption(color: HigColors.labelSecondary),
-            ),
-            Text(
-              '· PC · PS5 · Xbox · Mobile',
               style: HigTypography.caption(color: HigColors.labelSecondary),
             ),
           ],
@@ -1499,6 +1551,212 @@ class _LandingScreenState extends ConsumerState<LandingScreen> {
     );
   }
 
+  /// Regional Rollout Section: Piloting Live in Kenya First · Architected for the World.
+  Widget _buildGlobalRolloutSection(
+    BuildContext context, {
+    required bool isCompact,
+  }) {
+    const globalFlags = ['KE', 'NG', 'ZA', 'GH', 'UG', 'GB', 'US', 'DE', 'BR'];
+
+    return GlassCard(
+      radius: 20,
+      padding: EdgeInsets.all(isCompact ? 18 : 24),
+      borderColor: HigColors.brand.withValues(alpha: 0.35),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 14,
+            runSpacing: 10,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'REGIONAL ROLLOUT & GLOBAL INFRASTRUCTURE',
+                    style: HigTypography.mono(
+                      size: 11,
+                      color: HigColors.brandBright,
+                    ).copyWith(fontWeight: FontWeight.w800, letterSpacing: 1.0),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Piloting Live in Kenya First. Architected for the World.',
+                    style: HigTypography.title2(),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'We launched Phase 1 in Kenya — the world\'s premier mobile-money proving ground — to stress-test sub-second escrow and anti-cheat verification under live match conditions while keeping our global Card & USDC settlement engine ready for worldwide queues.',
+                    style: HigTypography.footnote(),
+                  ),
+                ],
+              ),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: globalFlags
+                    .map(
+                      (code) => CountryFlag(
+                        code: code,
+                        width: 22,
+                        height: 15,
+                      ),
+                    )
+                    .toList(),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final cols = constraints.maxWidth >= 900 ? 3 : 1;
+              const spacing = 12.0;
+              final itemWidth =
+                  (constraints.maxWidth - (spacing * (cols - 1))) / cols;
+
+              final phase1Kenya = Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: HigColors.surfaceGrouped,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: HigColors.emerald.withValues(alpha: 0.38),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 6,
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const CountryFlag(code: 'KE', width: 18, height: 12),
+                            const SizedBox(width: 8),
+                            const BrandLogo.kopokopo(height: 18),
+                          ],
+                        ),
+                        const HigBadge(
+                          label: 'PHASE 1 · LIVE IN KENYA',
+                          tone: HigBadgeTone.emerald,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Kenya First: Real-World Proving Ground',
+                      style: HigTypography.headline(),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Live KES match stakes, instant M-PESA STK Push deposits, and automated Safaricom B2C payouts. Built to prove deterministic match settlement at high daily match volume across East Africa.',
+                      style: HigTypography.footnote(),
+                    ),
+                  ],
+                ),
+              );
+
+              final phase2World = Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: HigColors.surfaceGrouped,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: HigColors.brand.withValues(alpha: 0.38),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 6,
+                      children: const [
+                        BrandLogo.crossmint(height: 18),
+                        HigBadge(
+                          label: 'GLOBAL RAIL · ARMED & READY',
+                          tone: HigBadgeTone.indigo,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Ready for the World: Card & USDC Rails',
+                      style: HigTypography.headline(),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Our global settlement layer is pre-integrated with Crossmint for Visa, Mastercard, Apple Pay, Google Pay, and on-chain USDC escrow — ready to scale across Europe, the Americas, Asia, and pan-African arenas.',
+                      style: HigTypography.footnote(),
+                    ),
+                  ],
+                ),
+              );
+
+              final unifiedCore = Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: HigColors.surfaceGrouped,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: HigColors.separator),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 6,
+                      children: const [
+                        HigBadge(
+                          label: 'UNIFIED CORE ENGINE',
+                          tone: HigBadgeTone.copper,
+                        ),
+                        HigBadge(
+                          label: 'ZERO RE-ARCHITECTURE',
+                          tone: HigBadgeTone.neutral,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'One Switch From Regional Pilot to Global',
+                      style: HigTypography.headline(),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Whether a match settles in KES during our Kenya rollout or USD/USDC globally, players compete on the same 5-pillar anti-fraud engine, Level 1–10 ELO progression, and developer Stats APIs.',
+                      style: HigTypography.footnote(),
+                    ),
+                  ],
+                ),
+              );
+
+              return Wrap(
+                spacing: spacing,
+                runSpacing: spacing,
+                children: [
+                  SizedBox(width: itemWidth, child: phase1Kenya),
+                  SizedBox(width: itemWidth, child: phase2World),
+                  SizedBox(width: itemWidth, child: unifiedCore),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   /// FACEIT 3-Pillar Bento Grid:
   /// 1. 5-Player Blitz Brackets & Cups
   /// 2. Hardware Anti-Smurf & Companion Auto-Launch
@@ -1680,6 +1938,10 @@ class _LandingScreenState extends ConsumerState<LandingScreen> {
       (
         'How are rankings and ELO handled across the 21 games?',
         'Every game maintains its own independent ELO rating (Level 1–10) and leaderboard. Your rating in EA Sports FC 27 never mixes with Counter-Strike 2 or Chess.'
+      ),
+      (
+        'Why is Playverzus piloting in Kenya first, and is it ready for global players?',
+        'Kenya leads the world in instant mobile-money adoption, making it the ideal live proving ground for real-time competitive escrow. While our Phase 1 pilot settles in KES via M-PESA, our global Visa/Mastercard and USDC settlement rails via Crossmint are already built and ready to activate worldwide.'
       ),
       (
         'How can game developers integrate their own games?',

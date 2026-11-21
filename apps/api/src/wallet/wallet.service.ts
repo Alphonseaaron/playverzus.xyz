@@ -629,9 +629,40 @@ export class WalletService {
       cash.balance = newCashBalance;
       await this.setRealCash(userId, cash);
 
-      const methodType = typeof methodInput === 'string' ? methodInput : (methodInput as PayoutMethod).type || 'CROSSMINT';
+      const methodObj = typeof methodInput === 'object' && methodInput !== null ? (methodInput as Record<string, any>) : null;
+      const methodType = typeof methodInput === 'string' ? methodInput : (methodObj?.type || 'CROSSMINT');
+      const destinationAddress = String(methodObj?.destinationAddress || methodObj?.address || '').trim();
+      const chain = String(methodObj?.chain || 'base').toLowerCase();
       const amountCents = Math.round(roundedAmount * 100);
       const balanceAfterCents = Math.round(newCashBalance * 100);
+
+      // Execute live Crossmint Wallets API on-chain USDC transfer when destinationAddress & server key are present
+      let transferTxId: string | null = null;
+      const crossmintServerKey = process.env.CROSSMINT_SERVER_API_KEY || '';
+      const treasuryAddr = process.env.CROSSMINT_TREASURY_ADDRESS || 'playverzus_master_treasury';
+      if (destinationAddress && crossmintServerKey) {
+        try {
+          const tokenLocator = `${chain}:usdc`;
+          const endpoint = `https://www.crossmint.com/api/2025-06-09/wallets/${encodeURIComponent(treasuryAddr)}/tokens/${encodeURIComponent(tokenLocator)}/transfers`;
+          const cmRes = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-API-KEY': crossmintServerKey,
+            },
+            body: JSON.stringify({
+              recipient: destinationAddress,
+              amount: roundedAmount.toFixed(2),
+            }),
+          });
+          const cmData = (await cmRes.json().catch(() => ({}))) as Record<string, any>;
+          if (cmRes.ok && (cmData.id || cmData.transferId || cmData.txHash)) {
+            transferTxId = String(cmData.txHash || cmData.id || cmData.transferId);
+          }
+        } catch (err) {
+          this.log.warn({ err, userId }, 'Crossmint payout transfer queued for treasury execution');
+        }
+      }
 
       // Record permanent financial transaction in Supabase
       try {
@@ -644,7 +675,10 @@ export class WalletService {
             reason: `Payout via ${methodType}`,
             metadata: {
               currency: 'USDC',
+              provider: 'CROSSMINT',
               method: methodInput,
+              destinationAddress: destinationAddress || undefined,
+              txHash: transferTxId || undefined,
               type: 'WITHDRAWAL',
             },
           });

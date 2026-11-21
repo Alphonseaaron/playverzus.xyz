@@ -2,6 +2,28 @@ import { NextResponse } from 'next/server';
 
 let cachedOAuthToken: string | null = null;
 let cachedOAuthExpiry = 0;
+let activePlatformGateway: 'kopokopo' | 'crossmint' =
+  process.env.DEFAULT_PAYMENT_GATEWAY === 'crossmint' ? 'crossmint' : 'kopokopo';
+
+function getCrossmintReadiness() {
+  const sk = process.env.CROSSMINT_SERVER_API_KEY || '';
+  const ck = process.env.NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY || '';
+  const wh = process.env.CROSSMINT_WEBHOOK_SECRET || '';
+  const serverKeyLive = sk.startsWith('sk_production_');
+  const clientKeyLive = ck.startsWith('ck_production_');
+  const isProd =
+    serverKeyLive ||
+    clientKeyLive ||
+    process.env.CROSSMINT_ENVIRONMENT === 'production' ||
+    process.env.NODE_ENV === 'production';
+  return {
+    configured: Boolean(sk && ck),
+    mode: isProd ? 'production' : 'staging',
+    serverKeyLive,
+    clientKeyLive,
+    webhookSecretConfigured: Boolean(wh),
+  };
+}
 
 function getKopoConfig() {
   const env = (process.env.KOPOKOPO_ENV || 'live').toLowerCase();
@@ -65,7 +87,7 @@ export async function GET(
   const cfg = getKopoConfig();
   const url = new URL(req.url);
 
-  if (action === 'status') {
+  if (action === 'status' || action === 'gateway') {
     const configured = Boolean(cfg.clientId && cfg.clientSecret && cfg.tillNumber);
     const verify = url.searchParams.get('verify') === '1';
     let oauthLive = false;
@@ -78,11 +100,20 @@ export async function GET(
         oauthError = e instanceof Error ? e.message : 'OAuth error';
       }
     }
+    const crossmint = getCrossmintReadiness();
     return NextResponse.json({
+      activeGateway: activePlatformGateway,
       configured,
       mode: cfg.baseUrl.includes('sandbox') ? 'sandbox' : 'live',
       tillConfigured: Boolean(cfg.tillNumber),
       ...(verify ? { oauthLive, ...(oauthError ? { oauthError } : {}) } : {}),
+      kopokopo: {
+        configured,
+        mode: cfg.baseUrl.includes('sandbox') ? 'sandbox' : 'live',
+        tillConfigured: Boolean(cfg.tillNumber),
+        ...(verify ? { oauthLive, ...(oauthError ? { oauthError } : {}) } : {}),
+      },
+      crossmint,
     });
   }
 
@@ -130,6 +161,22 @@ export async function POST(
 ) {
   const action = String(context.params?.action || '');
   const cfg = getKopoConfig();
+
+  if (action === 'gateway') {
+    const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+    activePlatformGateway = body.activeGateway === 'crossmint' ? 'crossmint' : 'kopokopo';
+    const configured = Boolean(cfg.clientId && cfg.clientSecret && cfg.tillNumber);
+    return NextResponse.json({
+      ok: true,
+      activeGateway: activePlatformGateway,
+      kopokopo: {
+        configured,
+        mode: cfg.baseUrl.includes('sandbox') ? 'sandbox' : 'live',
+        tillConfigured: Boolean(cfg.tillNumber),
+      },
+      crossmint: getCrossmintReadiness(),
+    });
+  }
 
   if (action === 'stk-push') {
     if (!cfg.clientId || !cfg.clientSecret || !cfg.tillNumber) {

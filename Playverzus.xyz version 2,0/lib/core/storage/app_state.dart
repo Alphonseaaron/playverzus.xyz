@@ -122,6 +122,8 @@ final walletModeProvider =
 });
 
 /// Admin-Controlled Payment Gateway Switch: Kopo Kopo (M-PESA / KES) <-> Crossmint (USD / USDC)
+/// Synchronized with both local SharedPreferences AND the live backend `/api/mpesa/gateway` endpoint
+/// so flipping the switch in Admin Treasury immediately updates the active payment rail platform-wide.
 class PaymentGatewayNotifier extends StateNotifier<PaymentGatewayMode> {
   PaymentGatewayNotifier() : super(PaymentGatewayMode.kopokopo) {
     _hydrate();
@@ -139,18 +141,55 @@ class PaymentGatewayNotifier extends StateNotifier<PaymentGatewayMode> {
         state = PaymentGatewayMode.kopokopo;
       }
     } catch (_) {}
+
+    // Also pull the canonical server-side active payment rail
+    await syncFromServer();
   }
 
-  Future<void> setGateway(PaymentGatewayMode mode) async {
+  Future<Map<String, dynamic>?> syncFromServer({bool verifyOAuth = false}) async {
+    try {
+      final path = verifyOAuth ? '/mpesa/gateway?verify=1' : '/mpesa/gateway';
+      final res = await ApiClient.get(path);
+      if (res is Map) {
+        final map = Map<String, dynamic>.from(res);
+        final serverGw = (map['activeGateway'] ?? '').toString().toLowerCase();
+        if (serverGw == 'crossmint' || serverGw == 'kopokopo') {
+          final target = serverGw == 'crossmint'
+              ? PaymentGatewayMode.crossmint
+              : PaymentGatewayMode.kopokopo;
+          if (state != target) {
+            state = target;
+          }
+          try {
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString(_key, serverGw);
+          } catch (_) {}
+        }
+        return map;
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  Future<Map<String, dynamic>?> setGateway(PaymentGatewayMode mode) async {
     HapticFeedback.mediumImpact();
     state = mode;
+    final wire = mode == PaymentGatewayMode.crossmint ? 'crossmint' : 'kopokopo';
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(
-        _key,
-        mode == PaymentGatewayMode.crossmint ? 'crossmint' : 'kopokopo',
-      );
+      await prefs.setString(_key, wire);
     } catch (_) {}
+
+    try {
+      final res = await ApiClient.post(
+        '/mpesa/gateway',
+        data: {'activeGateway': wire},
+      );
+      if (res is Map) {
+        return Map<String, dynamic>.from(res);
+      }
+    } catch (_) {}
+    return null;
   }
 }
 

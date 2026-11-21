@@ -2,17 +2,62 @@ import {
   Body,
   Controller,
   Get,
+  Optional,
   Post,
   Query,
   BadRequestException,
   ServiceUnavailableException,
   BadGatewayException,
 } from '@nestjs/common';
+import { RedisService } from '../redis/redis.service';
 
 @Controller('mpesa')
 export class V2MpesaController {
   private cachedOAuthToken: string | null = null;
   private cachedOAuthExpiry = 0;
+  private activeGateway: 'kopokopo' | 'crossmint' =
+    process.env.DEFAULT_PAYMENT_GATEWAY === 'crossmint' ? 'crossmint' : 'kopokopo';
+
+  constructor(@Optional() private readonly redis?: RedisService) {}
+
+  private getCrossmintReadiness() {
+    const sk = process.env.CROSSMINT_SERVER_API_KEY || '';
+    const ck = process.env.NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY || '';
+    const wh = process.env.CROSSMINT_WEBHOOK_SECRET || '';
+    const serverKeyLive = sk.startsWith('sk_production_');
+    const clientKeyLive = ck.startsWith('ck_production_');
+    const isProd =
+      serverKeyLive ||
+      clientKeyLive ||
+      process.env.CROSSMINT_ENVIRONMENT === 'production' ||
+      process.env.NODE_ENV === 'production';
+    return {
+      configured: Boolean(sk && ck),
+      mode: isProd ? 'production' : 'staging',
+      serverKeyLive,
+      clientKeyLive,
+      webhookSecretConfigured: Boolean(wh),
+    };
+  }
+
+  private async getPersistedGateway(): Promise<'kopokopo' | 'crossmint'> {
+    try {
+      const val = await this.redis?.get('platform:payment_gateway');
+      if (val === 'crossmint' || val === 'kopokopo') {
+        this.activeGateway = val;
+      }
+    } catch {}
+    return this.activeGateway;
+  }
+
+  private async setPersistedGateway(mode: string): Promise<'kopokopo' | 'crossmint'> {
+    const normalized = mode === 'crossmint' ? 'crossmint' : 'kopokopo';
+    this.activeGateway = normalized;
+    try {
+      await this.redis?.set('platform:payment_gateway', normalized, 60 * 60 * 24 * 365);
+    } catch {}
+    return normalized;
+  }
 
   private getKopoConfig() {
     const env = (process.env.KOPOKOPO_ENV || 'live').toLowerCase();
@@ -81,11 +126,43 @@ export class V2MpesaController {
         oauthError = e?.message || 'OAuth error';
       }
     }
+    const activeGateway = await this.getPersistedGateway();
+    const crossmint = this.getCrossmintReadiness();
     return {
+      activeGateway,
       configured,
       mode: cfg.baseUrl.includes('sandbox') ? 'sandbox' : 'live',
       tillConfigured: Boolean(cfg.tillNumber),
       ...(shouldVerify ? { oauthLive, ...(oauthError ? { oauthError } : {}) } : {}),
+      kopokopo: {
+        configured,
+        mode: cfg.baseUrl.includes('sandbox') ? 'sandbox' : 'live',
+        tillConfigured: Boolean(cfg.tillNumber),
+        ...(shouldVerify ? { oauthLive, ...(oauthError ? { oauthError } : {}) } : {}),
+      },
+      crossmint,
+    };
+  }
+
+  @Get('gateway')
+  async getGateway(@Query('verify') verify?: string) {
+    return this.getStatus(verify);
+  }
+
+  @Post('gateway')
+  async setGateway(@Body() body: { activeGateway?: string }) {
+    const activeGateway = await this.setPersistedGateway(body?.activeGateway || 'kopokopo');
+    const cfg = this.getKopoConfig();
+    const configured = Boolean(cfg.clientId && cfg.clientSecret && cfg.tillNumber);
+    return {
+      ok: true,
+      activeGateway,
+      kopokopo: {
+        configured,
+        mode: cfg.baseUrl.includes('sandbox') ? 'sandbox' : 'live',
+        tillConfigured: Boolean(cfg.tillNumber),
+      },
+      crossmint: this.getCrossmintReadiness(),
     };
   }
 
