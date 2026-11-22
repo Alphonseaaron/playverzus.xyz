@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../catalog/official_games.dart';
 import '../network/api_client.dart';
+import '../network/friendly_errors.dart';
 import '../../platform_channels/device_bridge.dart';
 
 enum WalletPlayMode { realCash, demoPoints }
@@ -40,8 +41,20 @@ class ToastNotifier extends StateNotifier<List<FrostedToast>> {
     Duration duration = const Duration(seconds: 4),
   }) {
     HapticFeedback.lightImpact();
+    final safeTitle = (tone == ToastTone.error || tone == ToastTone.warning)
+        ? FriendlyError.fromText(title, fallback: title)
+        : title;
+    final safeBody = (body != null &&
+            (tone == ToastTone.error || tone == ToastTone.warning))
+        ? FriendlyError.fromText(body, fallback: body)
+        : body;
     final id = '${DateTime.now().microsecondsSinceEpoch}';
-    final toast = FrostedToast(id: id, title: title, body: body, tone: tone);
+    final toast = FrostedToast(
+      id: id,
+      title: safeTitle,
+      body: safeBody,
+      tone: tone,
+    );
     state = [toast, ...state].take(3).toList();
     Future.delayed(duration, () => dismiss(id));
   }
@@ -971,11 +984,14 @@ class PlayerSessionNotifier extends StateNotifier<PlayerSession> {
       await _persistSession();
       return null;
     } on ApiException catch (e) {
-      return e.message;
+      return FriendlyError.fromText(e.message, statusCode: e.statusCode);
     } on AuthException catch (e) {
-      return e.message;
+      return FriendlyError.fromText(e.message);
     } catch (e) {
-      return 'Unable to sign in: $e';
+      return FriendlyError.humanize(
+        e,
+        fallback: 'We could not sign you in right now. Please try again.',
+      );
     }
   }
 
@@ -1049,20 +1065,24 @@ class PlayerSessionNotifier extends StateNotifier<PlayerSession> {
 
       return await signInWithBackend(cleanEmail, password);
     } on ApiException catch (e) {
-      return e.message;
+      return FriendlyError.fromText(e.message, statusCode: e.statusCode);
     } catch (e) {
-      return 'Registration failed: $e';
+      return FriendlyError.humanize(
+        e,
+        fallback:
+            'We could not finish creating your account right now. Please try again.',
+      );
     }
   }
 
   /// Activates Game Developer Studio access for an already signed-in player account.
   Future<String?> enableDeveloperPortal({required String studioName}) async {
     if (!state.isAuthenticated || state.isAdmin) {
-      return 'Sign in with a standard account to enable Game Developer Studio.';
+      return 'Sign in with a player account first to open Game Developer Studio.';
     }
     final cleanStudio = studioName.trim();
     if (cleanStudio.length < 2) {
-      return 'Enter a valid Studio or Developer Name (at least 2 characters).';
+      return 'Enter your Studio or Developer Name (at least 2 letters).';
     }
     try {
       await ApiClient.post('/developer/register-role', data: {
@@ -1078,9 +1098,12 @@ class PlayerSessionNotifier extends StateNotifier<PlayerSession> {
       await _persistSession();
       return null;
     } on ApiException catch (e) {
-      return e.message;
+      return FriendlyError.fromText(e.message, statusCode: e.statusCode);
     } catch (e) {
-      return 'Could not activate Developer Studio: $e';
+      return FriendlyError.humanize(
+        e,
+        fallback: 'Could not turn on Game Developer Studio right now. Please try again.',
+      );
     }
   }
 

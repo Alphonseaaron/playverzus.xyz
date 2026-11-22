@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/network/api_client.dart';
+import '../../core/network/friendly_errors.dart';
 import '../../core/storage/app_state.dart';
 import 'admin_models.dart';
 
@@ -166,7 +167,7 @@ class AdminConsoleNotifier extends StateNotifier<AdminConsoleState> {
       } on ApiException catch (e) {
         errors.add(e.message);
       } catch (e) {
-        errors.add(e.toString());
+        errors.add(FriendlyError.humanize(e));
       }
     }
 

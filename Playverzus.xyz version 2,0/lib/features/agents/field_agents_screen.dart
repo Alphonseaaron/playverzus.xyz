@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/config/app_config.dart';
 import '../../core/network/api_client.dart';
+import '../../core/network/friendly_errors.dart';
 import '../../core/storage/app_state.dart';
 import '../../design_system/layout/responsive.dart';
 import '../../design_system/tokens/hig_tokens.dart';
@@ -90,7 +91,7 @@ class _AdminGroundAgentsPanelState
     } on ApiException catch (e) {
       _error = e.message;
     } catch (e) {
-      _error = e.toString();
+      _error = FriendlyError.humanize(e);
     }
     if (mounted) setState(() => _loading = false);
   }

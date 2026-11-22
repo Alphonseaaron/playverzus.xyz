@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/app_config.dart';
+import 'friendly_errors.dart';
 
 class ApiException implements Exception {
   final String message;
@@ -85,52 +86,55 @@ class ApiClient {
   }
 
   static ApiException _mapError(Object err) {
-    if (err is ApiException) return err;
+    if (err is ApiException) {
+      return ApiException(
+        FriendlyError.fromText(err.message, statusCode: err.statusCode),
+        statusCode: err.statusCode,
+        isNetworkError: err.isNetworkError,
+      );
+    }
     if (err is DioException) {
       final code = err.response?.statusCode;
       final data = err.response?.data;
       if (data is Map && data['message'] != null) {
         final rawMsg = data['message'];
-        final msg = rawMsg is List ? rawMsg.join(', ') : rawMsg.toString();
-        return ApiException(msg, statusCode: code);
+        final joined = rawMsg is List ? rawMsg.join(', ') : rawMsg.toString();
+        return ApiException(
+          FriendlyError.fromText(joined, statusCode: code),
+          statusCode: code,
+        );
       }
       if (err.type == DioExceptionType.connectionTimeout ||
           err.type == DioExceptionType.receiveTimeout) {
         return const ApiException(
-          'Server took too long to respond. Try again.',
+          'That took a bit too long. Please check your internet connection and try again.',
           isNetworkError: true,
         );
       }
       if (err.type == DioExceptionType.connectionError) {
         return const ApiException(
-          'Unable to connect to Playverzus servers. Check your internet connection.',
+          'We could not connect right now. Check your Wi-Fi or mobile data and try again.',
           isNetworkError: true,
         );
       }
       if (code == 401) {
         return const ApiException(
-          'Your session expired. Sign in again.',
+          'Your login timed out for security. Please sign in again.',
           statusCode: 401,
         );
       }
       if (code == 403) {
         return const ApiException(
-          'You do not have permission for this action.',
+          'You do not have permission to do that right now.',
           statusCode: 403,
         );
       }
-      if (code != null && code >= 500) {
-        return ApiException(
-          'Server error ($code). Please retry shortly.',
-          statusCode: code,
-        );
-      }
       return ApiException(
-        err.message ?? 'Request failed.',
+        FriendlyError.fromText(err.message ?? '', statusCode: code),
         statusCode: code,
       );
     }
-    return ApiException(err.toString());
+    return ApiException(FriendlyError.humanize(err));
   }
 
   static Duration _defaultTtlFor(String path) {

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/catalog/official_games.dart';
+import '../../core/network/friendly_errors.dart';
 import '../../core/storage/app_state.dart';
 import '../tokens/hig_tokens.dart';
 
@@ -245,7 +246,7 @@ class _HigButtonState extends State<HigButton> {
   }
 }
 
-/// Uniform 44pt Apple HIG Input Field
+/// Uniform 44pt Apple HIG Input Field with pinpoint inline error indicator
 class HigTextField extends StatelessWidget {
   final TextEditingController? controller;
   final String placeholder;
@@ -254,6 +255,7 @@ class HigTextField extends StatelessWidget {
   final bool obscureText;
   final TextInputType? keyboardType;
   final bool autofocus;
+  final String? errorText;
 
   const HigTextField({
     super.key,
@@ -264,11 +266,13 @@ class HigTextField extends StatelessWidget {
     this.obscureText = false,
     this.keyboardType,
     this.autofocus = false,
+    this.errorText,
   });
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    final hasError = errorText != null && errorText!.trim().isNotEmpty;
+    final field = SizedBox(
       height: HigSpacing.inputHeight,
       child: CupertinoTextField(
         controller: controller,
@@ -286,14 +290,55 @@ class HigTextField extends StatelessWidget {
             ? null
             : Padding(
                 padding: const EdgeInsets.only(left: 12),
-                child: Icon(prefixIcon, size: 17, color: HigColors.labelTertiary),
+                child: Icon(
+                  prefixIcon,
+                  size: 17,
+                  color: hasError ? HigColors.crimson : HigColors.labelTertiary,
+                ),
               ),
         decoration: BoxDecoration(
-          color: HigColors.surfaceGrouped,
+          color: hasError
+              ? HigColors.crimson.withValues(alpha: 0.06)
+              : HigColors.surfaceGrouped,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: HigColors.glassBorder, width: 0.75),
+          border: Border.all(
+            color: hasError ? HigColors.crimson : HigColors.glassBorder,
+            width: hasError ? 1.4 : 0.75,
+          ),
         ),
       ),
+    );
+
+    if (!hasError) return field;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        field,
+        const SizedBox(height: 5),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsets.only(top: 1),
+              child: Icon(
+                CupertinoIcons.exclamationmark_circle_fill,
+                size: 13,
+                color: HigColors.crimson,
+              ),
+            ),
+            const SizedBox(width: 5),
+            Expanded(
+              child: Text(
+                errorText!,
+                style: HigTypography.caption(color: HigColors.crimson)
+                    .copyWith(fontSize: 12, fontWeight: FontWeight.w500),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -660,37 +705,62 @@ class HigLoadingCard extends StatelessWidget {
   }
 }
 
-/// Clean Inline Error Banner with Retry action
+/// Clean Inline Error Banner with plain human guidance and Try Again action
 class HigErrorBanner extends StatelessWidget {
   final String message;
+  final String? locationHint;
   final VoidCallback? onRetry;
-  const HigErrorBanner({super.key, required this.message, this.onRetry});
+  const HigErrorBanner({
+    super.key,
+    required this.message,
+    this.locationHint,
+    this.onRetry,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final safeMessage = FriendlyError.fromText(message, fallback: message);
     return GlassCard(
       radius: 14,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       backgroundColor: HigColors.crimson.withValues(alpha: 0.08),
       borderColor: HigColors.crimson.withValues(alpha: 0.35),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
-            CupertinoIcons.exclamationmark_circle_fill,
-            color: HigColors.crimson,
-            size: 18,
+          const Padding(
+            padding: EdgeInsets.only(top: 2),
+            child: Icon(
+              CupertinoIcons.exclamationmark_circle_fill,
+              color: HigColors.crimson,
+              size: 18,
+            ),
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
-              message,
-              style: HigTypography.footnote(color: HigColors.labelPrimary),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  safeMessage,
+                  style: HigTypography.footnote(color: HigColors.labelPrimary)
+                      .copyWith(fontWeight: FontWeight.w500),
+                ),
+                if (locationHint != null && locationHint!.trim().isNotEmpty) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    locationHint!,
+                    style: HigTypography.caption(color: HigColors.crimson),
+                  ),
+                ],
+              ],
             ),
           ),
           if (onRetry != null) ...[
             const SizedBox(width: 10),
             HigButton(
-              label: 'Retry',
+              label: 'Try Again',
               size: HigButtonSize.small,
               variant: HigButtonVariant.secondary,
               onPressed: onRetry,

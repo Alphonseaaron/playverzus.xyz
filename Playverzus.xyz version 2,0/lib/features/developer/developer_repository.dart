@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/catalog/official_games.dart';
 import '../../core/network/api_client.dart';
+import '../../core/network/friendly_errors.dart';
 import 'developer_models.dart';
 
 class DeveloperGamesState {
@@ -47,7 +48,10 @@ class DeveloperGamesNotifier extends StateNotifier<DeveloperGamesState> {
     } on ApiException catch (e) {
       state = state.copyWith(loading: false, error: e.message);
     } catch (e) {
-      state = state.copyWith(loading: false, error: '$e');
+      state = state.copyWith(
+        loading: false,
+        error: FriendlyError.humanize(e),
+      );
     }
   }
 
@@ -70,7 +74,7 @@ class DeveloperGamesNotifier extends StateNotifier<DeveloperGamesState> {
     } on ApiException catch (e) {
       return (game: null, error: e.message);
     } catch (e) {
-      return (game: null, error: '$e');
+      return (game: null, error: FriendlyError.humanize(e));
     }
   }
 
@@ -97,7 +101,7 @@ class DeveloperGamesNotifier extends StateNotifier<DeveloperGamesState> {
     } on ApiException catch (e) {
       return (game: null, error: e.message);
     } catch (e) {
-      return (game: null, error: '$e');
+      return (game: null, error: FriendlyError.humanize(e));
     }
   }
 
@@ -111,7 +115,7 @@ class DeveloperGamesNotifier extends StateNotifier<DeveloperGamesState> {
     } on ApiException catch (e) {
       return e.message;
     } catch (e) {
-      return '$e';
+      return FriendlyError.humanize(e);
     }
   }
 

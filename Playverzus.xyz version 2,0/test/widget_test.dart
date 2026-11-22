@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:playverzus_v2/app.dart';
 import 'package:playverzus_v2/core/catalog/official_games.dart';
 import 'package:playverzus_v2/core/config/app_config.dart';
+import 'package:playverzus_v2/core/network/friendly_errors.dart';
 import 'package:playverzus_v2/core/security/anti_fraud_engine.dart';
 import 'package:playverzus_v2/core/storage/app_state.dart';
 import 'package:playverzus_v2/design_system/tokens/hig_tokens.dart';
@@ -11,6 +12,7 @@ import 'package:playverzus_v2/features/admin/admin_models.dart';
 import 'package:playverzus_v2/features/developer/developer_models.dart';
 import 'package:playverzus_v2/features/downloads/download_hub_screen.dart';
 import 'package:playverzus_v2/features/legal/legal_screen.dart';
+import 'package:playverzus_v2/features/onboarding_auth/auth_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -424,5 +426,71 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.text('RESPONSIBLE SKILL-BASED GAMING'), findsOneWidget);
     expect(find.text('GLOBAL COMPLIANCE MATRIX'), findsOneWidget);
+  });
+
+  testWidgets(
+      'Friendly errors avoid technical jargon and AuthScreen points to exact invalid fields',
+      (WidgetTester tester) async {
+    // 1. Technical strings translate to everyday plain language
+    final netMsg = FriendlyError.fromText(
+      'DioException [connection error]: SocketException: Failed host lookup',
+    );
+    expect(netMsg.contains('DioException'), isFalse);
+    expect(netMsg.contains('SocketException'), isFalse);
+    expect(netMsg.toLowerCase().contains('internet'), isTrue);
+
+    final srvMsg = FriendlyError.fromText('Internal server error', statusCode: 500);
+    expect(srvMsg.contains('500'), isFalse);
+    expect(srvMsg.contains('Internal'), isFalse);
+
+    final fraudMsg = FriendlyError.fromText(
+      'Invalid telemetry signature: payload does not match HMAC-SHA256 digest',
+    );
+    expect(fraudMsg.contains('HMAC'), isFalse);
+
+    expect(
+      FriendlyError.detectTargetField('Your Safaricom phone number looks invalid'),
+      'phone',
+    );
+    expect(
+      FriendlyError.detectTargetField('Minimum M-PESA deposit is KES 50'),
+      'amount',
+    );
+
+    // 2. AuthScreen highlights exact fields where issues are when submitted empty
+    tester.view.physicalSize = const Size(390, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: MaterialApp(home: AuthScreen(isSignUp: true)),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 100));
+
+    final createBtn = find.text('Create Account & Play');
+    await tester.ensureVisible(createBtn);
+    await tester.tap(createBtn);
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('Please fix the highlighted fields below.'), findsOneWidget);
+    expect(
+      find.text('Look for the red highlighted field(s) below.'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Pick a username with at least 3 characters.'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Enter a valid email address (like name@example.com).'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Use at least 6 characters for your password.'),
+      findsOneWidget,
+    );
   });
 }

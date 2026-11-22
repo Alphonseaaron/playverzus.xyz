@@ -423,8 +423,8 @@ class _NewGameScreenState extends ConsumerState<NewGameScreen> {
       return groups.isEmpty
           ? 'Matched: "${match.group(0)}"'
           : 'Extracted: ${groups.join(' vs ')}';
-    } catch (e) {
-      return 'Invalid regex: $e';
+    } catch (_) {
+      return 'Pattern looks incomplete — double-check your brackets or symbols and try again.';
     }
   }
 

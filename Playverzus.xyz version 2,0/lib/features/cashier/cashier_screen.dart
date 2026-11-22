@@ -29,6 +29,8 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
   String? _pendingStkLocation;
   String? _pendingStkStatus;
   String? _error;
+  String? _amountErr;
+  String? _destErr;
   List<Map<String, dynamic>> _transactions = const [];
 
   final TextEditingController _amountCtrl = TextEditingController();
@@ -109,12 +111,16 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
   }
 
   Future<void> _handleDeposit(bool isMpesa) async {
+    setState(() {
+      _amountErr = null;
+      _destErr = null;
+      _error = null;
+    });
     final amountUsd = _parsedAmountUsd(isMpesa);
     if (amountUsd == null) {
-      ref.read(toastProvider.notifier).show(
-            isMpesa ? 'Enter a valid amount in KES' : 'Enter a valid amount in USD',
-            tone: ToastTone.error,
-          );
+      setState(() => _amountErr = isMpesa
+          ? 'Enter how much you want to deposit in KES (e.g. 500).'
+          : 'Enter how much you want to deposit in USD (e.g. 15).');
       return;
     }
 
@@ -124,39 +130,29 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
     if (isMpesa) {
       final kes = rawInputAmount.round();
       if (kes < PaymentFeeSchedule.mpesaMinDepositKes) {
-        ref.read(toastProvider.notifier).show(
-              'Minimum M-PESA deposit is KES ${PaymentFeeSchedule.mpesaMinDepositKes}',
-              tone: ToastTone.error,
-            );
+        setState(() => _amountErr =
+            'Minimum M-PESA deposit is KES ${PaymentFeeSchedule.mpesaMinDepositKes}. Enter a slightly higher amount.');
         return;
       }
       if (kes > PaymentFeeSchedule.mpesaMaxSingleDepositKes) {
-        ref.read(toastProvider.notifier).show(
-              'Maximum single M-PESA deposit is KES ${PaymentFeeSchedule.mpesaMaxSingleDepositKes}',
-              tone: ToastTone.error,
-            );
+        setState(() => _amountErr =
+            'Maximum single M-PESA deposit is KES ${PaymentFeeSchedule.mpesaMaxSingleDepositKes}. Try a smaller amount.');
         return;
       }
       if (_mpesaPhoneCtrl.text.trim().length < 9) {
-        ref.read(toastProvider.notifier).show(
-              'Enter a valid M-PESA phone number',
-              tone: ToastTone.error,
-            );
+        setState(() => _destErr =
+            'Enter a valid M-PESA phone number (e.g. +254 712 345 678).');
         return;
       }
     } else {
       if (rawInputAmount < PaymentFeeSchedule.crossmintMinDepositUsd) {
-        ref.read(toastProvider.notifier).show(
-              'Minimum deposit is \$${PaymentFeeSchedule.crossmintMinDepositUsd.toStringAsFixed(2)} USD',
-              tone: ToastTone.error,
-            );
+        setState(() => _amountErr =
+            'Minimum deposit is \$${PaymentFeeSchedule.crossmintMinDepositUsd.toStringAsFixed(2)} USD.');
         return;
       }
       if (rawInputAmount > PaymentFeeSchedule.crossmintMaxSingleDepositUsd) {
-        ref.read(toastProvider.notifier).show(
-              'Maximum single deposit is \$${PaymentFeeSchedule.crossmintMaxSingleDepositUsd.toStringAsFixed(0)} USD',
-              tone: ToastTone.error,
-            );
+        setState(() => _amountErr =
+            'Maximum single deposit is \$${PaymentFeeSchedule.crossmintMaxSingleDepositUsd.toStringAsFixed(0)} USD.');
         return;
       }
     }
@@ -267,12 +263,16 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
   }
 
   Future<void> _handleWithdraw(bool isMpesa) async {
+    setState(() {
+      _amountErr = null;
+      _destErr = null;
+      _error = null;
+    });
     final amountUsd = _parsedAmountUsd(isMpesa);
     if (amountUsd == null) {
-      ref.read(toastProvider.notifier).show(
-            isMpesa ? 'Enter a valid amount in KES' : 'Enter a valid amount in USD',
-            tone: ToastTone.error,
-          );
+      setState(() => _amountErr = isMpesa
+          ? 'Enter how much you want to withdraw in KES.'
+          : 'Enter how much you want to withdraw in USD.');
       return;
     }
 
@@ -289,17 +289,13 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
               ? PaymentFeeSchedule.mpesaExpressPrioritySurchargeKes
               : 0);
       if (kes < minWithdrawKes) {
-        ref.read(toastProvider.notifier).show(
-              'Minimum M-PESA ${_expressPayout ? 'Express VIP ' : ''}withdrawal is KES $minWithdrawKes (KES ${PaymentFeeSchedule.mpesaMinNetPayoutKes} net + KES $feeKes fee)',
-              tone: ToastTone.error,
-            );
+        setState(() => _amountErr =
+            'Minimum M-PESA ${_expressPayout ? 'Express VIP ' : ''}withdrawal is KES $minWithdrawKes (KES ${PaymentFeeSchedule.mpesaMinNetPayoutKes} sent to you + KES $feeKes fee).');
         return;
       }
       if (kes > PaymentFeeSchedule.mpesaMaxSingleWithdrawalKes) {
-        ref.read(toastProvider.notifier).show(
-              'Maximum single M-PESA withdrawal is KES ${PaymentFeeSchedule.mpesaMaxSingleWithdrawalKes}',
-              tone: ToastTone.error,
-            );
+        setState(() => _amountErr =
+            'Maximum single M-PESA withdrawal is KES ${PaymentFeeSchedule.mpesaMaxSingleWithdrawalKes}. Try a smaller amount.');
         return;
       }
     } else {
@@ -308,40 +304,31 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
               PaymentFeeSchedule.crossmintExpressPrioritySurchargeUsd
           : PaymentFeeSchedule.crossmintMinWithdrawalUsd;
       if (rawInputAmount < minWithdrawUsd) {
-        ref.read(toastProvider.notifier).show(
-              'Minimum withdrawal is \$${minWithdrawUsd.toStringAsFixed(2)} USDC',
-              tone: ToastTone.error,
-            );
+        setState(() => _amountErr =
+            'Minimum withdrawal is \$${minWithdrawUsd.toStringAsFixed(2)} USDC.');
         return;
       }
       if (rawInputAmount > PaymentFeeSchedule.crossmintMaxSingleWithdrawalUsd) {
-        ref.read(toastProvider.notifier).show(
-              'Maximum single withdrawal is \$${PaymentFeeSchedule.crossmintMaxSingleWithdrawalUsd.toStringAsFixed(0)} USDC',
-              tone: ToastTone.error,
-            );
+        setState(() => _amountErr =
+            'Maximum single withdrawal is \$${PaymentFeeSchedule.crossmintMaxSingleWithdrawalUsd.toStringAsFixed(0)} USDC.');
         return;
       }
     }
 
     final session = ref.read(playerSessionProvider);
     if (amountUsd > session.cashUsd + 0.001) {
-      ref.read(toastProvider.notifier).show(
-            'Amount exceeds your available cash balance',
-            tone: ToastTone.error,
-          );
+      setState(() => _amountErr =
+          'That amount is higher than your available cash balance above.');
       return;
     }
 
     final dest = isMpesa
         ? _mpesaPhoneCtrl.text.trim()
         : _walletAddrCtrl.text.trim();
-    if (dest.isEmpty) {
-      ref.read(toastProvider.notifier).show(
-            isMpesa
-                ? 'Enter your M-PESA phone number'
-                : 'Enter a destination wallet address',
-            tone: ToastTone.error,
-          );
+    if (dest.isEmpty || (isMpesa && dest.length < 9)) {
+      setState(() => _destErr = isMpesa
+          ? 'Enter your M-PESA phone number (e.g. +254 712 345 678).'
+          : 'Paste the wallet address where you want to receive USDC.');
       return;
     }
 
@@ -524,7 +511,12 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
 
                 HigSegmentedControl<int>(
                   groupValue: _tab,
-                  onChanged: (v) => setState(() => _tab = v),
+                  onChanged: (v) => setState(() {
+                    _tab = v;
+                    _amountErr = null;
+                    _destErr = null;
+                    _error = null;
+                  }),
                   segments: const {
                     0: 'Deposit',
                     1: 'Withdraw',
@@ -562,6 +554,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
 
                         // Primary Custom Amount Input (+ Max button on Withdraw)
                         Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Expanded(
                               child: HigTextField(
@@ -574,6 +567,12 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                                     const TextInputType.numberWithOptions(
                                   decimal: true,
                                 ),
+                                errorText: _amountErr,
+                                onChanged: (_) {
+                                  if (_amountErr != null) {
+                                    setState(() => _amountErr = null);
+                                  }
+                                },
                               ),
                             ),
                             if (_tab == 1) ...[
@@ -586,6 +585,9 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                                   _amountCtrl.text = isMpesa
                                       ? session.cashKes.round().toString()
                                       : session.cashUsd.toStringAsFixed(2);
+                                  if (_amountErr != null) {
+                                    setState(() => _amountErr = null);
+                                  }
                                 },
                               ),
                             ],
@@ -630,12 +632,24 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                             placeholder: 'M-PESA number (+2547...)',
                             prefixIcon: CupertinoIcons.phone,
                             keyboardType: TextInputType.phone,
+                            errorText: _destErr,
+                            onChanged: (_) {
+                              if (_destErr != null) {
+                                setState(() => _destErr = null);
+                              }
+                            },
                           )
                         else if (_tab == 1)
                           HigTextField(
                             controller: _walletAddrCtrl,
                             placeholder: 'USDC wallet address (Base / EVM)',
                             prefixIcon: CupertinoIcons.creditcard,
+                            errorText: _destErr,
+                            onChanged: (_) {
+                              if (_destErr != null) {
+                                setState(() => _destErr = null);
+                              }
+                            },
                           ),
 
                         const SizedBox(height: 16),
@@ -675,7 +689,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                               runSpacing: 8,
                               children: [
                                 Text(
-                                  'M-PESA Prompt Status: ${_pendingStkStatus ?? 'Pending'}',
+                                  'M-PESA Status: ${(_pendingStkStatus == 'STK_PUSH_SENT' || _pendingStkStatus == null) ? 'Waiting for your M-PESA PIN on your phone' : _pendingStkStatus!}',
                                   style: HigTypography.footnote(
                                     color: HigColors.labelPrimary,
                                   ),

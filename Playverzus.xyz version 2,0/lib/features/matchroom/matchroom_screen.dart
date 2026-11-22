@@ -10,6 +10,7 @@ import '../../core/config/app_config.dart';
 import '../../core/data/arena_repository.dart';
 import '../../core/engine/live_match_engine.dart';
 import '../../core/network/api_client.dart';
+import '../../core/network/friendly_errors.dart';
 import '../../core/security/anti_fraud_engine.dart';
 import '../../core/storage/app_state.dart';
 import '../../design_system/layout/responsive.dart';
@@ -37,6 +38,7 @@ class _MatchRoomScreenState extends ConsumerState<MatchRoomScreen> {
   int _telemetrySeq = 0;
   final List<ScoreFrameSample> _localFrameHistory = [];
   String? _lastAntiFraudSummary;
+  String? _scoreProofErr;
 
   String? _coinWinner;
   bool _copiedRoom = false;
@@ -219,12 +221,11 @@ class _MatchRoomScreenState extends ConsumerState<MatchRoomScreen> {
   Future<void> _submitScoreProof() async {
     final txt = _scoreProofCtrl.text.trim();
     if (txt.isEmpty) {
-      ref.read(toastProvider.notifier).show(
-            'Enter the observed scoreboard text (e.g. 3 - 1 FULL TIME)',
-            tone: ToastTone.warning,
-          );
+      setState(() => _scoreProofErr =
+          'Type the final score shown on your screen, e.g. "3 - 1 FULL TIME".');
       return;
     }
+    setState(() => _scoreProofErr = null);
 
     // 1. Run Bulletproof Anti-Fraud Pre-Validation (Velocity, Frozen-Frame, Temporal Persistence & HMAC-SHA256)
     final session = ref.read(playerSessionProvider);
@@ -249,9 +250,11 @@ class _MatchRoomScreenState extends ConsumerState<MatchRoomScreen> {
       [..._localFrameHistory, candidateFrame],
     );
     if (antiCheat.suspicious) {
+      final msg = FriendlyError.fromText(antiCheat.reasons.first);
+      setState(() => _scoreProofErr = msg);
       ref.read(toastProvider.notifier).show(
-            'Anti-Fraud Guard Blocked Submission',
-            body: antiCheat.reasons.first,
+            'Score Could Not Be Verified Yet',
+            body: msg,
             tone: ToastTone.error,
           );
       return;
@@ -275,9 +278,11 @@ class _MatchRoomScreenState extends ConsumerState<MatchRoomScreen> {
       nowMs: nowMs,
     );
     if (!verify.valid) {
+      final msg = FriendlyError.fromText(verify.reason ?? '');
+      setState(() => _scoreProofErr = msg);
       ref.read(toastProvider.notifier).show(
-            'Telemetry signature failed',
-            body: verify.reason,
+            'Could Not Verify Match Proof',
+            body: msg,
             tone: ToastTone.error,
           );
       return;
@@ -295,17 +300,19 @@ class _MatchRoomScreenState extends ConsumerState<MatchRoomScreen> {
       _telemetrySeq = nextSeq;
       _localFrameHistory.add(candidateFrame);
       _lastAntiFraudSummary =
-          'Seq #$nextSeq · HMAC-${signature.substring(0, 8)} · Conf ${(temporal.effectiveConfidence * 100).toStringAsFixed(0)}%';
+          'Proof #$nextSeq verified (${(temporal.effectiveConfidence * 100).toStringAsFixed(0)}% match confidence)';
       _scoreProofCtrl.clear();
+      _scoreProofErr = null;
       if (!mounted) return;
       ref.read(toastProvider.notifier).show(
-            'Verified Score Proof Submitted',
+            'Score Submitted',
             body: _lastAntiFraudSummary,
             tone: ToastTone.success,
           );
       await _loadMatchState(silent: true);
     } on ApiException catch (e) {
       if (!mounted) return;
+      setState(() => _scoreProofErr = e.message);
       ref.read(toastProvider.notifier).show(e.message, tone: ToastTone.error);
     } finally {
       if (mounted) setState(() => _submittingProof = false);
@@ -960,6 +967,12 @@ class _MatchRoomScreenState extends ConsumerState<MatchRoomScreen> {
               controller: _scoreProofCtrl,
               placeholder: 'Scoreboard reading (e.g. 3 - 1 FULL TIME)',
               prefixIcon: CupertinoIcons.doc_text_search,
+              errorText: _scoreProofErr,
+              onChanged: (_) {
+                if (_scoreProofErr != null) {
+                  setState(() => _scoreProofErr = null);
+                }
+              },
             ),
             const SizedBox(height: 8),
             Wrap(

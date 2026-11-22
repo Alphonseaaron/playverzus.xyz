@@ -36,6 +36,8 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
   String _region = 'East Africa';
   bool _countryLocked = false;
   bool _creating = false;
+  String? _rivalErr;
+  String? _stakeErr;
 
   final _rivalCtrl = TextEditingController();
   final _customStakeCtrl = TextEditingController();
@@ -65,13 +67,30 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
     final activeGame = ref.read(activeGameProvider);
     final session = ref.read(playerSessionProvider);
 
+    setState(() {
+      _rivalErr = null;
+      _stakeErr = null;
+    });
+
     if (_mode == 'DIRECT_RIVAL' && _rivalCtrl.text.trim().isEmpty) {
-      ref.read(toastProvider.notifier).show(
-            'Enter Opponent @Username',
-            body: 'Specify who you want to challenge directly.',
-            tone: ToastTone.warning,
-          );
+      setState(() => _rivalErr =
+          'Type the opponent’s Playverzus username here so we know who to invite.');
       return;
+    }
+
+    final customRaw = _customStakeCtrl.text.trim();
+    if (customRaw.isNotEmpty) {
+      final parsed = double.tryParse(customRaw);
+      if (parsed == null || parsed < 0) {
+        setState(() => _stakeErr =
+            'Enter a valid positive amount, or clear this box to use a preset above.');
+        return;
+      }
+      if (_isCash && parsed > session.cashUsd + 0.001) {
+        setState(() => _stakeErr =
+            'That stake is higher than your available cash balance.');
+        return;
+      }
     }
 
     setState(() => _creating = true);
@@ -194,6 +213,10 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                     controller: _rivalCtrl,
                     placeholder: 'Target opponent @username',
                     prefixIcon: CupertinoIcons.at,
+                    errorText: _rivalErr,
+                    onChanged: (_) {
+                      if (_rivalErr != null) setState(() => _rivalErr = null);
+                    },
                   ),
                 ],
 
@@ -345,7 +368,8 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                   placeholder: 'Or enter custom USD stake amount (optional)',
                   prefixIcon: CupertinoIcons.money_dollar_circle,
                   keyboardType: TextInputType.number,
-                  onChanged: (_) => setState(() {}),
+                  errorText: _stakeErr,
+                  onChanged: (_) => setState(() => _stakeErr = null),
                 ),
 
                 if (_isCash && _effectiveStakeUsd > 0) ...[

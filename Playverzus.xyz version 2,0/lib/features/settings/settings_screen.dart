@@ -38,6 +38,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _savingProfile = false;
   bool _activatingDev = false;
   String? _profileError;
+  String? _displayNameErr;
+  String? _studioNameErr;
 
   @override
   void initState() {
@@ -98,9 +100,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Future<void> _saveProfile() async {
     final session = ref.read(playerSessionProvider);
+    if (_displayNameCtrl.text.trim().length < 3) {
+      setState(() {
+        _displayNameErr = 'Enter a display gamer tag with at least 3 characters.';
+        _profileError = 'Please check the highlighted gamer tag field below.';
+      });
+      return;
+    }
     setState(() {
       _savingProfile = true;
       _profileError = null;
+      _displayNameErr = null;
     });
     try {
       if (session.accessToken != null && session.accessToken!.isNotEmpty) {
@@ -327,6 +337,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           controller: _displayNameCtrl,
                           placeholder: 'Display gamer tag',
                           prefixIcon: CupertinoIcons.at,
+                          errorText: _displayNameErr,
+                          onChanged: (_) {
+                            if (_displayNameErr != null) {
+                              setState(() => _displayNameErr = null);
+                            }
+                          },
                         ),
                         const SizedBox(height: 12),
                         Text('Full Legal Name (for Payouts & KYC)',
@@ -640,6 +656,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             controller: _studioNameCtrl,
                             placeholder: 'Enter your Studio / Developer Name',
                             prefixIcon: CupertinoIcons.gear_solid,
+                            errorText: _studioNameErr,
+                            onChanged: (_) {
+                              if (_studioNameErr != null) {
+                                setState(() => _studioNameErr = null);
+                              }
+                            },
                           ),
                           const SizedBox(height: 10),
                           HigButton(
@@ -647,7 +669,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             icon: CupertinoIcons.gear_solid,
                             loading: _activatingDev,
                             onPressed: () async {
-                              setState(() => _activatingDev = true);
+                              if (_studioNameCtrl.text.trim().length < 2) {
+                                setState(() => _studioNameErr =
+                                    'Enter your Studio or Developer Name (at least 2 letters).');
+                                return;
+                              }
+                              setState(() {
+                                _studioNameErr = null;
+                                _activatingDev = true;
+                              });
                               final err = await ref
                                   .read(playerSessionProvider.notifier)
                                   .enableDeveloperPortal(
@@ -656,8 +686,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               if (!context.mounted) return;
                               setState(() => _activatingDev = false);
                               if (err != null) {
+                                setState(() => _studioNameErr = err);
                                 ref.read(toastProvider.notifier).show(
-                                      'Could not activate Studio',
+                                      'Could Not Open Developer Studio',
                                       body: err,
                                       tone: ToastTone.error,
                                     );

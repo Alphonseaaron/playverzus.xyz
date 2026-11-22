@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/catalog/countries.dart';
+import '../../core/network/friendly_errors.dart';
 import '../../core/storage/app_state.dart';
 import '../../design_system/tokens/hig_tokens.dart';
 import '../../design_system/widgets/brand_logo.dart';
@@ -44,6 +45,14 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   bool _ageConfirmed = false;
   bool _loading = false;
   String? _error;
+
+  String? _identifierErr;
+  String? _studioErr;
+  String? _usernameErr;
+  String? _emailErr;
+  String? _passwordErr;
+  String? _countryErr;
+  String? _termsErr;
 
   @override
   void initState() {
@@ -202,23 +211,63 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     }
   }
 
-  Future<void> _submit() async {
-    setState(() => _error = null);
+  void _clearFieldErrors() {
+    _error = null;
+    _identifierErr = null;
+    _studioErr = null;
+    _usernameErr = null;
+    _emailErr = null;
+    _passwordErr = null;
+    _countryErr = null;
+    _termsErr = null;
+  }
 
-    if (widget.isSignUp) {
-      if (_registerAsDeveloper && _studioNameCtrl.text.trim().length < 2) {
-        setState(() => _error =
-            'Enter your Studio or Developer Name (at least 2 characters).');
+  Future<void> _submit() async {
+    setState(_clearFieldErrors);
+
+    if (!widget.isSignUp) {
+      bool hasLocalIssue = false;
+      if (_identifierCtrl.text.trim().isEmpty) {
+        _identifierErr = 'Enter your email address or username here.';
+        hasLocalIssue = true;
+      }
+      if (_passwordCtrl.text.isEmpty) {
+        _passwordErr = 'Enter your password here.';
+        hasLocalIssue = true;
+      }
+      if (hasLocalIssue) {
+        setState(() => _error = 'Please fill in the highlighted fields below.');
         return;
+      }
+    } else {
+      bool hasLocalIssue = false;
+      if (_registerAsDeveloper && _studioNameCtrl.text.trim().length < 2) {
+        _studioErr = 'Enter your Studio or Developer Name (at least 2 letters).';
+        hasLocalIssue = true;
+      }
+      if (_usernameCtrl.text.trim().length < 3) {
+        _usernameErr = 'Pick a username with at least 3 characters.';
+        hasLocalIssue = true;
+      }
+      final email = _emailCtrl.text.trim();
+      if (email.isEmpty || !email.contains('@') || !email.contains('.')) {
+        _emailErr = 'Enter a valid email address (like name@example.com).';
+        hasLocalIssue = true;
+      }
+      if (_passwordCtrl.text.length < 6) {
+        _passwordErr = 'Use at least 6 characters for your password.';
+        hasLocalIssue = true;
       }
       if (_countryCode.isEmpty) {
-        setState(() => _error =
-            'Please select your country / nationality for tournament eligibility.');
-        return;
+        _countryErr = 'Select your country so we can match local currencies and ladders.';
+        hasLocalIssue = true;
       }
       if (!_ageConfirmed) {
-        setState(() => _error =
-            'You must confirm your age and agree to the Terms of Service & Privacy Policy.');
+        _termsErr = 'Tick this box to confirm your age and accept our Terms & Privacy Policy.';
+        hasLocalIssue = true;
+      }
+      if (hasLocalIssue) {
+        setState(() => _error = 'Please fix the highlighted fields below.');
         return;
       }
     }
@@ -248,7 +297,24 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     setState(() => _loading = false);
 
     if (err != null) {
-      setState(() => _error = err);
+      final friendly = FriendlyError.fromText(err, fallback: err);
+      final target = FriendlyError.detectTargetField(friendly);
+      setState(() {
+        _error = friendly;
+        if (!widget.isSignUp) {
+          if (target == 'email' || target == 'username') {
+            _identifierErr = 'Double-check your email or username.';
+          } else if (target == 'password') {
+            _passwordErr = 'Double-check your password.';
+          }
+        } else {
+          if (target == 'username') _usernameErr = friendly;
+          if (target == 'email') _emailErr = friendly;
+          if (target == 'password') _passwordErr = friendly;
+          if (target == 'country') _countryErr = friendly;
+          if (target == 'studio') _studioErr = friendly;
+        }
+      });
       return;
     }
 
@@ -380,7 +446,18 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                             ],
 
                             if (_error != null) ...[
-                              HigErrorBanner(message: _error!),
+                              HigErrorBanner(
+                                message: _error!,
+                                locationHint: (_identifierErr != null ||
+                                        _studioErr != null ||
+                                        _usernameErr != null ||
+                                        _emailErr != null ||
+                                        _passwordErr != null ||
+                                        _countryErr != null ||
+                                        _termsErr != null)
+                                    ? 'Look for the red highlighted field(s) below.'
+                                    : null,
+                              ),
                               const SizedBox(height: 14),
                             ],
 
@@ -393,6 +470,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                 placeholder: 'Email or username',
                                 prefixIcon: CupertinoIcons.person,
                                 keyboardType: TextInputType.emailAddress,
+                                errorText: _identifierErr,
+                                onChanged: (_) {
+                                  if (_identifierErr != null) {
+                                    setState(() => _identifierErr = null);
+                                  }
+                                },
                               ),
                               const SizedBox(height: 14),
                               _fieldLabel('Password', requiredField: true),
@@ -401,6 +484,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                 placeholder: '••••••••',
                                 prefixIcon: CupertinoIcons.lock,
                                 obscureText: true,
+                                errorText: _passwordErr,
+                                onChanged: (_) {
+                                  if (_passwordErr != null) {
+                                    setState(() => _passwordErr = null);
+                                  }
+                                },
                               ),
                             ] else ...[
                               // ── SIGN UP FORM (Player & Game Developer) ──
@@ -413,6 +502,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                   controller: _studioNameCtrl,
                                   placeholder: 'e.g. Neon Pixel Studios',
                                   prefixIcon: CupertinoIcons.gear_solid,
+                                  errorText: _studioErr,
+                                  onChanged: (_) {
+                                    if (_studioErr != null) {
+                                      setState(() => _studioErr = null);
+                                    }
+                                  },
                                 ),
                                 const SizedBox(height: 12),
                               ],
@@ -423,6 +518,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                 controller: _usernameCtrl,
                                 placeholder: 'e.g. s1mple, ace_sniper',
                                 prefixIcon: CupertinoIcons.person,
+                                errorText: _usernameErr,
+                                onChanged: (_) {
+                                  if (_usernameErr != null) {
+                                    setState(() => _usernameErr = null);
+                                  }
+                                },
                               ),
                               const SizedBox(height: 12),
 
@@ -443,6 +544,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                 placeholder: 'you@example.com',
                                 prefixIcon: CupertinoIcons.mail,
                                 keyboardType: TextInputType.emailAddress,
+                                errorText: _emailErr,
+                                onChanged: (_) {
+                                  if (_emailErr != null) {
+                                    setState(() => _emailErr = null);
+                                  }
+                                },
                               ),
                               const SizedBox(height: 12),
 
@@ -452,6 +559,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                 placeholder: 'Minimum 6 characters',
                                 prefixIcon: CupertinoIcons.lock,
                                 obscureText: true,
+                                errorText: _passwordErr,
+                                onChanged: (_) {
+                                  if (_passwordErr != null) {
+                                    setState(() => _passwordErr = null);
+                                  }
+                                },
                               ),
                               const SizedBox(height: 12),
 
@@ -461,17 +574,28 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                 hint: '(for Regional & National Ladders)',
                               ),
                               GestureDetector(
-                                onTap: _pickCountry,
+                                onTap: () async {
+                                  await _pickCountry();
+                                  if (_countryCode.isNotEmpty &&
+                                      _countryErr != null &&
+                                      mounted) {
+                                    setState(() => _countryErr = null);
+                                  }
+                                },
                                 child: Container(
                                   height: HigSpacing.inputHeight,
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 14),
                                   decoration: BoxDecoration(
-                                    color: HigColors.surfaceGrouped,
+                                    color: _countryErr != null
+                                        ? HigColors.crimson.withValues(alpha: 0.06)
+                                        : HigColors.surfaceGrouped,
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
-                                        color: HigColors.glassBorder,
-                                        width: 0.75),
+                                        color: _countryErr != null
+                                            ? HigColors.crimson
+                                            : HigColors.glassBorder,
+                                        width: _countryErr != null ? 1.4 : 0.75),
                                   ),
                                   child: Row(
                                     children: [
@@ -482,10 +606,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                           height: 15,
                                         )
                                       else
-                                        const Icon(
+                                        Icon(
                                           CupertinoIcons.globe,
                                           size: 17,
-                                          color: HigColors.labelTertiary,
+                                          color: _countryErr != null
+                                              ? HigColors.crimson
+                                              : HigColors.labelTertiary,
                                         ),
                                       const SizedBox(width: 10),
                                       Expanded(
@@ -507,6 +633,34 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                   ),
                                 ),
                               ),
+                              if (_countryErr != null) ...[
+                                const SizedBox(height: 5),
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Padding(
+                                      padding: EdgeInsets.only(top: 1),
+                                      child: Icon(
+                                        CupertinoIcons.exclamationmark_circle_fill,
+                                        size: 13,
+                                        color: HigColors.crimson,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 5),
+                                    Expanded(
+                                      child: Text(
+                                        _countryErr!,
+                                        style: HigTypography.caption(
+                                          color: HigColors.crimson,
+                                        ).copyWith(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                               const SizedBox(height: 12),
 
                               LayoutBuilder(
@@ -576,8 +730,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
 
                               // Age & Terms Checkbox
                               GestureDetector(
-                                onTap: () => setState(
-                                    () => _ageConfirmed = !_ageConfirmed),
+                                onTap: () => setState(() {
+                                  _ageConfirmed = !_ageConfirmed;
+                                  if (_ageConfirmed) _termsErr = null;
+                                }),
                                 child: Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -593,7 +749,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                         border: Border.all(
                                           color: _ageConfirmed
                                               ? HigColors.brand
-                                              : HigColors.separator,
+                                              : (_termsErr != null
+                                                  ? HigColors.crimson
+                                                  : HigColors.separator),
+                                          width: _termsErr != null && !_ageConfirmed
+                                              ? 1.5
+                                              : 1.0,
                                         ),
                                       ),
                                       child: _ageConfirmed
@@ -638,6 +799,34 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                   ],
                                 ),
                               ),
+                              if (_termsErr != null) ...[
+                                const SizedBox(height: 6),
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Padding(
+                                      padding: EdgeInsets.only(top: 1),
+                                      child: Icon(
+                                        CupertinoIcons.exclamationmark_circle_fill,
+                                        size: 13,
+                                        color: HigColors.crimson,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 5),
+                                    Expanded(
+                                      child: Text(
+                                        _termsErr!,
+                                        style: HigTypography.caption(
+                                          color: HigColors.crimson,
+                                        ).copyWith(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ],
 
                             const SizedBox(height: 20),

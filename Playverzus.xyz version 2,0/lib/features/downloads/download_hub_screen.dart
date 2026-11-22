@@ -138,9 +138,10 @@ class _DownloadHubScreenState extends ConsumerState<DownloadHubScreen> {
           );
     } catch (_) {
       ref.read(toastProvider.notifier).show(
-            'Installer Package Link Ready',
-            body: 'Package URL: ${spec.url}',
-            tone: ToastTone.info,
+            'Could Not Start Download Automatically',
+            body:
+                'Your browser may have blocked the file download. Allow downloads for Playverzus and try again.',
+            tone: ToastTone.warning,
           );
     }
   }

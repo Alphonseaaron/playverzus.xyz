@@ -35,6 +35,9 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
   final _replyCtrl = TextEditingController();
   String _ticketCategory = 'GENERAL';
   bool _submitting = false;
+  String? _ideaTitleErr;
+  String? _subjectErr;
+  String? _messageErr;
 
   @override
   void initState() {
@@ -103,8 +106,14 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
   }
 
   Future<void> _submitIdea() async {
-    if (_ideaTitleCtrl.text.trim().isEmpty) return;
-    setState(() => _submitting = true);
+    if (_ideaTitleCtrl.text.trim().isEmpty) {
+      setState(() => _ideaTitleErr = 'Add a short title for your idea above.');
+      return;
+    }
+    setState(() {
+      _ideaTitleErr = null;
+      _submitting = true;
+    });
     try {
       await ApiClient.post('/polls/suggest', data: {
         'title': _ideaTitleCtrl.text.trim(),
@@ -126,14 +135,20 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
 
   Future<void> _submitTicket() async {
     final session = ref.read(playerSessionProvider);
-    if (_subjectCtrl.text.trim().isEmpty || _messageCtrl.text.trim().isEmpty) {
-      ref.read(toastProvider.notifier).show(
-            'Enter a subject and message',
-            tone: ToastTone.error,
-          );
+    final noSubj = _subjectCtrl.text.trim().isEmpty;
+    final noMsg = _messageCtrl.text.trim().isEmpty;
+    if (noSubj || noMsg) {
+      setState(() {
+        _subjectErr = noSubj ? 'Enter a short topic for your question or dispute.' : null;
+        _messageErr = noMsg ? 'Tell us what happened so our team can help you faster.' : null;
+      });
       return;
     }
-    setState(() => _submitting = true);
+    setState(() {
+      _subjectErr = null;
+      _messageErr = null;
+      _submitting = true;
+    });
     try {
       await ApiClient.post('/support/tickets', data: {
         'name': session.username,
@@ -340,6 +355,10 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
               HigTextField(
                 controller: _ideaTitleCtrl,
                 placeholder: 'Idea title (e.g. Add Call of Duty: Mobile)',
+                errorText: _ideaTitleErr,
+                onChanged: (_) {
+                  if (_ideaTitleErr != null) setState(() => _ideaTitleErr = null);
+                },
               ),
               const SizedBox(height: 10),
               HigTextField(
@@ -412,11 +431,19 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
               HigTextField(
                 controller: _subjectCtrl,
                 placeholder: 'Subject',
+                errorText: _subjectErr,
+                onChanged: (_) {
+                  if (_subjectErr != null) setState(() => _subjectErr = null);
+                },
               ),
               const SizedBox(height: 10),
               HigTextField(
                 controller: _messageCtrl,
                 placeholder: 'Describe the issue in detail...',
+                errorText: _messageErr,
+                onChanged: (_) {
+                  if (_messageErr != null) setState(() => _messageErr = null);
+                },
               ),
               const SizedBox(height: 14),
               HigButton(
