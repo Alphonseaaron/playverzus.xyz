@@ -1997,6 +1997,7 @@ class _LandingFooter extends StatelessWidget {
         _FooterLinkItem('Privacy Policy', onPrivacy),
         _FooterLinkItem('Terms of Service', onTerms),
         _FooterLinkItem('Responsible Gaming', onResponsibleGaming),
+        _FooterLinkItem('Compliance & Licensing', onResponsibleGaming),
         _FooterLinkItem('Cookie & Permissions', onCookieSettings),
       ],
     );
@@ -2012,8 +2013,11 @@ class _LandingFooter extends StatelessWidget {
           horizontal: compact ? 20 : 32,
           vertical: compact ? 40 : 56,
         ),
-        child: wide
-            ? Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (wide)
+              Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(flex: 3, child: brandUtilityColumn),
@@ -2023,22 +2027,47 @@ class _LandingFooter extends StatelessWidget {
                   Expanded(flex: 2, child: legalLinks),
                 ],
               )
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            else ...[
+              brandUtilityColumn,
+              const SizedBox(height: 36),
+              Wrap(
+                spacing: 40,
+                runSpacing: 28,
                 children: [
-                  brandUtilityColumn,
-                  const SizedBox(height: 36),
-                  Wrap(
-                    spacing: 40,
-                    runSpacing: 28,
-                    children: [
-                      platformLinks,
-                      ecosystemLinks,
-                      legalLinks,
-                    ],
-                  ),
+                  platformLinks,
+                  ecosystemLinks,
+                  legalLinks,
                 ],
               ),
+            ],
+            const SizedBox(height: 36),
+            const Divider(color: HigColors.separator, height: 1),
+            const SizedBox(height: 18),
+            Wrap(
+              spacing: 12,
+              runSpacing: 6,
+              alignment: WrapAlignment.spaceBetween,
+              children: [
+                Text(
+                  '© 2026 Playverzus Technologies Inc. · Nairobi · Delaware · London · Skill-Based Competition Infrastructure',
+                  style: HigTypography.caption(color: HigColors.labelTertiary)
+                      .copyWith(fontSize: 11.5),
+                ),
+                Text(
+                  'Support & DPO: support@playverzus.xyz',
+                  style: HigTypography.caption(color: HigColors.labelTertiary)
+                      .copyWith(fontSize: 11.5),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Disclaimer: EA SPORTS FC, Counter-Strike, Apex Legends, Marvel Rivals, Valorant, Rocket League, Call of Duty, Tekken, Fortnite, League of Legends, Dota 2, Mobile Legends: Bang Bang, and Subway Surfers are trademarks of their respective owners (Electronic Arts Inc., Valve Corporation, Riot Games, Epic Games, Activision Publishing, Bandai Namco, NetEase, Moonton, SYBO Games). Playverzus is an independent skill competition platform not sponsored by or affiliated with those publishers.',
+              style: HigTypography.caption(color: HigColors.labelTertiary)
+                  .copyWith(fontSize: 10.5, height: 1.45),
+            ),
+          ],
+        ),
       ),
     );
   }

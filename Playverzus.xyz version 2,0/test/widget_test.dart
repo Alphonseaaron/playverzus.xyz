@@ -401,11 +401,17 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.text('TERMS OF SERVICE & RULES'), findsOneWidget);
     expect(
-      find.text('Strictly Prohibited Infractions (Immediate Ban & Forfeiture)'),
+      find.text(
+        'Strictly Prohibited Infractions (Immediate Permanent Ban & Forfeiture)',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.text('THE SKILL VS. CHANCE DOCTRINE & PREDOMINANCE TEST'),
       findsOneWidget,
     );
 
-    // 4. Detailed v1 Responsible Gaming
+    // 4. Detailed v1 Responsible Gaming & Global Compliance Matrix
     await tester.pumpWidget(
       const ProviderScope(
         child: MaterialApp(
@@ -417,5 +423,6 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.text('RESPONSIBLE SKILL-BASED GAMING'), findsOneWidget);
+    expect(find.text('GLOBAL COMPLIANCE MATRIX'), findsOneWidget);
   });
 }

@@ -103,7 +103,17 @@ const nextConfig = {
     };
   },
   async headers() {
+    const noStoreHeaders = [
+      {
+        key: 'Cache-Control',
+        value: 'public, max-age=0, must-revalidate',
+      },
+    ];
     return [
+      { source: '/v2_index.html', headers: noStoreHeaders },
+      { source: '/flutter_bootstrap.js', headers: noStoreHeaders },
+      { source: '/flutter_service_worker.js', headers: noStoreHeaders },
+      { source: '/main.dart.js', headers: noStoreHeaders },
       {
         source: '/_next/static/:path*',
         headers: [
