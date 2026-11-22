@@ -10,6 +10,7 @@ import '../../design_system/tokens/hig_tokens.dart';
 import '../../design_system/widgets/brand_logo.dart';
 import '../../design_system/widgets/country_flag.dart';
 import '../../design_system/widgets/hig_primitives.dart';
+import '../../platform_channels/device_bridge.dart';
 import '../developer/developer_repository.dart';
 
 /// Public Playverzus v2.0 Landing Page modeled on FACEIT's low-noise,
@@ -196,6 +197,11 @@ class _LandingScreenState extends ConsumerState<LandingScreen> {
                         onTerms: () => context.go('/terms'),
                         onResponsibleGaming: () =>
                             context.go('/responsible-gaming'),
+                        onCookieSettings: () => showDialog<void>(
+                          context: context,
+                          barrierColor: Colors.black.withValues(alpha: 0.72),
+                          builder: (_) => const _CookieAndPermissionsDialog(),
+                        ),
                       ),
                     ],
                   ),
@@ -1919,6 +1925,7 @@ class _LandingFooter extends StatelessWidget {
   final VoidCallback onPrivacy;
   final VoidCallback onTerms;
   final VoidCallback onResponsibleGaming;
+  final VoidCallback onCookieSettings;
 
   const _LandingFooter({
     required this.onPlayNow,
@@ -1928,6 +1935,7 @@ class _LandingFooter extends StatelessWidget {
     required this.onPrivacy,
     required this.onTerms,
     required this.onResponsibleGaming,
+    required this.onCookieSettings,
   });
 
   @override
@@ -1989,6 +1997,7 @@ class _LandingFooter extends StatelessWidget {
         _FooterLinkItem('Privacy Policy', onPrivacy),
         _FooterLinkItem('Terms of Service', onTerms),
         _FooterLinkItem('Responsible Gaming', onResponsibleGaming),
+        _FooterLinkItem('Cookie & Permissions', onCookieSettings),
       ],
     );
 
@@ -2301,4 +2310,127 @@ class _SampleSquadRow {
     this.losses,
     this.points,
   );
+}
+
+class _CookieAndPermissionsDialog extends StatefulWidget {
+  const _CookieAndPermissionsDialog();
+
+  @override
+  State<_CookieAndPermissionsDialog> createState() =>
+      _CookieAndPermissionsDialogState();
+}
+
+class _CookieAndPermissionsDialogState
+    extends State<_CookieAndPermissionsDialog> {
+  String _notifState = DeviceBridge.getNotificationPermissionState();
+  bool _checkingNotifs = false;
+
+  Future<void> _requestAlerts() async {
+    setState(() => _checkingNotifs = true);
+    await DeviceBridge.requestNotificationPermission();
+    if (!mounted) return;
+    setState(() {
+      _notifState = DeviceBridge.getNotificationPermissionState();
+      _checkingNotifs = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: HigColors.surfacePrimary,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: HigColors.separator),
+      ),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 460),
+        child: Padding(
+          padding: const EdgeInsets.all(22),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Cookie & Device Permissions',
+                      style: HigTypography.title3(),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(
+                      CupertinoIcons.xmark,
+                      size: 16,
+                      color: HigColors.labelSecondary,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Playverzus uses essential authentication cookies only — zero third-party ad trackers. Functions requiring OS access (Live Notifications and Screen Capture during duels) explicitly prompt your device.',
+                style: HigTypography.footnote(color: HigColors.labelSecondary),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: HigColors.surfaceGrouped,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: HigColors.separator),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Browser Match Alerts',
+                            style: HigTypography.headline().copyWith(
+                              fontSize: 13.5,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            'Status: ${_notifState.toUpperCase()}',
+                            style: HigTypography.caption(
+                              color: _notifState == 'granted'
+                                  ? HigColors.emerald
+                                  : HigColors.labelSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    HigButton(
+                      label: _notifState == 'granted'
+                          ? 'Granted'
+                          : 'Allow Alerts',
+                      size: HigButtonSize.small,
+                      loading: _checkingNotifs,
+                      variant: _notifState == 'granted'
+                          ? HigButtonVariant.emerald
+                          : HigButtonVariant.primary,
+                      onPressed:
+                          _notifState == 'granted' ? null : _requestAlerts,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              HigButton(
+                label: 'Save Preferences',
+                fullWidth: true,
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

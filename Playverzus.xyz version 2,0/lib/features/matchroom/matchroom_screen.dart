@@ -18,6 +18,7 @@ import '../../design_system/widgets/country_flag.dart';
 import '../../design_system/widgets/hig_primitives.dart';
 import '../../design_system/widgets/proof_of_victory_card.dart';
 import '../../platform_channels/device_bridge.dart';
+import 'pre_match_permissions_sheet.dart';
 
 class MatchRoomScreen extends ConsumerStatefulWidget {
   final String matchId;
@@ -458,9 +459,20 @@ class _MatchRoomScreenState extends ConsumerState<MatchRoomScreen> {
                     ? HigButtonVariant.emerald
                     : HigButtonVariant.primary,
                 onAction: isHost && live.opponentSeated && !isSettled
-                    ? () => ref
-                        .read(liveMatchEngineProvider.notifier)
-                        .pressReady(isCreatorSide: true)
+                    ? () async {
+                        if (!live.hostReady) {
+                          final ok = await PreMatchPermissionsDialog
+                              .ensureAuthorized(
+                            context,
+                            ref,
+                            gameName: game.displayName,
+                          );
+                          if (!ok || !mounted) return;
+                        }
+                        await ref
+                            .read(liveMatchEngineProvider.notifier)
+                            .pressReady(isCreatorSide: true);
+                      }
                     : null,
                 onCopy: () {
                   Clipboard.setData(ClipboardData(text: myHandle));
@@ -490,9 +502,20 @@ class _MatchRoomScreenState extends ConsumerState<MatchRoomScreen> {
                     ? HigButtonVariant.emerald
                     : HigButtonVariant.primary,
                 onAction: isOpponent && !isSettled
-                    ? () => ref
-                        .read(liveMatchEngineProvider.notifier)
-                        .pressReady(isCreatorSide: false)
+                    ? () async {
+                        if (!live.opponentReady) {
+                          final ok = await PreMatchPermissionsDialog
+                              .ensureAuthorized(
+                            context,
+                            ref,
+                            gameName: game.displayName,
+                          );
+                          if (!ok || !mounted) return;
+                        }
+                        await ref
+                            .read(liveMatchEngineProvider.notifier)
+                            .pressReady(isCreatorSide: false);
+                      }
                     : null,
                 onCopy: () {
                   Clipboard.setData(ClipboardData(text: inviteLink));
@@ -789,14 +812,32 @@ class _MatchRoomScreenState extends ConsumerState<MatchRoomScreen> {
               fullWidth: true,
               onPressed: (!live.opponentSeated && !isLiveInGame)
                   ? null
-                  : () {
+                  : () async {
                       final engine = ref.read(liveMatchEngineProvider.notifier);
                       if (isCountdown || isLiveInGame) {
-                        engine.executeForceAutoLaunch();
+                        await engine.executeForceAutoLaunch();
                       } else if (isHost) {
-                        engine.pressReady(isCreatorSide: true);
+                        if (!live.hostReady) {
+                          final ok = await PreMatchPermissionsDialog
+                              .ensureAuthorized(
+                            context,
+                            ref,
+                            gameName: game.displayName,
+                          );
+                          if (!ok || !mounted) return;
+                        }
+                        await engine.pressReady(isCreatorSide: true);
                       } else if (isOpponent) {
-                        engine.pressReady(isCreatorSide: false);
+                        if (!live.opponentReady) {
+                          final ok = await PreMatchPermissionsDialog
+                              .ensureAuthorized(
+                            context,
+                            ref,
+                            gameName: game.displayName,
+                          );
+                          if (!ok || !mounted) return;
+                        }
+                        await engine.pressReady(isCreatorSide: false);
                       }
                     },
             ),
@@ -828,6 +869,12 @@ class _MatchRoomScreenState extends ConsumerState<MatchRoomScreen> {
                           );
                       return;
                     }
+                    final ok = await PreMatchPermissionsDialog.ensureAuthorized(
+                      context,
+                      ref,
+                      gameName: game.displayName,
+                    );
+                    if (!ok || !mounted) return;
                     final res = await DeviceBridge.forceAutoLaunchGame(
                       game,
                       matchId: widget.matchId,

@@ -74,17 +74,34 @@ class DeviceBridge {
   static const MethodChannel _channel =
       MethodChannel('xyz.playverzus.v2/device_bridge');
 
+  /// Identifies the visitor's real operating system key across Web & Native:
+  /// `'windows'`, `'macos'`, `'android'`, `'ios'`, or `'linux'`.
+  static String detectVisitorPlatformKey() {
+    if (kIsWeb) {
+      return detectWebOsKey();
+    }
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+        return 'android';
+      case TargetPlatform.iOS:
+        return 'ios';
+      case TargetPlatform.macOS:
+        return 'macos';
+      case TargetPlatform.linux:
+        return 'linux';
+      default:
+        return 'windows';
+    }
+  }
+
   static DeviceCapabilities detectCapabilities() {
     if (kIsWeb) {
-      final isMobileTarget = defaultTargetPlatform == TargetPlatform.android ||
-          defaultTargetPlatform == TargetPlatform.iOS;
+      final osKey = detectWebOsKey();
+      final isMobileTarget = osKey == 'android' || osKey == 'ios';
       if (isMobileTarget) {
         return DeviceCapabilities(
-          osLabel: defaultTargetPlatform == TargetPlatform.iOS
-              ? 'iOS Mobile Web'
-              : 'Android Mobile Web',
-          platformKey:
-              defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android',
+          osLabel: osKey == 'ios' ? 'iOS Mobile Web' : 'Android Mobile Web',
+          platformKey: osKey,
           supportsNativeGameScan: false,
           isWeb: true,
           recommendedMode: DeviceCaptureMode.mobileWebSnapshot,
@@ -93,9 +110,14 @@ class DeviceBridge {
               'Mobile browsers cannot run background screen capture. Verify in 1 tap or install the Playverzus Android APK for live tracking.',
         );
       }
-      return const DeviceCapabilities(
-        osLabel: 'Desktop Web Browser',
-        platformKey: 'web_desktop',
+      final desktopLabel = switch (osKey) {
+        'macos' => 'macOS Desktop Browser',
+        'linux' => 'Linux Desktop Browser',
+        _ => 'Windows PC Browser',
+      };
+      return DeviceCapabilities(
+        osLabel: desktopLabel,
+        platformKey: osKey,
         supportsNativeGameScan: false,
         isWeb: true,
         recommendedMode: DeviceCaptureMode.webMonitorAutoLock,
@@ -194,7 +216,15 @@ class DeviceBridge {
     );
   }
 
-  /// Requests OS notification permission once on registration/first auth.
+  /// Inspects live Notification permission state (`'granted'`, `'denied'`, `'default'`).
+  static String getNotificationPermissionState() {
+    if (kIsWeb) {
+      return getWebNotificationPermissionState();
+    }
+    return 'granted';
+  }
+
+  /// Requests OS notification permission cleanly without silently faking approval.
   static Future<bool> requestNotificationPermission() async {
     if (kIsWeb) {
       return requestWebNotificationPermission();
@@ -203,6 +233,26 @@ class DeviceBridge {
       final ok = await _channel.invokeMethod<bool>(
         'requestNotificationPermission',
       );
+      return ok ?? true;
+    } catch (_) {
+      return true;
+    }
+  }
+
+  /// Requests browser Screen/Window Share permission (`getDisplayMedia` on Desktop Web)
+  /// or native OS capture readiness. Returns true ONLY if user actually grants access.
+  static Future<bool> requestScreenCapturePermission() async {
+    if (kIsWeb) {
+      final osKey = detectWebOsKey();
+      if (osKey == 'android' || osKey == 'ios') {
+        // Mobile browsers cannot invoke getDisplayMedia in background; allow screenshot upload mode after explicit consent.
+        return true;
+      }
+      return requestWebDisplayCapturePermission();
+    }
+    try {
+      final ok =
+          await _channel.invokeMethod<bool>('requestCapturePermission');
       return ok ?? true;
     } catch (_) {
       return true;

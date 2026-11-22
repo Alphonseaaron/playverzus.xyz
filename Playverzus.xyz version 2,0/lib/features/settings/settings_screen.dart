@@ -9,6 +9,7 @@ import '../../design_system/layout/responsive.dart';
 import '../../design_system/tokens/hig_tokens.dart';
 import '../../design_system/widgets/country_flag.dart';
 import '../../design_system/widgets/hig_primitives.dart';
+import '../matchroom/pre_match_permissions_sheet.dart';
 
 /// Complete v1.0 Account Settings + v2.0 Device Binding & Console Sync (`/settings`).
 /// Hydrates real identity & KYC status from `GET /profile/me` and persists via `PATCH /profile/me`.
@@ -547,13 +548,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                   : HigButtonVariant.primary,
                               fullWidth: true,
                               onPressed: () async {
-                                await ref
-                                    .read(machineAuthProvider.notifier)
-                                    .authorizeAllOnce();
+                                final ok = await PreMatchPermissionsDialog
+                                    .ensureAuthorized(
+                                  context,
+                                  ref,
+                                  gameName: 'Playverzus Arena',
+                                );
+                                if (!ok || !mounted) return;
                                 ref.read(toastProvider.notifier).show(
                                       'Device Bound',
                                       body:
-                                          'Alerts, sync & auto-escrow enabled.',
+                                          'Alerts, capture & auto-escrow verified.',
                                       tone: ToastTone.success,
                                     );
                               },

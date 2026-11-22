@@ -9,6 +9,8 @@ import 'package:playverzus_v2/core/storage/app_state.dart';
 import 'package:playverzus_v2/design_system/tokens/hig_tokens.dart';
 import 'package:playverzus_v2/features/admin/admin_models.dart';
 import 'package:playverzus_v2/features/developer/developer_models.dart';
+import 'package:playverzus_v2/features/downloads/download_hub_screen.dart';
+import 'package:playverzus_v2/features/legal/legal_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -348,5 +350,72 @@ void main() {
     expect(subWingSplit.companyProductionAndProfitKes, 1040); // 80% locked for company
     expect(subWingSplit.directAgentCommissionKes, 195); // 15% to Sub-Agent
     expect(subWingSplit.leadAgentWingOverrideKes, 65); // 5% to Lead Agent
+  });
+
+  testWidgets(
+      'Single-device Download hub & full v1 Legal documents render cleanly without overflow',
+      (WidgetTester tester) async {
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    tester.view.devicePixelRatio = 1.0;
+
+    // 1. Download Hub on Compact Mobile & Desktop (single detected device initially)
+    tester.view.physicalSize = const Size(390, 844);
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: MaterialApp(home: Scaffold(body: DownloadHubScreen())),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('Need a different platform?'), findsOneWidget);
+    expect(find.text('FREQUENTLY ASKED QUESTIONS'), findsOneWidget);
+
+    tester.view.physicalSize = const Size(1440, 900);
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('Need a different platform?'), findsOneWidget);
+
+    // 2. Detailed v1 Privacy Policy
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: MaterialApp(
+          home: Scaffold(body: LegalScreen(docType: LegalDocType.privacy)),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('PLAYER PRIVACY POLICY'), findsOneWidget);
+    expect(
+      find.text('Authoritative Zero Video Storage Guarantee'),
+      findsOneWidget,
+    );
+
+    // 3. Detailed v1 Terms of Service
+    tester.view.physicalSize = const Size(390, 844);
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: MaterialApp(
+          home: Scaffold(body: LegalScreen(docType: LegalDocType.terms)),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('TERMS OF SERVICE & RULES'), findsOneWidget);
+    expect(
+      find.text('Strictly Prohibited Infractions (Immediate Ban & Forfeiture)'),
+      findsOneWidget,
+    );
+
+    // 4. Detailed v1 Responsible Gaming
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: MaterialApp(
+          home: Scaffold(
+            body: LegalScreen(docType: LegalDocType.responsibleGaming),
+          ),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('RESPONSIBLE SKILL-BASED GAMING'), findsOneWidget);
   });
 }

@@ -243,10 +243,6 @@ class LiveMatchEngineNotifier extends StateNotifier<LiveMatchState> {
     if (game == null) return;
 
     HapticFeedback.mediumImpact();
-    final machine = _ref.read(machineAuthProvider);
-    if (!machine.isFullyReady) {
-      await _ref.read(machineAuthProvider.notifier).authorizeAllOnce();
-    }
 
     final nextHostReady = isCreatorSide ? !state.hostReady : state.hostReady;
     final nextOppReady =

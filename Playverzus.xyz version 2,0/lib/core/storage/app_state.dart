@@ -243,7 +243,8 @@ class MachineAuthState {
       boundUserId.isNotEmpty &&
       deviceFingerprint.isNotEmpty &&
       deviceFingerprint != 'UNBOUND' &&
-      alertsAuthorized;
+      alertsAuthorized &&
+      captureAuthorized;
 
   /// Only returns installed games that belong to the official 21-game catalog.
   List<OfficialGame> get featuredInstalledGames =>
@@ -353,9 +354,10 @@ class MachineAuthNotifier extends StateNotifier<MachineAuthState> {
       }
     } catch (_) {}
 
-    // 2. Collect real device fingerprint matching the current runtime device
+    // 2. Collect real device fingerprint & inspect actual Notification permission state
     final fp = await DeviceBridge.collectDeviceFingerprint();
-    final osNotifOk = await DeviceBridge.requestNotificationPermission();
+    final notifState = DeviceBridge.getNotificationPermissionState();
+    final osNotifOk = notifState == 'granted';
 
     // 3. Scan installed games ONLY when running on a native OS that supports it
     final officialIds = officialGames.map((g) => g.id).toSet();
@@ -373,7 +375,7 @@ class MachineAuthNotifier extends StateNotifier<MachineAuthState> {
       deviceModel: fp.deviceModel,
       hardwareAttested: fp.hardwareAttested,
       osNotificationsGranted: osNotifOk,
-      alertsAuthorized: true,
+      alertsAuthorized: osNotifOk,
       captureAuthorized: !kIsWeb || savedStreamChannel.isNotEmpty,
       autoEscrowEnabled: true,
       installedGameIds: verifiedGames,
@@ -431,13 +433,38 @@ class MachineAuthNotifier extends StateNotifier<MachineAuthState> {
     } catch (_) {}
   }
 
-  Future<void> authorizeAllOnce() async {
+  /// Explicitly prompts the user for live match OS/Web notification permission.
+  Future<bool> promptNotificationPermission() async {
+    HapticFeedback.selectionClick();
+    final granted = await DeviceBridge.requestNotificationPermission();
+    state = state.copyWith(
+      osNotificationsGranted: granted,
+      alertsAuthorized: granted,
+    );
+    await _persist();
+    return granted;
+  }
+
+  /// Explicitly prompts the user for screen/window verification feed permission
+  /// (`getDisplayMedia` on Desktop Web or OS foreground/screenshot capture consent).
+  Future<bool> promptScreenCapturePermission() async {
+    HapticFeedback.selectionClick();
+    final granted = await DeviceBridge.requestScreenCapturePermission();
+    state = state.copyWith(captureAuthorized: granted);
+    await _persist();
+    return granted;
+  }
+
+  Future<bool> authorizeAllOnce() async {
     HapticFeedback.mediumImpact();
     final fp = (state.deviceFingerprint.isEmpty ||
             state.deviceFingerprint == 'UNBOUND')
         ? await DeviceBridge.collectDeviceFingerprint()
         : null;
     final osNotif = await DeviceBridge.requestNotificationPermission();
+    final captureOk = state.captureAuthorized
+        ? true
+        : await DeviceBridge.requestScreenCapturePermission();
     state = state.copyWith(
       machineId: fp?.fingerprintId ?? state.machineId,
       deviceFingerprint: fp?.fingerprintId ?? state.deviceFingerprint,
@@ -445,11 +472,12 @@ class MachineAuthNotifier extends StateNotifier<MachineAuthState> {
       hardwareAttested: fp?.hardwareAttested ?? state.hardwareAttested,
       fingerprintSynced: true,
       osNotificationsGranted: osNotif,
-      alertsAuthorized: true,
-      captureAuthorized: true,
+      alertsAuthorized: osNotif,
+      captureAuthorized: captureOk,
       autoEscrowEnabled: true,
     );
     await _persist();
+    return osNotif && captureOk;
   }
 
   Future<void> toggleInstalledGame(String gameId) async {

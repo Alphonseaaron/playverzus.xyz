@@ -112,10 +112,12 @@ class _PublicPageShell extends ConsumerWidget {
                               }
                             },
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 10),
                           GestureDetector(
                             onTap: () => context.go('/'),
-                            child: const BrandLogo.full(height: 24),
+                            child: MediaQuery.sizeOf(context).width < 460
+                                ? const BrandLogo.mark(height: 24)
+                                : const BrandLogo.full(height: 24),
                           ),
                           const Spacer(),
                           HigButton(
@@ -124,9 +126,11 @@ class _PublicPageShell extends ConsumerWidget {
                             variant: HigButtonVariant.ghost,
                             onPressed: () => context.go('/login'),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 6),
                           HigButton(
-                            label: 'Create Account',
+                            label: MediaQuery.sizeOf(context).width < 420
+                                ? 'Play Now'
+                                : 'Create Account',
                             size: HigButtonSize.small,
                             onPressed: () => context.go('/signup'),
                           ),

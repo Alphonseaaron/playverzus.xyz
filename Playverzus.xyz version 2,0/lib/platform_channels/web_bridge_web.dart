@@ -25,6 +25,51 @@ String collectWebFingerprintSignals() {
   }
 }
 
+/// Inspects browser navigator.userAgent & platform to identify the true visitor OS.
+String detectWebOsKey() {
+  try {
+    final nav = globalContext.getProperty<JSObject?>('navigator'.toJS);
+    final ua = (nav?.getProperty<JSAny?>('userAgent'.toJS)?.dartify() ?? '')
+        .toString()
+        .toLowerCase();
+    final plat = (nav?.getProperty<JSAny?>('platform'.toJS)?.dartify() ?? '')
+        .toString()
+        .toLowerCase();
+
+    if (ua.contains('iphone') ||
+        ua.contains('ipad') ||
+        ua.contains('ipod') ||
+        (plat.contains('mac') && ua.contains('mobile'))) {
+      return 'ios';
+    }
+    if (ua.contains('android')) {
+      return 'android';
+    }
+    if (ua.contains('mac os x') || ua.contains('macintosh') || plat.contains('mac')) {
+      return 'macos';
+    }
+    if (ua.contains('windows') || plat.contains('win')) {
+      return 'windows';
+    }
+    if (ua.contains('linux') || plat.contains('linux')) {
+      return 'linux';
+    }
+  } catch (_) {}
+  return 'windows';
+}
+
+String getWebNotificationPermissionState() {
+  try {
+    final notifCtor = globalContext.getProperty<JSObject?>('Notification'.toJS);
+    if (notifCtor == null) return 'unsupported';
+    return (notifCtor.getProperty<JSAny?>('permission'.toJS)?.dartify() ??
+            'default')
+        .toString();
+  } catch (_) {
+    return 'default';
+  }
+}
+
 Future<bool> requestWebNotificationPermission() async {
   try {
     final notifCtor = globalContext.getProperty<JSObject?>('Notification'.toJS);
@@ -40,6 +85,47 @@ Future<bool> requestWebNotificationPermission() async {
     if (promise == null) return false;
     final res = await promise.toDart;
     return res?.dartify()?.toString() == 'granted';
+  } catch (_) {
+    return false;
+  }
+}
+
+/// Triggers the real browser Screen/Window Share picker (`getDisplayMedia`) so
+/// the user explicitly grants game-window feed verification permission.
+Future<bool> requestWebDisplayCapturePermission() async {
+  try {
+    final nav = globalContext.getProperty<JSObject?>('navigator'.toJS);
+    final mediaDevices = nav?.getProperty<JSObject?>('mediaDevices'.toJS);
+    if (mediaDevices == null) return false;
+
+    final constraints = JSObject();
+    constraints.setProperty('video'.toJS, true.toJS);
+    constraints.setProperty('audio'.toJS, false.toJS);
+
+    final promise = mediaDevices.callMethod<JSPromise<JSAny?>?>(
+      'getDisplayMedia'.toJS,
+      constraints,
+    );
+    if (promise == null) return false;
+
+    final streamAny = await promise.toDart;
+    final stream = streamAny as JSObject?;
+    if (stream == null) return false;
+
+    // Release preview tracks cleanly while recording authorization;
+    // active capture pipeline re-acquires when match enters LIVE state.
+    final tracksObj = stream.callMethod<JSObject?>('getTracks'.toJS);
+    if (tracksObj != null) {
+      final length =
+          (tracksObj.getProperty<JSAny?>('length'.toJS)?.dartify() as num?)
+                  ?.toInt() ??
+              0;
+      for (int i = 0; i < length; i++) {
+        final track = tracksObj.getProperty<JSObject?>(i.toString().toJS);
+        track?.callMethod<JSAny?>('stop'.toJS);
+      }
+    }
+    return true;
   } catch (_) {
     return false;
   }
