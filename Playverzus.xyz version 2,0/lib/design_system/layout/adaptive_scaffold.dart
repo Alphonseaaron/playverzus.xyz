@@ -555,7 +555,7 @@ class _AdaptiveScaffoldState extends ConsumerState<AdaptiveScaffold> {
                         _menuTile(
                           icon: CupertinoIcons.arrow_down_circle_fill,
                           title: 'Download App (APK / Desktop)',
-                          subtitle: 'Native game detection & background tracking',
+                          subtitle: 'One-tap launches & live match alerts',
                           onTap: () => nav('/download'),
                         ),
                     ],

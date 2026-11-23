@@ -157,7 +157,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                   ),
                                   const SizedBox(height: 3),
                                   Text(
-                                    'ID: ${machine.deviceFingerprint} · Install the native app to auto-scan installed games, sync with our ${officialGames.length} featured titles, and force auto-launch when both players press Ready in Duels & Tournaments.',
+                                    'Install the Playverzus Companion App to sync your ${officialGames.length} featured titles, launch straight into duels, and receive instant Ready & settlement alerts.',
                                     style: HigTypography.footnote(),
                                   ),
                                 ],

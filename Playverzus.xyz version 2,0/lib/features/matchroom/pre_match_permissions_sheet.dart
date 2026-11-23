@@ -60,36 +60,36 @@ class _PreMatchPermissionsDialogState
           label: 'macOS Desktop',
           icon: CupertinoIcons.device_laptop,
           screenTip:
-              'Select your game window in macOS Screen Recording / browser share permissions so scoreboards sync automatically.',
+              'Approve match access when prompted so ${widget.gameName} duels confirm smoothly.',
           pushTip:
-              'macOS banner notifications will alert you when your opponent readies up or a match settles.',
+              'macOS notifications alert you immediately when your opponent readies up or a match settles.',
         );
       case 'android':
         return (
           label: 'Android Mobile',
           icon: CupertinoIcons.device_phone_portrait,
           screenTip: kIsWeb
-              ? 'Mobile browsers pause background feeds — allow capture/proof upload mode or install the Android Companion APK for live tracking.'
-              : 'Foreground MediaProjection stays active while your game runs in fullscreen.',
+              ? 'Allow quick match confirmation when prompted, or install the Playverzus Android app for seamless matches.'
+              : 'Keeps live match sync active while you play.',
           pushTip:
-              'Heads-up Android alerts notify you immediately on score events and match settlement.',
+              'Heads-up Android alerts notify you immediately on match updates and payouts.',
         );
       case 'ios':
         return (
           label: 'iPhone & iPad',
           icon: CupertinoIcons.device_phone_portrait,
           screenTip: kIsWeb
-              ? 'Mobile Safari protects background apps — authorize 1-tap final scoreboard proof upload for 2-second verification.'
-              : 'Native Apple ReplayKit syncs your scoreboard automatically.',
+              ? 'Authorize quick 1-tap match confirmation for fast, automatic payouts.'
+              : 'Keeps your ${widget.gameName} match synced automatically.',
           pushTip:
-              'iOS alerts notify you as soon as opponents join or Full Time locks.',
+              'iOS alerts notify you as soon as opponents join or your match finishes.',
         );
       case 'linux':
         return (
           label: 'Linux Desktop',
           icon: CupertinoIcons.desktopcomputer,
           screenTip:
-              'Share your game window or monitor using PipeWire / browser screen sharing so scores record cleanly.',
+              'Approve the browser prompt when starting so matches verify automatically.',
           pushTip:
               'Desktop notifications keep you synced when full-screen matches start or end.',
         );
@@ -98,9 +98,9 @@ class _PreMatchPermissionsDialogState
           label: 'Windows PC',
           icon: CupertinoIcons.desktopcomputer,
           screenTip:
-              'In the browser sharing popup, choose your ${widget.gameName} window or display so scores verify automatically.',
+              'Approve the browser prompt when starting ${widget.gameName} so your match verifies automatically.',
           pushTip:
-              'Windows notification alerts ping you during fullscreen gameplay when Ready locks or settlement completes.',
+              'Windows notification alerts ping you during gameplay when Ready locks or settlement completes.',
         );
     }
   }
@@ -114,9 +114,9 @@ class _PreMatchPermissionsDialogState
       if (!mounted) return;
       if (!ok) {
         ref.read(toastProvider.notifier).show(
-              'Screen Share Permission Required',
+              'Permission Required',
               body:
-                  'Approve the browser window/screen picker to verify ${widget.gameName} frames in volatile RAM.',
+                  'Approve the prompt when your browser asks so Playverzus can confirm ${widget.gameName} matches automatically.',
               tone: ToastTone.warning,
             );
       }
@@ -219,17 +219,17 @@ class _PreMatchPermissionsDialogState
               ),
               const SizedBox(height: 18),
 
-              // Permission 1: Game Window Feed & Anti-Cheat Capture
+              // Permission 1: Live Match Verification Access
               _PermissionTile(
                 index: '1',
-                title: 'Game Window Feed & Anti-Cheat',
+                title: 'Live Match Verification Access',
                 subtitle: info.screenTip,
                 privacyNote:
-                    'Processed ephemerally in local volatile RAM. Zero video recorded or stored.',
+                    'Used strictly during active duels for automatic verification. Zero videos are recorded or stored.',
                 icon: CupertinoIcons.desktopcomputer,
                 granted: screenDone,
                 loading: _requestingScreen,
-                actionLabel: screenDone ? 'Connected' : 'Connect Feed',
+                actionLabel: screenDone ? 'Connected' : 'Allow Access',
                 onTap: _grantScreenCapture,
               ),
               const SizedBox(height: 12),

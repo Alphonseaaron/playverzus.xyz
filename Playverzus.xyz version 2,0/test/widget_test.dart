@@ -506,4 +506,41 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets(
+      'Public & player screens keep internal visual machine mechanics confidential',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final forbiddenTerms = [
+      'volatile RAM',
+      'dHash',
+      'HMAC-SHA256',
+      'Regions of Interest',
+      '5-pillar',
+      '5-Pillar',
+      'ScreenCaptureKit',
+      'MediaProjection',
+      'ReplayKit',
+    ];
+
+    for (final w in <Widget>[
+      const DownloadHubScreen(),
+      const LegalScreen(docType: LegalDocType.privacy),
+      const LegalScreen(docType: LegalDocType.terms),
+      const LegalScreen(docType: LegalDocType.responsibleGaming),
+    ]) {
+      await tester.pumpWidget(
+        ProviderScope(child: MaterialApp(home: Scaffold(body: w))),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+      for (final term in forbiddenTerms) {
+        expect(find.textContaining(term), findsNothing,
+            reason: '$w must not display "$term"');
+      }
+    }
+  });
 }

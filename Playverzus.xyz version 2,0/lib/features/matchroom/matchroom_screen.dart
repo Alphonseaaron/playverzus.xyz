@@ -616,10 +616,10 @@ class _MatchRoomScreenState extends ConsumerState<MatchRoomScreen> {
                 spacing: 8,
                 runSpacing: 6,
                 children: [
-                  Text('Live Verification Feed', style: HigTypography.title3()),
+                  Text('Live Match Feed', style: HigTypography.title3()),
                   HigBadge(
                     label: isLiveInGame
-                        ? 'LIVE TRACKING'
+                        ? 'LIVE SYNC'
                         : isSettled
                             ? 'VERIFIED'
                             : 'STANDBY',
@@ -632,7 +632,7 @@ class _MatchRoomScreenState extends ConsumerState<MatchRoomScreen> {
               ),
               const SizedBox(height: 6),
               Text(
-                'While ${game.shortName} runs in the foreground, Playverzus verifies scoreboard updates in the background and pushes real-time notifications.',
+                'While you play ${game.shortName}, Playverzus keeps your match synchronized and sends real-time Ready & payout alerts.',
                 style: HigTypography.caption(),
               ),
               const SizedBox(height: 14),
@@ -786,8 +786,8 @@ class _MatchRoomScreenState extends ConsumerState<MatchRoomScreen> {
           ),
           _stepTile(
             4,
-            'Background Verification & Settlement',
-            'Verifies final score & settles Smart Escrow automatically on Full Time.',
+            'Automatic Result & Payout',
+            'Confirms the final outcome and releases escrow winnings once the match ends.',
             done: isLiveInGame || isSettled,
           ),
           const SizedBox(height: 16),
@@ -946,10 +946,10 @@ class _MatchRoomScreenState extends ConsumerState<MatchRoomScreen> {
               spacing: 8,
               runSpacing: 4,
               children: [
-                Text('Anti-Fraud Verification & Settlement',
+                Text('Match Verification & Settlement',
                     style: HigTypography.headline().copyWith(fontSize: 13.5)),
                 const HigBadge(
-                  label: 'HMAC-SHA256 · dHASH · DUAL ORACLE',
+                  label: 'PROTECTED ESCROW',
                   tone: HigBadgeTone.emerald,
                 ),
               ],
@@ -967,7 +967,7 @@ class _MatchRoomScreenState extends ConsumerState<MatchRoomScreen> {
             const SizedBox(height: 6),
             HigTextField(
               controller: _scoreProofCtrl,
-              placeholder: 'Scoreboard reading (e.g. 3 - 1 FULL TIME)',
+              placeholder: 'Final match score (e.g. 3 - 1 FULL TIME)',
               prefixIcon: CupertinoIcons.doc_text_search,
               errorText: _scoreProofErr,
               onChanged: (_) {

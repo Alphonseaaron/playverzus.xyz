@@ -574,7 +574,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 ref.read(toastProvider.notifier).show(
                                       'Device Bound',
                                       body:
-                                          'Alerts, capture & auto-escrow verified.',
+                                          'Match alerts & fair-play protection verified.',
                                       tone: ToastTone.success,
                                     );
                               },

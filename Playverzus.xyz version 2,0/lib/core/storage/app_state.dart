@@ -265,7 +265,7 @@ class MachineAuthState {
 
   String get deviceBindingSummary {
     if (capabilities.isWeb) {
-      return 'Browser session bound ($deviceFingerprint). Web browsers cannot scan local OS apps — use the Android APK or Desktop client for automatic game detection and force auto-launch.';
+      return 'Browser session active ($deviceFingerprint). Install the Playverzus Companion App for one-tap game launches and desktop/mobile Ready alerts.';
     }
     return 'Native ${capabilities.osLabel} bound ($deviceFingerprint). ${featuredInstalledGames.length} featured titles detected on this device.';
   }

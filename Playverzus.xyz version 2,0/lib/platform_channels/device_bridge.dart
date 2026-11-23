@@ -105,9 +105,9 @@ class DeviceBridge {
           supportsNativeGameScan: false,
           isWeb: true,
           recommendedMode: DeviceCaptureMode.mobileWebSnapshot,
-          modeTitle: '1-Tap Snapshot / Native APK',
+          modeTitle: 'Mobile Web Match Sync',
           modeDescription:
-              'Mobile browsers cannot run background screen capture. Verify in 1 tap or install the Playverzus Android APK for live tracking.',
+              'Quick match confirmation in mobile browser, or install the Playverzus mobile companion for instant launches.',
         );
       }
       final desktopLabel = switch (osKey) {
@@ -121,9 +121,9 @@ class DeviceBridge {
         supportsNativeGameScan: false,
         isWeb: true,
         recommendedMode: DeviceCaptureMode.webMonitorAutoLock,
-        modeTitle: 'Entire Screen Auto-Lock',
+        modeTitle: 'Browser Match Sync',
         modeDescription:
-            'Share your monitor once after sign-in. Our engine skips Playverzus navigation and auto-locks onto your game HUD.',
+            'Automatic match verification and instant Ready & winner settlement directly in your browser.',
       );
     }
 
@@ -135,9 +135,9 @@ class DeviceBridge {
           supportsNativeGameScan: true,
           isWeb: false,
           recommendedMode: DeviceCaptureMode.nativeAndroidService,
-          modeTitle: 'Android Foreground Auto-Sync',
+          modeTitle: 'Android Auto-Sync',
           modeDescription:
-              'Auto-detects installed mobile games, force-launches on ready, and pushes live winning/losing notifications over the game.',
+              'Auto-detects installed mobile games, launches on Ready, and pushes live match alerts.',
         );
       case TargetPlatform.iOS:
         return const DeviceCapabilities(
@@ -146,9 +146,9 @@ class DeviceBridge {
           supportsNativeGameScan: true,
           isWeb: false,
           recommendedMode: DeviceCaptureMode.nativeIosReplayKit,
-          modeTitle: 'Apple ReplayKit Broadcast',
+          modeTitle: 'iOS Auto-Sync',
           modeDescription:
-              'Native iOS ReplayKit live sync paired with on-device Vision HUD detection.',
+              'Seamless iOS match verification and instant payout alerts.',
         );
       case TargetPlatform.windows:
       case TargetPlatform.macOS:
@@ -163,9 +163,9 @@ class DeviceBridge {
           supportsNativeGameScan: true,
           isWeb: false,
           recommendedMode: DeviceCaptureMode.nativeDesktopWindowLock,
-          modeTitle: 'Native Game Window Lock',
+          modeTitle: 'Desktop Companion Sync',
           modeDescription:
-              'Auto-scans Steam, EA App, Epic & Riot libraries, force-launches games on ready, and locks onto the HUD automatically.',
+              'Auto-syncs Steam, EA App, Epic & Riot libraries, launches matches on Ready, and confirms results automatically.',
         );
       default:
         return const DeviceCapabilities(

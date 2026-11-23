@@ -953,7 +953,7 @@ class _MoreThanMatchmakingSection extends StatelessWidget {
         badgeTone: HigBadgeTone.indigo,
         title: 'Verified Cups & Game APIs',
         description:
-            'Native PC & Android companion telemetry paired with automated developer Stats APIs.',
+            'Official tournaments and Blitz brackets paired with automated developer Stats APIs.',
         primaryActionLabel: 'DOWNLOAD CLIENT',
         onPrimaryAction: onDownload,
         secondaryActionLabel: 'DEVELOPER API',
@@ -1987,7 +1987,7 @@ class _LandingFooter extends StatelessWidget {
       items: [
         _FooterLinkItem('Game Developers', onDeveloper),
         _FooterLinkItem('Ground Agents', onSignIn),
-        _FooterLinkItem('5-Pillar Anti-Cheat', onDownload),
+        _FooterLinkItem('Fair Play & Rules', onTerms),
         _FooterLinkItem('Cashier & Payouts', onSignIn),
       ],
     );
@@ -2400,7 +2400,7 @@ class _CookieAndPermissionsDialogState
               ),
               const SizedBox(height: 8),
               Text(
-                'Playverzus uses essential authentication cookies only — zero third-party ad trackers. Functions requiring OS access (Live Notifications and Screen Capture during duels) explicitly prompt your device.',
+                'Playverzus uses essential authentication cookies only — zero third-party ad trackers. Optional features requiring device access (such as Live Match Alerts) prompt you explicitly before enabling.',
                 style: HigTypography.footnote(color: HigColors.labelSecondary),
               ),
               const SizedBox(height: 16),

@@ -400,14 +400,14 @@ class LiveMatchEngineNotifier extends StateNotifier<LiveMatchState> {
 
     final computedDetail = customDetail ??
         (isFinal
-            ? 'Final scoreboard verified ($confidencePct% HUD confidence). Smart Escrow payout released!'
+            ? 'Final result verified. Smart Escrow payout released!'
             : switch (lead) {
                 MatchLeadStatus.winning =>
-                  'Leading by +${scoreA - scoreB} in ${game.shortName}. Hold lead to secure payout · HUD $confidencePct%.',
+                  'Leading by +${scoreA - scoreB} in ${game.shortName}. Hold lead to secure payout.',
                 MatchLeadStatus.losing =>
-                  'Trailing by ${scoreB - scoreA} in ${game.shortName}. Score ${scoreB - scoreA} to equalize · HUD $confidencePct%.',
+                  'Trailing by ${scoreB - scoreA} in ${game.shortName}. Score ${scoreB - scoreA} to equalize.',
                 MatchLeadStatus.tied =>
-                  'All square in ${game.shortName}. Next verified point takes the lead · HUD $confidencePct%.',
+                  'All square in ${game.shortName}. Next goal or point takes the lead.',
               });
 
     state = state.copyWith(

@@ -297,7 +297,7 @@ class DeveloperPortalScreen extends ConsumerWidget {
                     Text('Connect Your First Game API',
                         style: HigTypography.title3()),
                     Text(
-                      'No HUD OCR calibration needed — just supply your platform Stats API.',
+                      'Connect your official platform Stats API so player stats and match results sync automatically.',
                       style: HigTypography.caption(),
                     ),
                   ],

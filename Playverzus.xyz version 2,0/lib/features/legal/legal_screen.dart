@@ -329,7 +329,7 @@ class _PrivacyDocument extends StatelessWidget {
           effectiveLabel: 'EFFECTIVE: NOVEMBER 2026',
           title: 'PLAYER PRIVACY POLICY',
           subtitle:
-              'Our strict Zero-Storage visual policy, data minimization standards, and security safeguards under GDPR and the Kenya Data Protection Act (2019).',
+              'Our strict Zero Video Storage commitment, data minimization standards, and security safeguards under GDPR and the Kenya Data Protection Act (2019).',
         ),
         const SizedBox(height: 22),
 
@@ -373,7 +373,7 @@ class _PrivacyDocument extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               const _Paragraph(
-                'During competitive match sessions, screen captures and video telemetry feeds are processed transiently in volatile device and server memory solely to verify scoreboards and prevent fraud. Playverzus.xyz never records, never archives, and never retains full video streams or personal desktop recordings.',
+                'Playverzus.xyz confirms competitive match outcomes strictly to uphold fair play and instant escrow payouts. We never record, never archive, and never retain gameplay videos or personal desktop recordings on our servers.',
               ),
             ],
           ),
@@ -406,9 +406,9 @@ class _PrivacyDocument extends StatelessWidget {
               dotColor: HigColors.emerald,
             ),
             _BulletItem(
-              lead: 'Match Telemetry & Results:',
+              lead: 'Match Scores & Outcomes:',
               body:
-                  'Numeric game scores, round durations, timestamped telemetry packets signed via ephemeral match-room HMAC-SHA256 keys, and 64-bit perceptual frame integrity hashes (dHash).',
+                  'Numeric game scores, match timestamps, and verified final outcome records used to update skill ratings and settle prizes.',
               dotColor: HigColors.emerald,
             ),
             _BulletItem(
@@ -418,9 +418,9 @@ class _PrivacyDocument extends StatelessWidget {
               dotColor: HigColors.emerald,
             ),
             _BulletItem(
-              lead: 'Anti-Fraud & Device Telemetry:',
+              lead: 'Fair-Play & Device Security:',
               body:
-                  'Deterministic device fingerprints derived from display dimensions, runtime platform properties, and WebGL/hardware signals, masked IP subnet hashes, and browser session tokens used strictly to block win-trading rings, emulator manipulation, and multi-accounting.',
+                  'Standard device and session identifiers used strictly to protect your account, prevent duplicate multi-accounting, and block fraudulent match manipulation.',
               dotColor: HigColors.emerald,
             ),
           ],
@@ -429,10 +429,10 @@ class _PrivacyDocument extends StatelessWidget {
         _LegalSectionBlock(
           number: '03.',
           accentColor: HigColors.emerald,
-          heading: 'How Game Feeds & Visual Data Are Handled',
+          heading: 'How Match Verification Protects Your Privacy',
           children: [
             const _Paragraph(
-              'To ensure full transparency regarding how match feeds are verified:',
+              'Every step of match verification prioritizes player privacy:',
             ),
             Container(
               padding: const EdgeInsets.all(16),
@@ -447,29 +447,26 @@ class _PrivacyDocument extends StatelessWidget {
                   Row(
                     children: [
                       const Icon(
-                        Icons.memory_rounded,
+                        Icons.verified_user_rounded,
                         size: 16,
                         color: HigColors.brandBright,
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'Ephemeral Memory Processing Pipeline',
+                        'Permission-First Verification Standards',
                         style: HigTypography.headline().copyWith(fontSize: 13),
                       ),
                     ],
                   ),
                   const SizedBox(height: 10),
                   const _Paragraph(
-                    '1. You explicitly authorize a game window, screen share, or companion service via OS/browser permission prompts.',
+                    '1. Device permissions prompt you clearly before any live competitive match begins.',
                   ),
                   const _Paragraph(
-                    '2. Our visual verification engine isolates designated scoreboard Regions of Interest in volatile RAM.',
+                    '2. Playverzus confirms only the official numeric match outcome and final winner cleanly.',
                   ),
                   const _Paragraph(
-                    '3. Extracted numeric score values are compared across match participants using dual-consensus and developer API telemetry.',
-                  ),
-                  const _Paragraph(
-                    '4. Immediately after numerical verification, the frame buffer is discarded from volatile memory. No persistent video recordings remain on our servers.',
+                    '3. Playverzus never archives full gameplay streams, personal files, or desktop recordings.',
                   ),
                 ],
               ),
@@ -711,9 +708,9 @@ class _TermsDocument extends StatelessWidget {
               _HighlightMiniCard(
                 icon: CupertinoIcons.shield_lefthalf_fill,
                 color: HigColors.amber,
-                title: 'Anti-Cheat Integrity',
+                title: 'Fair-Play Integrity',
                 body:
-                    'Proprietary 5-pillar automated verification protects fair play in volatile RAM. Replays, bots, or collusion trigger permanent bans.',
+                    'Proprietary automated verification protects fair play across every duel and bracket. Collusion, bots, or tampering trigger permanent bans.',
               ),
             ];
             if (!rowLayout) {
@@ -788,25 +785,25 @@ class _TermsDocument extends StatelessWidget {
         const _LegalSectionBlock(
           number: '03.',
           accentColor: HigColors.brand,
-          heading: 'Proprietary Automated Verification & Telemetry',
+          heading: 'Proprietary Match Verification',
           children: [
             _Paragraph(
-              'To eliminate delayed manual disputes across 21+ PC, console, mobile, and developer Stats API titles, Playverzus uses automated visual & telemetry verification:',
+              'To eliminate delayed manual disputes across 21+ PC, console, mobile, and developer Stats API titles, Playverzus uses proprietary automated verification:',
             ),
             _BulletItem(
-              lead: 'Ephemeral Volatile Analysis:',
+              lead: 'Zero Video Retention:',
               body:
-                  'Game feeds, scoreboard regions, and HUD frames captured after user permission are analyzed transiently in volatile RAM. Raw full-length video streams are never permanently recorded or saved to disk.',
+                  'Match confirmation runs strictly during active competitive sessions without permanently recording or archiving personal video streams.',
             ),
             _BulletItem(
               lead: 'Proprietary Technology Protections:',
               body:
-                  'All verification engines, perceptual dHash comparison models, HMAC-SHA256 telemetry validators, and Stats API connectors are proprietary trade secrets of Playverzus.xyz.',
+                  'All verification engines, integrity checks, and official developer Stats API connectors are confidential proprietary trade secrets of Playverzus.xyz.',
             ),
             _BulletItem(
-              lead: 'Display Integrity:',
+              lead: 'Fair Display Rules:',
               body:
-                  'Participants must keep designated in-game scoreboards and gamertags clearly visible and unobstructed during active matches. Obscuring, cropping, or masking HUD regions constitutes a match forfeiture violation.',
+                  'Participants must play honestly without tampering, third-party overlays, or hiding active match screens during live competitions.',
             ),
           ],
         ),
@@ -1112,13 +1109,13 @@ class _ResponsibleGamingDocument extends StatelessWidget {
             _BulletItem(
               lead: 'Kenya Data Protection Act (2019):',
               body:
-                  'Enforces our Zero Video Storage policy: frames stay in transient volatile memory with only numeric scores and mathematical integrity hashes persisted.',
+                  'Enforces our Zero Video Storage commitment: only official match scores and outcome records are retained.',
               dotColor: HigColors.indigo,
             ),
             _BulletItem(
               lead: 'Consumer Protection Act (2012):',
               body:
-                  'Deterministic verification engines, transparent upfront gateway fee disclosures, and formal 15-minute Human-in-the-Loop dispute resolution satisfy fairness standards.',
+                  'Automated verification, transparent upfront gateway fee disclosures, and formal 15-minute Human-in-the-Loop dispute resolution satisfy fairness standards.',
               dotColor: HigColors.indigo,
             ),
           ],
