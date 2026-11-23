@@ -15,7 +15,23 @@ export class SocialService {
   }
 
   async listFriends(userId: string) {
-    const friends = await this.friendshipService.listFriends(userId);
+    const { data: rows, error } = await this.supabase
+      .from('friendships')
+      .select('*')
+      .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`)
+      .in('status', ['ACCEPTED', 'PENDING'])
+      .order('created_at', { ascending: false });
+
+    const friends =
+      !error && rows
+        ? rows.map((f: any) => ({
+            id: f.id,
+            requesterId: f.requester_id,
+            addresseeId: f.addressee_id,
+            status: f.status,
+            createdAt: f.created_at,
+          }))
+        : await this.friendshipService.listFriends(userId);
     if (!friends || friends.length === 0) return [];
 
     const friendIds = Array.from(
@@ -47,8 +63,14 @@ export class SocialService {
       const prof = profileMap.get(friendId);
       return {
         ...f,
+        friendId,
         friendUsername: prof?.username,
         friendCountryCode: prof?.countryCode,
+        friend: {
+          id: friendId,
+          username: prof?.username,
+          country_code: prof?.countryCode,
+        },
       };
     });
   }

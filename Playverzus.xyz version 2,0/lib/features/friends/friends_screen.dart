@@ -289,13 +289,29 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                         final friendshipId = (f['id'] ?? '').toString();
                         final status =
                             (f['status'] ?? 'ACCEPTED').toString().toUpperCase();
+                        final reqId =
+                            (f['requesterId'] ?? f['requester_id'] ?? '')
+                                .toString();
+                        final addId =
+                            (f['addresseeId'] ?? f['addressee_id'] ?? '')
+                                .toString();
+                        final isIncomingPending = status == 'PENDING' &&
+                            addId.isNotEmpty &&
+                            addId == session.userId;
                         final other = (f['friend'] as Map?) ??
                             (f['addressee'] as Map?) ??
                             (f['requester'] as Map?) ??
                             f;
-                        final targetId = (other['id'] ?? '').toString();
-                        final username =
-                            (other['username'] ?? 'player').toString();
+                        final fallbackOtherId =
+                            reqId == session.userId ? addId : reqId;
+                        final targetId = (f['friendId'] ??
+                                other['id'] ??
+                                fallbackOtherId)
+                            .toString();
+                        final username = (f['friendUsername'] ??
+                                other['username'] ??
+                                'player')
+                            .toString();
 
                         return Column(
                           children: [
@@ -320,21 +336,28 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
                                   style: HigTypography.headline()
                                       .copyWith(fontSize: 14)),
                               subtitle: Text(
-                                status == 'PENDING'
-                                    ? 'Pending request'
-                                    : 'Connected',
+                                isIncomingPending
+                                    ? 'Incoming friend request'
+                                    : status == 'PENDING'
+                                        ? 'Request sent · waiting reply'
+                                        : 'Connected',
                                 style: HigTypography.caption(),
                               ),
                               trailing: Wrap(
                                 spacing: 6,
                                 children: [
-                                  if (status == 'PENDING')
+                                  if (isIncomingPending)
                                     HigButton(
                                       label: 'Accept',
                                       size: HigButtonSize.small,
                                       variant: HigButtonVariant.emerald,
                                       onPressed: () =>
                                           _acceptRequest(friendshipId),
+                                    )
+                                  else if (status == 'PENDING')
+                                    const HigBadge(
+                                      label: 'PENDING',
+                                      tone: HigBadgeTone.neutral,
                                     )
                                   else
                                     HigButton(

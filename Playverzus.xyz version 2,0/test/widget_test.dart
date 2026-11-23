@@ -469,6 +469,10 @@ void main() {
       ),
       contains('nobody99'),
     );
+    expect(
+      FriendlyError.fromText('Player not found'),
+      'Player not found',
+    );
 
     // 2. AuthScreen highlights exact fields where issues are when submitted empty
     tester.view.physicalSize = const Size(390, 900);

@@ -113,7 +113,7 @@ export class MatchController {
       });
       throw new ForbiddenException('Only verified participants in this match can submit score proofs');
     }
-    if (['SETTLED', 'CANCELLED', 'VOIDED'].includes(match.status)) {
+    if (['CANCELLED', 'VOIDED'].includes(match.status)) {
       throw new BadRequestException(`Cannot submit score to a match with status ${match.status}`);
     }
 

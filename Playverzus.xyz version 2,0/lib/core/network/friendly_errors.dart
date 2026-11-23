@@ -84,7 +84,14 @@ class FriendlyError {
     }
 
     // 3. Not Found / Missing Items
-    if (_matchesAny(lower, ['no competitor account found', 'could not find rival', 'could not find a player'])) {
+    if (_matchesAny(lower, [
+      'player not found',
+      'no player found',
+      'no competitor account found',
+      'could not find rival',
+      'could not find a player',
+      'could not find a competitor',
+    ])) {
       return trimmed;
     }
     if (statusCode == 404 ||
