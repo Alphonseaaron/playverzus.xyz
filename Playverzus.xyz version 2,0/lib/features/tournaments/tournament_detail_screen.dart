@@ -78,6 +78,15 @@ class _TournamentDetailScreenState
     return '\$${usd.toStringAsFixed(0)} USDC';
   }
 
+  String _displayTournamentName(TournamentModel t, PaymentGatewayMode gw) {
+    if (gw != PaymentGatewayMode.kopokopo) return t.name;
+    final kesEntry = (t.entryFeeUsd * AppConfig.usdToKesRate).round();
+    return t.name.replaceAll(
+      RegExp(r'\$\d+(?:\.\d{1,2})?'),
+      'KES $kesEntry',
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final arena = ref.watch(arenaDataProvider);
@@ -240,7 +249,8 @@ class _TournamentDetailScreenState
                                   ],
                                 ),
                                 const SizedBox(height: 6),
-                                Text(t.name, style: HigTypography.title2()),
+                                Text(_displayTournamentName(t, gateway),
+                                    style: HigTypography.title2()),
                                 const SizedBox(height: 4),
                                 Text(
                                   '${game.displayName} · ${t.enrolledCount}/${t.size} · Entry ${_fmt(gateway, t.entryFeeUsd)} · Prize ${_fmt(gateway, t.prizePoolUsd)}',

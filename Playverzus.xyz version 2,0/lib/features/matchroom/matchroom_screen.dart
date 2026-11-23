@@ -900,7 +900,9 @@ class _MatchRoomScreenState extends ConsumerState<MatchRoomScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: HigButton(
-                  label: 'Link Console Stream',
+                  label: Responsive.isCompact(context)
+                      ? 'Link Stream'
+                      : 'Link Console Stream',
                   icon: CupertinoIcons.tv,
                   variant: HigButtonVariant.secondary,
                   size: HigButtonSize.small,
@@ -1058,7 +1060,9 @@ class _MatchRoomScreenState extends ConsumerState<MatchRoomScreen> {
                   fullWidth: true,
                   onPressed: () async {
                     try {
-                      await ApiClient.post('/matches/${widget.matchId}/cancel');
+                      await ref
+                          .read(arenaDataProvider.notifier)
+                          .cancelChallenge(widget.matchId);
                       if (!context.mounted) return;
                       ref.read(toastProvider.notifier).show(
                             'Match cancelled',
@@ -1066,9 +1070,16 @@ class _MatchRoomScreenState extends ConsumerState<MatchRoomScreen> {
                           );
                       context.go('/challenges');
                     } on ApiException catch (e) {
+                      if (!context.mounted) return;
                       ref
                           .read(toastProvider.notifier)
                           .show(e.message, tone: ToastTone.error);
+                    } catch (e) {
+                      if (!context.mounted) return;
+                      ref.read(toastProvider.notifier).show(
+                            FriendlyError.humanize(e),
+                            tone: ToastTone.error,
+                          );
                     }
                   },
                 ),

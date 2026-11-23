@@ -456,6 +456,19 @@ void main() {
       FriendlyError.detectTargetField('Minimum M-PESA deposit is KES 50'),
       'amount',
     );
+    expect(
+      FriendlyError.detectTargetField(
+        'Your email, username, or password does not match. Please double-check and try again.',
+      ),
+      'credentials',
+    );
+    expect(
+      FriendlyError.fromText(
+        'No competitor account found with username "nobody99".',
+        statusCode: 404,
+      ),
+      contains('nobody99'),
+    );
 
     // 2. AuthScreen highlights exact fields where issues are when submitted empty
     tester.view.physicalSize = const Size(390, 900);

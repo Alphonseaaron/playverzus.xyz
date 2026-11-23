@@ -918,8 +918,6 @@ class _AdminGroundAgentsPanelState
         children: [
           Text(
             label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
             style: HigTypography.caption(),
           ),
           const SizedBox(height: 4),
@@ -936,8 +934,6 @@ class _AdminGroundAgentsPanelState
           const SizedBox(height: 2),
           Text(
             sub,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
             style: HigTypography.caption(color: HigColors.labelTertiary),
           ),
         ],
@@ -961,12 +957,17 @@ class _FieldAgentStaffScreenState extends ConsumerState<FieldAgentStaffScreen> {
   bool _loading = true;
   bool _requestingPayout = false;
   bool _recruitingSub = false;
+  bool _applyingAgent = false;
   String? _selectedAgentCode;
 
   Map<String, dynamic> _agent = const {};
   List<Map<String, dynamic>> _subAgents = const [];
   List<Map<String, dynamic>> _allAgents = const [];
 
+  final _applyNameCtrl = TextEditingController();
+  final _applyPhoneCtrl = TextEditingController();
+  final _applyRegionCtrl = TextEditingController(text: 'Nairobi');
+  final _applyWingCtrl = TextEditingController();
   final _subNameCtrl = TextEditingController();
   final _subPhoneCtrl = TextEditingController();
   final _subRegionCtrl = TextEditingController();
@@ -979,10 +980,26 @@ class _FieldAgentStaffScreenState extends ConsumerState<FieldAgentStaffScreen> {
 
   @override
   void dispose() {
+    _applyNameCtrl.dispose();
+    _applyPhoneCtrl.dispose();
+    _applyRegionCtrl.dispose();
+    _applyWingCtrl.dispose();
     _subNameCtrl.dispose();
     _subPhoneCtrl.dispose();
     _subRegionCtrl.dispose();
     super.dispose();
+  }
+
+  void _selectAgent(Map<String, dynamic> found) {
+    final code = (found['referralCode'] ?? '').toString();
+    final myId = (found['id'] ?? '').toString();
+    setState(() {
+      _agent = found;
+      _selectedAgentCode = code;
+      _subAgents = _allAgents
+          .where((a) => (a['parentAgentId'] ?? '').toString() == myId)
+          .toList();
+    });
   }
 
   Future<void> _loadAgentPortal({String? codeOverride}) async {
@@ -997,33 +1014,96 @@ class _FieldAgentStaffScreenState extends ConsumerState<FieldAgentStaffScreen> {
             .whereType<Map>()
             .map((e) => Map<String, dynamic>.from(e))
             .toList();
-        if (_allAgents.isNotEmpty) {
-          final qUser = session.username.toLowerCase();
-          final qEmail = session.email.toLowerCase();
-          final qCode = targetCode.toUpperCase();
-          final found = _allAgents.firstWhere(
-            (a) =>
-                (qCode.isNotEmpty &&
-                    (a['referralCode'] ?? '').toString().toUpperCase() ==
-                        qCode) ||
-                (qCode.isEmpty &&
-                    qEmail.isNotEmpty &&
-                    (a['email'] ?? '').toString().toLowerCase() == qEmail) ||
-                (qCode.isEmpty &&
-                    qUser.isNotEmpty &&
-                    (a['username'] ?? '').toString().toLowerCase() == qUser),
-            orElse: () => _allAgents.first,
-          );
-          _agent = found;
-          _selectedAgentCode = (_agent['referralCode'] ?? '').toString();
-          final myId = (_agent['id'] ?? '').toString();
-          _subAgents = _allAgents
-              .where((a) => (a['parentAgentId'] ?? '').toString() == myId)
-              .toList();
+
+        final qUser = session.username.trim().toLowerCase();
+        final qEmail = session.email.trim().toLowerCase();
+        final qUid = session.userId.trim();
+        final qCode = targetCode.trim().toUpperCase();
+
+        Map<String, dynamic>? found;
+        if (session.isAdmin && qCode.isNotEmpty) {
+          for (final a in _allAgents) {
+            if ((a['referralCode'] ?? '').toString().toUpperCase() == qCode) {
+              found = a;
+              break;
+            }
+          }
+        }
+        if (found == null) {
+          for (final a in _allAgents) {
+            final aUid = (a['userId'] ?? '').toString().trim();
+            final aEmail = (a['email'] ?? '').toString().trim().toLowerCase();
+            final aUser = (a['username'] ?? '').toString().trim().toLowerCase();
+            if ((qUid.isNotEmpty && aUid == qUid) ||
+                (qEmail.isNotEmpty && aEmail == qEmail) ||
+                (qUser.isNotEmpty && aUser == qUser)) {
+              found = a;
+              break;
+            }
+          }
+        }
+        if (found == null && session.isAdmin && _allAgents.isNotEmpty) {
+          found = _allAgents.first;
+        }
+
+        if (found != null) {
+          _selectAgent(found);
+        } else {
+          _agent = const {};
+          _subAgents = const [];
         }
       }
     } catch (_) {}
     if (mounted) setState(() => _loading = false);
+  }
+
+  Future<void> _applyAsAgent() async {
+    final session = ref.read(playerSessionProvider);
+    final name = _applyNameCtrl.text.trim().isNotEmpty
+        ? _applyNameCtrl.text.trim()
+        : session.username;
+    final phone = _applyPhoneCtrl.text.trim();
+    if (phone.length < 9) {
+      ref.read(toastProvider.notifier).show(
+            'Enter your Safaricom M-PESA phone number',
+            body: 'We use this phone number for direct M-PESA commission settlements.',
+            tone: ToastTone.error,
+          );
+      return;
+    }
+    setState(() => _applyingAgent = true);
+    try {
+      await ApiClient.post('/agents/register', data: {
+        'userId': session.userId,
+        'email': session.email,
+        'username': session.username,
+        'fullName': name,
+        'phone': phone,
+        'region': _applyRegionCtrl.text.trim().isEmpty
+            ? 'Nairobi'
+            : _applyRegionCtrl.text.trim(),
+        if (_applyWingCtrl.text.trim().isNotEmpty)
+          'parentWingCode': _applyWingCtrl.text.trim().toUpperCase(),
+      });
+      await _loadAgentPortal();
+      if (!mounted) return;
+      ref.read(toastProvider.notifier).show(
+            'Field Agent Ledger Activated',
+            body: 'Your personal referral code and commission tracker are live.',
+            tone: ToastTone.success,
+          );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ref.read(toastProvider.notifier).show(e.message, tone: ToastTone.error);
+    } catch (e) {
+      if (!mounted) return;
+      ref.read(toastProvider.notifier).show(
+            FriendlyError.humanize(e),
+            tone: ToastTone.error,
+          );
+    } finally {
+      if (mounted) setState(() => _applyingAgent = false);
+    }
   }
 
   Future<void> _requestPayout() async {
@@ -1090,7 +1170,85 @@ class _FieldAgentStaffScreenState extends ConsumerState<FieldAgentStaffScreen> {
   @override
   Widget build(BuildContext context) {
     final gw = ref.watch(paymentGatewayProvider);
-    final isDesktop = Responsive.isDesktopOrExpanded(context);
+    final session = ref.watch(playerSessionProvider);
+
+    if (_loading && _agent.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(24),
+        child: HigLoadingCard(message: 'Loading Field Agent Hub...'),
+      );
+    }
+
+    if (_agent.isEmpty) {
+      return ListView(
+        padding: const EdgeInsets.only(bottom: 100),
+        children: [
+          HigMaxWidthContainer(
+            maxWidth: 760,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                GlassCard(
+                  radius: 18,
+                  padding: const EdgeInsets.all(22),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const HigBadge(
+                        label: 'FIELD AGENT & CAMPUS AMBASSADOR PROGRAM',
+                        tone: HigBadgeTone.copper,
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        'Earn Commission Onboarding Players on the Ground',
+                        style: HigTypography.title2(),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Lead Agents earn 5% on referred players\' qualifying first deposits plus 18% of net platform match rake, and a 5% override on sub-agents they recruit under their wing.',
+                        style: HigTypography.footnote(),
+                      ),
+                      const SizedBox(height: 18),
+                      HigTextField(
+                        controller: _applyNameCtrl,
+                        placeholder: 'Your Full Name (or leave empty for @${session.username})',
+                        prefixIcon: CupertinoIcons.person,
+                      ),
+                      const SizedBox(height: 10),
+                      HigTextField(
+                        controller: _applyPhoneCtrl,
+                        placeholder: 'M-PESA Payout Phone (e.g. +254712345678)',
+                        prefixIcon: CupertinoIcons.phone,
+                      ),
+                      const SizedBox(height: 10),
+                      HigTextField(
+                        controller: _applyRegionCtrl,
+                        placeholder: 'Territory / Campus / Gaming Lounge',
+                        prefixIcon: CupertinoIcons.location,
+                      ),
+                      const SizedBox(height: 10),
+                      HigTextField(
+                        controller: _applyWingCtrl,
+                        placeholder: 'Lead Agent Wing Invite Code (optional)',
+                        prefixIcon: CupertinoIcons.ticket,
+                      ),
+                      const SizedBox(height: 16),
+                      HigButton(
+                        label: 'Activate My Field Agent Code',
+                        icon: CupertinoIcons.checkmark_seal_fill,
+                        fullWidth: true,
+                        loading: _applyingAgent,
+                        onPressed: _applyAsAgent,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
 
     final fullName = (_agent['fullName'] ?? 'Field Agent').toString();
     final tier = (_agent['tier'] ?? 'LEAD_AGENT').toString();
@@ -1173,7 +1331,7 @@ class _FieldAgentStaffScreenState extends ConsumerState<FieldAgentStaffScreen> {
                             ),
                           ],
                         ),
-                        if (_allAgents.length > 1)
+                        if (session.isAdmin && _allAgents.length > 1)
                           Wrap(
                             spacing: 6,
                             runSpacing: 6,
@@ -1182,8 +1340,7 @@ class _FieldAgentStaffScreenState extends ConsumerState<FieldAgentStaffScreen> {
                                   (a['referralCode'] ?? '').toString();
                               final selected = code == refCode;
                               return GestureDetector(
-                                onTap: () =>
-                                    _loadAgentPortal(codeOverride: code),
+                                onTap: () => _selectAgent(a),
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 10, vertical: 6),
@@ -1238,41 +1395,60 @@ class _FieldAgentStaffScreenState extends ConsumerState<FieldAgentStaffScreen> {
               const SizedBox(height: 14),
 
               // 2. MUTUAL-TRUST COMMISSION LEDGER ("HOW MUCH PLAYVERZUS OWES YOU")
-              GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: isDesktop ? 4 : 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 1.85,
-                children: [
-                  _agentKpi(
-                    'PLAYVERZUS OWES YOU NOW',
-                    _fmtMoney(gw, pendingOwedKes),
-                    _agent['payoutRequested'] == true
-                        ? 'Payout Requested · Awaiting Admin'
-                        : 'Available for M-PESA Payout',
-                    HigColors.amber,
-                  ),
-                  _agentKpi(
-                    'TOTAL ALREADY PAID TO YOU',
-                    _fmtMoney(gw, totalPaidKes),
-                    '${payouts.length} Verified M-PESA Settlements',
-                    HigColors.emerald,
-                  ),
-                  _agentKpi(
-                    '1ST DEPOSIT + GAMEPLAY CUT',
-                    '${_fmtMoney(gw, ftdCommKes)} + ${_fmtMoney(gw, rakeCommKes)}',
-                    '${_agent['activatedDepositorsCount'] ?? 0} Activated Depositors',
-                    HigColors.brandBright,
-                  ),
-                  _agentKpi(
-                    'WING SUB-AGENT OVERRIDES',
-                    _fmtMoney(gw, wingCommKes),
-                    '${_subAgents.length} Sub-Agents · Lifetime ${_fmtMoney(gw, totalEarnedKes)}',
-                    HigColors.labelPrimary,
-                  ),
-                ],
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final cols = constraints.maxWidth >= 900
+                      ? 4
+                      : constraints.maxWidth >= 520
+                          ? 2
+                          : 1;
+                  final tileW =
+                      (constraints.maxWidth - (cols - 1) * 12) / cols;
+                  return Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      SizedBox(
+                        width: tileW,
+                        child: _agentKpi(
+                          'PLAYVERZUS OWES YOU NOW',
+                          _fmtMoney(gw, pendingOwedKes),
+                          _agent['payoutRequested'] == true
+                              ? 'Payout Requested · Awaiting Admin'
+                              : 'Available for M-PESA Payout',
+                          HigColors.amber,
+                        ),
+                      ),
+                      SizedBox(
+                        width: tileW,
+                        child: _agentKpi(
+                          'TOTAL ALREADY PAID TO YOU',
+                          _fmtMoney(gw, totalPaidKes),
+                          '${payouts.length} Verified M-PESA Settlements',
+                          HigColors.emerald,
+                        ),
+                      ),
+                      SizedBox(
+                        width: tileW,
+                        child: _agentKpi(
+                          '1ST DEPOSIT + GAMEPLAY CUT',
+                          '${_fmtMoney(gw, ftdCommKes)} + ${_fmtMoney(gw, rakeCommKes)}',
+                          '${_agent['activatedDepositorsCount'] ?? 0} Activated Depositors',
+                          HigColors.brandBright,
+                        ),
+                      ),
+                      SizedBox(
+                        width: tileW,
+                        child: _agentKpi(
+                          'WING SUB-AGENT OVERRIDES',
+                          _fmtMoney(gw, wingCommKes),
+                          '${_subAgents.length} Sub-Agents · Lifetime ${_fmtMoney(gw, totalEarnedKes)}',
+                          HigColors.labelPrimary,
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
 
               const SizedBox(height: 14),
@@ -1549,8 +1725,6 @@ class _FieldAgentStaffScreenState extends ConsumerState<FieldAgentStaffScreen> {
         children: [
           Text(
             label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
             style: HigTypography.caption(),
           ),
           const SizedBox(height: 4),
@@ -1567,8 +1741,6 @@ class _FieldAgentStaffScreenState extends ConsumerState<FieldAgentStaffScreen> {
           const SizedBox(height: 2),
           Text(
             sub,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
             style: HigTypography.caption(color: HigColors.labelTertiary),
           ),
         ],

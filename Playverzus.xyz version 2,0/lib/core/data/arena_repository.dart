@@ -445,8 +445,9 @@ class ArenaDataNotifier extends StateNotifier<ArenaDataState> {
       });
       if (res is Map && res['id'] != null) {
         id = res['id'].toString();
-        if (res['room_code'] != null) {
-          roomCode = res['room_code'].toString();
+        final serverRoom = (res['roomCode'] ?? res['room_code'])?.toString();
+        if (serverRoom != null && serverRoom.isNotEmpty) {
+          roomCode = serverRoom;
         }
       }
     }
@@ -690,6 +691,21 @@ class ArenaDataNotifier extends StateNotifier<ArenaDataState> {
 
     apply(state.blitzPools, (l) => state = state.copyWith(blitzPools: l));
     apply(state.tournaments, (l) => state = state.copyWith(tournaments: l));
+  }
+
+  Future<void> cancelChallenge(String matchId) async {
+    final session = _ref.read(playerSessionProvider);
+    if (session.accessToken != null && session.accessToken!.isNotEmpty) {
+      await ApiClient.post('/matches/$matchId/cancel');
+    }
+    state = state.copyWith(
+      challenges: state.challenges.where((c) => c.id != matchId).toList(),
+      myMatches: state.myMatches
+          .map((m) => m.id == matchId ? m.copyWith(status: 'CANCELLED') : m)
+          .toList(),
+      clearError: true,
+    );
+    await refreshFromApi();
   }
 }
 

@@ -302,7 +302,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       setState(() {
         _error = friendly;
         if (!widget.isSignUp) {
-          if (target == 'email' || target == 'username') {
+          if (target == 'credentials') {
+            _identifierErr = 'Check your email or username.';
+            _passwordErr = 'Double-check your password.';
+          } else if (target == 'email' || target == 'username') {
             _identifierErr = 'Double-check your email or username.';
           } else if (target == 'password') {
             _passwordErr = 'Double-check your password.';

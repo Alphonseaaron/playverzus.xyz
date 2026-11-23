@@ -84,6 +84,9 @@ class FriendlyError {
     }
 
     // 3. Not Found / Missing Items
+    if (_matchesAny(lower, ['no competitor account found', 'could not find rival', 'could not find a player'])) {
+      return trimmed;
+    }
     if (statusCode == 404 ||
         _matchesAny(lower, [
           'cannot get ',
@@ -174,6 +177,15 @@ class FriendlyError {
   /// `'phone'`, `'amount'`, `'wallet'`, `'country'`, `'studio'`, `'terms'`).
   static String? detectTargetField(String raw) {
     final lower = raw.toLowerCase();
+    if (_matchesAny(lower, [
+      'does not match',
+      'invalid login',
+      'wrong password',
+      'incorrect password',
+      'invalid email or password',
+    ])) {
+      return 'credentials';
+    }
     if (lower.contains('email')) return 'email';
     if (lower.contains('password')) return 'password';
     if (_matchesAny(lower, ['username', 'gamer tag', 'gamertag', 'rival', '@'])) {

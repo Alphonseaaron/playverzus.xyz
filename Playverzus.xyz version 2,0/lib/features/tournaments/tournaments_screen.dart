@@ -572,7 +572,18 @@ class _TournamentsScreenState extends ConsumerState<TournamentsScreen> {
 
               const SizedBox(height: 14),
 
-              LayoutBuilder(
+              if (visibleCups.isEmpty)
+                HigEmptyState(
+                  icon: CupertinoIcons.rosette,
+                  title: 'No Open Cups Right Now',
+                  subtitle: _onlyActiveGame
+                      ? 'No community brackets are open for ${activeGame.displayName} right now — create one or switch to All Arenas.'
+                      : 'No scheduled cups match this filter yet. Launch a custom Single/Double Elim, Swiss, or Round Robin bracket.',
+                  actionLabel: 'Create Tournament',
+                  onAction: () => context.push('/tournaments/new'),
+                )
+              else
+                LayoutBuilder(
                 builder: (context, constraints) {
                   final cols = constraints.maxWidth >= 980
                       ? 3

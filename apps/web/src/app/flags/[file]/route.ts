@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const flagCache = new Map<string, { body: ArrayBuffer; contentType: string }>();
+const flagCache = new Map<string, { body: Uint8Array; contentType: string }>();
 const MAX_CACHE = 250;
 
 export async function GET(
@@ -16,7 +16,7 @@ export async function GET(
 
   const cached = flagCache.get(iso);
   if (cached) {
-    return new NextResponse(cached.body, {
+    return new NextResponse(Buffer.from(cached.body), {
       status: 200,
       headers: {
         'Content-Type': cached.contentType,
@@ -32,15 +32,15 @@ export async function GET(
       return new NextResponse('Flag not found', { status: upstream.status });
     }
     const contentType = upstream.headers.get('content-type') || 'image/png';
-    const body = await upstream.arrayBuffer();
-    if (body.byteLength > 0 && body.byteLength < 100_000) {
+    const bytes = new Uint8Array(await upstream.arrayBuffer());
+    if (bytes.byteLength > 0 && bytes.byteLength < 100_000) {
       if (flagCache.size >= MAX_CACHE) {
         const oldest = flagCache.keys().next().value;
         if (oldest) flagCache.delete(oldest);
       }
-      flagCache.set(iso, { body, contentType });
+      flagCache.set(iso, { body: bytes, contentType });
     }
-    return new NextResponse(body, {
+    return new NextResponse(Buffer.from(bytes), {
       status: 200,
       headers: {
         'Content-Type': contentType,

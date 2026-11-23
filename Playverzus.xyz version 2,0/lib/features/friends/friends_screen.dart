@@ -79,9 +79,25 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
         caseSensitive: false,
       ).hasMatch(raw);
       if (!isUuid) {
-        final resolved = await ApiClient.post('/auth/resolve-username', data: {
-          'username': raw,
-        });
+        dynamic resolved;
+        try {
+          resolved = await ApiClient.post('/auth/resolve-username', data: {
+            'username': raw,
+          });
+        } on ApiException catch (e) {
+          if (!mounted) return;
+          final notFound = e.statusCode == 404 ||
+              e.message.toLowerCase().contains('not find') ||
+              e.message.toLowerCase().contains('no competitor');
+          ref.read(toastProvider.notifier).show(
+                notFound ? 'Player not found' : e.message,
+                body: notFound
+                    ? 'Could not find a player named @$raw. Double-check their username spelling.'
+                    : null,
+                tone: ToastTone.error,
+              );
+          return;
+        }
         final resolvedId = (resolved is Map)
             ? (resolved['userId'] ?? resolved['id'])?.toString()
             : null;
