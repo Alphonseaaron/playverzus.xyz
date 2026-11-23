@@ -75,7 +75,7 @@ export const QUICK_MATCH_ELO_WINDOW = 150;
 /** Financial & Treasury Accounting Thresholds (USDC) */
 export const MIN_DEPOSIT_USDC = 5.0;
 export const MAX_DEPOSIT_USDC = 100_000.0;
-export const MIN_WITHDRAWAL_USDC = 10.0;
+export const MIN_WITHDRAWAL_USDC = 5.0;
 export const MAX_WITHDRAWAL_USDC = 1_000_000.0; // Effectively no maximum ceiling: bounded strictly by player available balance
 
 // Backward compatibility aliases

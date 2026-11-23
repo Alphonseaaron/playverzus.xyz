@@ -35,10 +35,7 @@ class _ChallengesScreenState extends ConsumerState<ChallengesScreen> {
 
   String _formatMoney(PaymentGatewayMode gateway, ChallengeModel c) {
     if (!c.isCash || c.stakeUsd == 0) return 'FREE · 500 PTS';
-    if (gateway == PaymentGatewayMode.kopokopo) {
-      return 'KES ${(c.stakeUsd * AppConfig.usdToKesRate).round()}';
-    }
-    return '\$${c.stakeUsd.toStringAsFixed(2)} USDC';
+    return AppConfig.formatUsdc(c.stakeUsd);
   }
 
   String _modeLabel(String mode, String squad) {

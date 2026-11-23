@@ -72,10 +72,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   String _formatStake(PaymentGatewayMode gateway, double usd) {
     if (usd == 0) return 'FREE PTS';
-    if (gateway == PaymentGatewayMode.kopokopo) {
-      return 'KES ${(usd * AppConfig.usdToKesRate).round()}';
-    }
-    return '\$${usd.toStringAsFixed(2)}';
+    return AppConfig.formatUsdc(usd);
   }
 
   String _recommendedAppLabel() {
@@ -757,7 +754,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildLedgerTab(PaymentGatewayMode gateway) {
-    final isMpesa = gateway == PaymentGatewayMode.kopokopo;
     if (_loadingLedger && _ledgerRows.isEmpty) {
       return const HigLoadingCard(message: 'Loading ledger transactions...');
     }
@@ -811,9 +807,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
           final formattedAmt = isPoints
               ? '${positive ? '+' : '-'}${amt.abs().round()} PTS'
-              : isMpesa
-                  ? '${positive ? '+' : '-'}KES ${(amt.abs() * AppConfig.usdToKesRate).round()}'
-                  : '${positive ? '+' : '-'}\$${amt.abs().toStringAsFixed(2)}';
+              : '${positive ? '+' : '-'}${AppConfig.formatUsdc(amt.abs(), alwaysDecimals: true)}';
 
           return Column(
             children: [

@@ -9,6 +9,7 @@ import 'package:playverzus_v2/core/security/anti_fraud_engine.dart';
 import 'package:playverzus_v2/core/storage/app_state.dart';
 import 'package:playverzus_v2/design_system/tokens/hig_tokens.dart';
 import 'package:playverzus_v2/features/admin/admin_models.dart';
+import 'package:playverzus_v2/features/cashier/cashier_screen.dart';
 import 'package:playverzus_v2/features/developer/developer_models.dart';
 import 'package:playverzus_v2/features/downloads/download_hub_screen.dart';
 import 'package:playverzus_v2/features/legal/legal_screen.dart';
@@ -352,6 +353,20 @@ void main() {
     expect(subWingSplit.companyProductionAndProfitKes, 1040); // 80% locked for company
     expect(subWingSplit.directAgentCommissionKes, 195); // 15% to Sub-Agent
     expect(subWingSplit.leadAgentWingOverrideKes, 65); // 5% to Lead Agent
+
+    // 4. Unified USDC currency formatting, 5 USDC minimum thresholds & withdrawal fee efficiency
+    expect(PaymentFeeSchedule.minDepositUsdc, 5.00);
+    expect(PaymentFeeSchedule.mpesaMinDepositKes, 650);
+    expect(PaymentFeeSchedule.crossmintMinDepositUsd, 5.00);
+    expect(PaymentFeeSchedule.mpesaMinWithdrawalKes, 650);
+    expect(AppConfig.formatUsdc(5.0), 'USDC 5');
+    expect(AppConfig.formatUsdc(5.0, alwaysDecimals: true), 'USDC 5.00');
+    expect(AppConfig.usdcToKes(20.0), 2600);
+    expect(AppConfig.kesToUsdc(650), 5.00);
+    expect(
+      PaymentFeeSchedule.mpesaWithdrawalFeePercent(650),
+      greaterThan(PaymentFeeSchedule.mpesaWithdrawalFeePercent(2600)),
+    );
   });
 
   testWidgets(
@@ -546,5 +561,66 @@ void main() {
             reason: '$w must not display "$term"');
       }
     }
+  });
+
+  testWidgets(
+      'Cashier displays USDC, enforces min USDC 5 deposit, provides 2-way converter, and explains KES 50 withdrawal fee',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1280, 960);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: MaterialApp(home: Scaffold(body: CashierScreen())),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 120));
+
+    // Primary currency is USDC with KES conversion preview
+    expect(find.text('USDC 0.00'), findsOneWidget);
+    expect(find.textContaining('Minimum deposit: USDC 5.00 (KES 650)'),
+        findsWidgets);
+
+    // Entering below 5 USDC shows clear red validation error (HigTextField wraps CupertinoTextField -> EditableText)
+    final usdcField = find.byType(EditableText).first;
+    await tester.enterText(usdcField, '2');
+    await tester.pump();
+    final depBtn = find.text('Deposit via M-PESA');
+    await tester.ensureVisible(depBtn);
+    await tester.tap(depBtn);
+    await tester.pump();
+    expect(
+      find.text('Minimum deposit is USDC 5.00 (KES 650). Enter USDC 5 or more.'),
+      findsOneWidget,
+    );
+
+    // 2-way converter syncs KES -> USDC cleanly
+    final kesField = find.byType(EditableText).at(1);
+    await tester.enterText(kesField, '2600');
+    await tester.pump();
+    expect(find.text('20'), findsWidgets);
+
+    // Switch to Withdraw tab -> verify converter + suggested best withdrawal + KES 50 explanation
+    await tester.ensureVisible(find.text('Withdraw'));
+    await tester.tap(find.text('Withdraw'));
+    await tester.pump();
+    expect(find.text('USDC 20 · Best Value'), findsOneWidget);
+    expect(
+      find.textContaining('Best value withdrawal'),
+      findsOneWidget,
+    );
+
+    // Tap USDC 5 (Min) -> shows clear explanation of the fixed KES 50 fee (7.7%) and recommends USDC 20+
+    await tester.ensureVisible(find.text('USDC 5 (Min)'));
+    await tester.tap(find.text('USDC 5 (Min)'));
+    await tester.pump();
+    expect(
+      find.textContaining('Understanding the KES 50 withdrawal fee'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Suggested best withdrawal: USDC 20+'),
+        findsOneWidget);
   });
 }

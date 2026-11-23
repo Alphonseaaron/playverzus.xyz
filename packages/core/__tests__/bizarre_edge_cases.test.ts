@@ -177,8 +177,10 @@ describe('Master Bizarre & Edge Case Audit Suite', () => {
       const mockClient = createMockWalletSupabase(10000, 0);
       const wallet = new PaysafeWallet({ client: mockClient });
 
-      // Below MIN_WITHDRAWAL_EUR (10)
-      await expect(wallet.payout('u1', 9.99, { type: 'BANK_ACCOUNT' } as any)).rejects.toThrowError(
+      // Below MIN_WITHDRAWAL_EUR
+      await expect(
+        wallet.payout('u1', Number((MIN_WITHDRAWAL_EUR - 0.01).toFixed(2)), { type: 'BANK_ACCOUNT' } as any),
+      ).rejects.toThrowError(
         `minimum withdrawal threshold is $${MIN_WITHDRAWAL_EUR.toFixed(2)} USDC`,
       );
 

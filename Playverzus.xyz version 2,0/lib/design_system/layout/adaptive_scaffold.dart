@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/config/app_config.dart';
 import '../../core/engine/live_match_engine.dart';
 import '../../core/storage/app_state.dart';
 import '../../features/admin/admin_models.dart';
@@ -397,7 +398,6 @@ class _AdaptiveScaffoldState extends ConsumerState<AdaptiveScaffold> {
   void _showAccountMenuSheet(BuildContext context) {
     HapticFeedback.selectionClick();
     final session = ref.read(playerSessionProvider);
-    final gateway = ref.read(paymentGatewayProvider);
 
     showModalBottomSheet<void>(
       context: context,
@@ -477,7 +477,7 @@ class _AdaptiveScaffoldState extends ConsumerState<AdaptiveScaffold> {
                                       ? '${session.role.toUpperCase()} · ${session.email}'
                                       : session.isDeveloper
                                           ? '${session.studioName.isNotEmpty ? session.studioName : 'Developer Studio'} · ${session.email}'
-                                          : '${session.elo} ELO · ${gateway == PaymentGatewayMode.kopokopo ? 'KES ${session.cashKes.round()}' : '\$${session.cashUsd.toStringAsFixed(2)}'}',
+                                          : '${session.elo} ELO · ${AppConfig.formatUsdc(session.cashUsd, alwaysDecimals: true)}',
                                   style: HigTypography.caption(),
                                 ),
                               ],
@@ -748,16 +748,13 @@ class _AdaptiveScaffoldState extends ConsumerState<AdaptiveScaffold> {
   ) {
     final session = ref.watch(playerSessionProvider);
     final walletMode = ref.watch(walletModeProvider);
-    final gateway = ref.watch(paymentGatewayProvider);
     final liveHistoryCount =
         ref.watch(liveMatchEngineProvider).notificationHistory.length;
     final isCompact = tier == ScreenTier.compact;
     final showBack = _needsBackButton(widget.currentPath, session, tier);
 
     final balanceLabel = walletMode == WalletPlayMode.realCash
-        ? (gateway == PaymentGatewayMode.kopokopo
-            ? 'KES ${session.cashKes.round()}'
-            : '\$${session.cashUsd.toStringAsFixed(2)}')
+        ? AppConfig.formatUsdc(session.cashUsd, alwaysDecimals: true)
         : '${session.demoPoints} PTS';
 
     return Container(

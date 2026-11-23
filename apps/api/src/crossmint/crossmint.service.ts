@@ -48,8 +48,8 @@ export class CrossmintService {
     currency = 'USD',
   ): Promise<CrossmintOrderResult> {
     const netCreditUsd = Math.round(Number(amount) * 100) / 100;
-    if (isNaN(netCreditUsd) || netCreditUsd < 2) {
-      throw new BadRequestException('Minimum Crossmint deposit amount is $2.00 USD');
+    if (isNaN(netCreditUsd) || netCreditUsd < 5) {
+      throw new BadRequestException('Minimum Crossmint deposit amount is 5.00 USDC');
     }
     if (netCreditUsd > 2000) {
       throw new BadRequestException('Maximum single Crossmint deposit amount is $2,000.00 USD');

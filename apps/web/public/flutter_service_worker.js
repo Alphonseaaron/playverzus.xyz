@@ -66,14 +66,14 @@ const RESOURCES = {"assets/AssetManifest.bin": "76af58883a1b415f74ee6443c6209b96
 "downloads/playverzus-v2-revenue-model.pdf": "bf424bcfec9f066424b00fdf319d2581",
 "favicon.png": "c5df9dd993eb0268017e14cca43ff05c",
 "flutter.js": "24bc71911b75b5f8135c949e27a2984e",
-"flutter_bootstrap.js": "5ddf8902ccc38aceaf92dac36136bc3e",
+"flutter_bootstrap.js": "a735f16bb110acf10e7305b2ec31a87a",
 "icons/Icon-192.png": "c5df9dd993eb0268017e14cca43ff05c",
 "icons/Icon-512.png": "c5df9dd993eb0268017e14cca43ff05c",
 "icons/Icon-maskable-192.png": "c5df9dd993eb0268017e14cca43ff05c",
 "icons/Icon-maskable-512.png": "c5df9dd993eb0268017e14cca43ff05c",
 "index.html": "b5feab9b3820354b474ecfdf83142d10",
 "/": "b5feab9b3820354b474ecfdf83142d10",
-"main.dart.js": "64e7e89ef9694e31d421ef029709f436",
+"main.dart.js": "12d42a867f4d5b43bfe23bb5a8a51297",
 "manifest.json": "62bfab366f9c8c70648ecfedb1c8d98e",
 "version.json": "1b64731dbb0e5ad841d138ebe9699f0d"};
 // The application shell files that are downloaded before a service worker can

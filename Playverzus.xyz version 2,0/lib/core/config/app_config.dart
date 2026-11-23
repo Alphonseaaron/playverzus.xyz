@@ -50,35 +50,52 @@ class AppConfig {
 
   static const String appVersion = '2.0.0';
   static const double usdToKesRate = 130.0;
+
+  /// Canonical platform currency formatter: always renders USDC cleanly.
+  static String formatUsdc(double amount, {bool alwaysDecimals = false}) {
+    if (!alwaysDecimals && (amount - amount.roundToDouble()).abs() < 0.005) {
+      return 'USDC ${amount.round()}';
+    }
+    return 'USDC ${amount.toStringAsFixed(2)}';
+  }
+
+  /// Rounds a USDC value converted to local KES (for M-PESA settlement & converter preview).
+  static int usdcToKes(double usdc) => (usdc * usdToKesRate).round();
+
+  /// Converts a local KES value back to USDC (rounded cleanly to 2 decimals).
+  static double kesToUsdc(num kes) =>
+      ((kes / usdToKesRate) * 100).roundToDouble() / 100.0;
 }
 
 /// Upfront Customer-Paid Gateway Fee & Threshold Schedule.
 /// Ensures Playverzus NEVER goes into the negative on deposits or withdrawals,
-/// keeping 100% of its 10% competitive match & tournament rake intact.
+/// keeping 100% of its competitive match & tournament rake intact.
 class PaymentFeeSchedule {
   // ── 1. M-PESA (Kopo Kopo Buy Goods & Move Money / PAY) Thresholds (KES) ──
-  static const int mpesaMinDepositKes = 100;
+  static const double minDepositUsdc = 5.00;
+  static const int mpesaMinDepositKes = 650; // USDC 5.00 @ 130 KES/USDC
   static const int mpesaMaxSingleDepositKes = 250000; // Safaricom CBK single-tx cap
-  static const int mpesaFreeDepositTierCapKes = 200; // Conservative 0-fee floor
+  static const int mpesaFreeDepositTierCapKes = 200; // Legacy band guard
   static const double mpesaBuyGoodsFeeRate = 0.0055; // 0.55% Kopo Kopo Buy Goods tariff
   static const int mpesaBuyGoodsMaxFeeKes = 200; // Capped at KES 200 above KES 36,365
 
   static const int mpesaFlatPayoutFeeKes = 50; // Kopo Kopo Move Money / PAY flat fee
   static const int mpesaExpressPrioritySurchargeKes =
       35; // Optional Instant VIP Payout pure profit surcharge (Total KES 85)
-  static const int mpesaMinNetPayoutKes = 100; // Minimum net sent to M-PESA phone
+  static const int mpesaMinNetPayoutKes = 600; // Minimum net sent to M-PESA phone (USDC 5 gross - KES 50 fee)
   static const int mpesaMinWithdrawalKes =
-      mpesaMinNetPayoutKes + mpesaFlatPayoutFeeKes; // KES 150 total deduction
+      mpesaMinNetPayoutKes + mpesaFlatPayoutFeeKes; // KES 650 total deduction (USDC 5.00)
   static const int mpesaMinExpressWithdrawalKes =
       mpesaMinNetPayoutKes +
       mpesaFlatPayoutFeeKes +
-      mpesaExpressPrioritySurchargeKes; // KES 185 total deduction
+      mpesaExpressPrioritySurchargeKes; // KES 685 total deduction
+  static const double mpesaRecommendedBestWithdrawalUsdc = 20.0; // KES 2,600 (<2% fee impact)
   static const int mpesaMaxSingleWithdrawalKes = 70000;
   static const int mpesaMaxDailyWithdrawalKes = 150000;
   static const int mpesaMaxDailyWithdrawalCount = 3;
 
-  // ── 2. Crossmint (Global Card / Apple Pay / Google Pay / USDC) Thresholds (USD) ──
-  static const double crossmintMinDepositUsd = 2.00;
+  // ── 2. Crossmint (Global Card / Apple Pay / Google Pay / USDC) Thresholds (USDC) ──
+  static const double crossmintMinDepositUsd = 5.00;
   static const double crossmintMaxSingleDepositUsd = 2000.00;
   static const double crossmintCardFeeRate = 0.035; // 3.5% + $0.30 (min $0.50)
   static const double crossmintCardFixedFeeUsd = 0.30;
@@ -91,6 +108,15 @@ class PaymentFeeSchedule {
   static const double crossmintMaxSingleWithdrawalUsd = 1000.00;
   static const double crossmintMaxDailyWithdrawalUsd = 2500.00;
   static const int crossmintMaxDailyWithdrawalCount = 3;
+
+  /// Effective percentage of a withdrawal eaten by the fixed M-PESA payout fee.
+  static double mpesaWithdrawalFeePercent(int grossKes,
+      {bool expressPayout = false}) {
+    if (grossKes <= 0) return 0.0;
+    final fee = mpesaFlatPayoutFeeKes +
+        (expressPayout ? mpesaExpressPrioritySurchargeKes : 0);
+    return (fee / grossKes) * 100.0;
+  }
 
   /// Computes upfront customer-paid Kopo Kopo Buy Goods fee for a desired wallet credit in KES.
   static int computeMpesaDepositFeeKes(int desiredCreditKes) {

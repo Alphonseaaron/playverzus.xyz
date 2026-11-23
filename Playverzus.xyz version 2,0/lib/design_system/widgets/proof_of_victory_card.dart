@@ -48,12 +48,8 @@ class ProofOfVictoryCard extends ConsumerWidget {
     this.isTournamentFinal = false,
   });
 
-  String _formatAmount(PaymentGatewayMode gateway, double usd) {
-    if (gateway == PaymentGatewayMode.kopokopo) {
-      final kes = (usd * AppConfig.usdToKesRate).round();
-      return 'KES $kes';
-    }
-    return '\$${usd.toStringAsFixed(2)} USDC';
+  String _formatAmount(double usd) {
+    return AppConfig.formatUsdc(usd, alwaysDecimals: true);
   }
 
   @override
@@ -61,8 +57,8 @@ class ProofOfVictoryCard extends ConsumerWidget {
     final gateway = ref.watch(paymentGatewayProvider);
     final showCashDelta = !isTournament || isTournamentFinal;
     final relativeText = viewerWon
-        ? '+${_formatAmount(gateway, payoutUsd)}'
-        : '-${_formatAmount(gateway, stakeUsd)}';
+        ? '+${_formatAmount(payoutUsd)}'
+        : '-${_formatAmount(stakeUsd)}';
     final accentColor = viewerWon ? HigColors.emerald : HigColors.crimson;
 
     final statusPillText = isTournament && !isTournamentFinal

@@ -917,7 +917,7 @@ class _TermsDocument extends StatelessWidget {
             _BulletItem(
               lead: 'Global Crossmint USDC & Kenya M-PESA Thresholds:',
               body:
-                  'Global USDC rails: minimum deposit 5.00 USDC (max 5,000.00 USDC per deposit); minimum withdrawal 10.00 USDC (max 10,000.00 USDC per payout). Kenya Phase 1 M-PESA pilot: minimum deposit KES 50, minimum withdrawal KES 150 (ensuring KES 100+ net delivery to M-PESA after standard mobile-money gateway fee), max single withdrawal KES 70,000. Optional Express VIP instant priority payout fee (KES 35 M-PESA / \$0.50 USDC) applies only when explicitly selected.',
+                  'All balances, entry fees, and prize pools are denominated in USDC. Minimum deposit is 5.00 USDC (KES 650 on M-PESA, max 2,000.00 USDC / KES 250,000 per deposit); minimum withdrawal is 5.00 USDC (KES 650 on M-PESA). Every M-PESA withdrawal carries a flat KES 50 (~0.38 USDC) Safaricom/Kopo Kopo network payout fee paid upfront (we suggest withdrawing 20.00 USDC / KES 2,600+ to keep the fixed fee impact under 2%). Optional Express VIP instant priority payout fee (KES 35 M-PESA / 0.50 USDC) applies only when explicitly selected.',
             ),
           ],
         ),
@@ -987,7 +987,7 @@ class _ResponsibleGamingDocument extends StatelessWidget {
     (
       'Kenya (Phase 1 Pilot)',
       'Legal (Contest of Skill)',
-      'M-PESA KES + Demo',
+      'USDC (M-PESA Converter) + Demo',
       'BCLB Cap 131 skill exemption, Consumer Protection Act 2012 audit trails, 18+ gate, Kenya DPA (2019).',
     ),
     (

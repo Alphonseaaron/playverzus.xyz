@@ -12,14 +12,10 @@ import '../../design_system/layout/responsive.dart';
 import '../../design_system/tokens/hig_tokens.dart';
 import '../../design_system/widgets/hig_primitives.dart';
 
-/// Shared formatter for KES or USD/USDC depending on active Payment Rail.
+/// Shared platform currency formatter (USDC across all Playverzus dashboards).
 String _fmtMoney(PaymentGatewayMode gw, num kesAmount) {
-  final kes = kesAmount.round();
-  if (gw == PaymentGatewayMode.kopokopo) {
-    return 'KES $kes';
-  }
-  final usd = kes / AppConfig.usdToKesRate;
-  return '\$${usd.toStringAsFixed(2)} USDC';
+  final usd = AppConfig.kesToUsdc(kesAmount);
+  return AppConfig.formatUsdc(usd, alwaysDecimals: true);
 }
 
 /// ═══════════════════════════════════════════════════════════════════════════

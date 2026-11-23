@@ -56,10 +56,7 @@ class _CreateTournamentScreenState
 
   String _fmt(PaymentGatewayMode gw, double usd) {
     if (usd == 0) return 'FREE';
-    if (gw == PaymentGatewayMode.kopokopo) {
-      return 'KES ${(usd * AppConfig.usdToKesRate).round()}';
-    }
-    return '\$${usd.toStringAsFixed(0)} USDC';
+    return AppConfig.formatUsdc(usd);
   }
 
   Future<void> _submit() async {

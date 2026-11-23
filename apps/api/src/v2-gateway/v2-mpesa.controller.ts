@@ -226,14 +226,18 @@ export class V2MpesaController {
         const refId = String(
           attrs?.event?.resource?.reference || json?.data?.id || metadata?.reference || loc.split('/').pop(),
         );
+        const netCreditUsdc = Number(metadata?.net_credit_usdc || 0);
         if (userId && netCreditKes > 0 && refId) {
-          const netUsd = Math.round((netCreditKes / 130) * 100) / 100;
+          const netUsd =
+            netCreditUsdc > 0
+              ? Math.round(netCreditUsdc * 100) / 100
+              : Math.round((netCreditKes / 130) * 100) / 100;
           await this.walletService.creditCrossmintDeposit(
             userId,
             netUsd,
             'USD',
             `mpesa-${refId}`,
-            { provider: 'MPESA', netCreditKes, totalPaidKes: rawPaidKes, reference: refId },
+            { provider: 'MPESA', netCreditKes, netCreditUsdc: netUsd, totalPaidKes: rawPaidKes, reference: refId },
           );
         }
       }
@@ -256,10 +260,13 @@ export class V2MpesaController {
         'Live M-PESA gateway requires KOPOKOPO_CLIENT_ID, KOPOKOPO_CLIENT_SECRET, and KOPOKOPO_TILL_NUMBER configured on the server.',
       );
     }
-    const netCreditKes = Math.round(Number(body?.amountKes || 0));
+    const rawUsdc = Number(body?.amountUsdc || 0);
+    const netCreditKes = Math.round(Number(body?.amountKes || (rawUsdc > 0 ? rawUsdc * 130 : 0)));
+    const netCreditUsdc =
+      rawUsdc > 0 ? Math.round(rawUsdc * 100) / 100 : Math.round((netCreditKes / 130) * 100) / 100;
     const phone = this.normalizeKenyaPhone(body?.phone);
-    if (!netCreditKes || netCreditKes < 100) {
-      throw new BadRequestException('Minimum M-PESA deposit is KES 100.');
+    if (!netCreditKes || netCreditKes < 650 || netCreditUsdc < 5) {
+      throw new BadRequestException('Minimum M-PESA deposit is USDC 5.00 (KES 650).');
     }
     if (netCreditKes > 250000) {
       throw new BadRequestException('Maximum single M-PESA deposit is KES 250,000.');
@@ -284,6 +291,7 @@ export class V2MpesaController {
       amount: { currency: 'KES', value: totalChargeKes },
       metadata: {
         customer_id: String(body?.userId || ''),
+        net_credit_usdc: String(netCreditUsdc),
         net_credit_kes: String(netCreditKes),
         fee_kes: String(feeKes),
         total_charge_kes: String(totalChargeKes),
@@ -309,11 +317,12 @@ export class V2MpesaController {
         status: 'STK_PUSH_SENT',
         location,
         amountKes: netCreditKes,
+        netCreditUsdc,
         netCreditKes,
         feeKes,
         totalChargeKes,
         phone,
-        message: `M-PESA STK prompt sent to ${phone} for KES ${totalChargeKes} (KES ${netCreditKes} wallet credit + KES ${feeKes} processing fee).`,
+        message: `M-PESA STK prompt sent to ${phone} for KES ${totalChargeKes} (${netCreditUsdc.toFixed(2)} USDC / KES ${netCreditKes} credit + KES ${feeKes} fee).`,
       };
     }
 
@@ -331,15 +340,16 @@ export class V2MpesaController {
         'Live M-PESA payouts require KOPOKOPO_CLIENT_ID and KOPOKOPO_CLIENT_SECRET configured on the server.',
       );
     }
-    const grossWithdrawalKes = Math.round(Number(body?.amountKes || 0));
+    const rawUsdc = Number(body?.amountUsdc || 0);
+    const grossWithdrawalKes = Math.round(Number(body?.amountKes || (rawUsdc > 0 ? rawUsdc * 130 : 0)));
     const phone = this.normalizeKenyaPhone(body?.phone);
-    if (!grossWithdrawalKes || grossWithdrawalKes < 150) {
+    if (!grossWithdrawalKes || grossWithdrawalKes < 650) {
       throw new BadRequestException(
-        'Minimum M-PESA withdrawal is KES 150 (KES 100 net payout + KES 50 payout fee).',
+        'Minimum M-PESA withdrawal is USDC 5.00 (KES 650) so you receive KES 600 after the KES 50 payout fee.',
       );
     }
     if (grossWithdrawalKes > 70000) {
-      throw new BadRequestException('Maximum single M-PESA withdrawal is KES 70,000.');
+      throw new BadRequestException('Maximum single M-PESA withdrawal is KES 70,000 (~538.46 USDC).');
     }
     if (!/^\+254\d{9}$/.test(phone)) {
       throw new BadRequestException('Enter a valid Kenyan M-PESA phone number (+2547XXXXXXXX).');
@@ -353,18 +363,21 @@ export class V2MpesaController {
     const isExpress = body?.expressPayout === true;
     const expressSurchargeKes = isExpress ? 35 : 0;
     const feeKes = 50 + expressSurchargeKes; // KES 50 Kopo Kopo cost + optional KES 35 VIP instant margin
-    const minGross = 100 + feeKes;
+    const minGross = 600 + feeKes;
     if (grossWithdrawalKes < minGross) {
       throw new BadRequestException(
-        `Minimum M-PESA ${isExpress ? 'Express VIP ' : ''}withdrawal is KES ${minGross} (KES 100 net payout + KES ${feeKes} fee).`,
+        `Minimum M-PESA ${isExpress ? 'Express VIP ' : ''}withdrawal is KES ${minGross} (KES 600 net payout + KES ${feeKes} fee).`,
       );
     }
     const commitDaily = this.checkAndRecordDailyWithdrawal(userKey, grossWithdrawalKes);
     const netPayoutKes = grossWithdrawalKes - feeKes;
 
-    // Validate & deduct grossWithdrawalKes from player's Real Cash wallet on the server
+    // Validate & deduct grossUsd from player's Real Cash wallet on the server
     if (userId && this.walletService) {
-      const grossUsd = Math.round((grossWithdrawalKes / 130) * 100) / 100;
+      const grossUsd =
+        rawUsdc > 0
+          ? Math.round(rawUsdc * 100) / 100
+          : Math.round((grossWithdrawalKes / 130) * 100) / 100;
       await this.walletService.requestPayout(userId, grossUsd, {
         type: 'MPESA',
         phone,

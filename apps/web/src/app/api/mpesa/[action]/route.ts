@@ -283,11 +283,14 @@ function checkAndRecordDailyWithdrawal(userKey: string, amountKes: number) {
     }
     try {
       const body = parsedBody;
-      const netCreditKes = Math.round(Number(body.amountKes || 0));
+      const rawUsdc = Number(body.amountUsdc || 0);
+      const netCreditKes = Math.round(Number(body.amountKes || (rawUsdc > 0 ? rawUsdc * 130 : 0)));
+      const netCreditUsdc =
+        rawUsdc > 0 ? Math.round(rawUsdc * 100) / 100 : Math.round((netCreditKes / 130) * 100) / 100;
       const phone = normalizeKenyaPhone(body.phone);
-      if (!netCreditKes || netCreditKes < 100) {
+      if (!netCreditKes || netCreditKes < 650 || netCreditUsdc < 5) {
         return NextResponse.json(
-          { message: 'Minimum M-PESA deposit is KES 100.' },
+          { message: 'Minimum M-PESA deposit is USDC 5.00 (KES 650).' },
           { status: 400 },
         );
       }
@@ -319,6 +322,7 @@ function checkAndRecordDailyWithdrawal(userKey: string, amountKes: number) {
         amount: { currency: 'KES', value: totalChargeKes },
         metadata: {
           customer_id: String(body.userId || ''),
+          net_credit_usdc: String(netCreditUsdc),
           net_credit_kes: String(netCreditKes),
           fee_kes: String(feeKes),
           total_charge_kes: String(totalChargeKes),
@@ -345,11 +349,12 @@ function checkAndRecordDailyWithdrawal(userKey: string, amountKes: number) {
             status: 'STK_PUSH_SENT',
             location,
             amountKes: netCreditKes,
+            netCreditUsdc,
             netCreditKes,
             feeKes,
             totalChargeKes,
             phone,
-            message: `M-PESA STK prompt sent to ${phone} for KES ${totalChargeKes} (KES ${netCreditKes} wallet credit + KES ${feeKes} processing fee).`,
+            message: `M-PESA STK prompt sent to ${phone} for KES ${totalChargeKes} (${netCreditUsdc.toFixed(2)} USDC / KES ${netCreditKes} credit + KES ${feeKes} fee).`,
           },
           { status: 201 },
         );
@@ -380,17 +385,18 @@ function checkAndRecordDailyWithdrawal(userKey: string, amountKes: number) {
     }
     try {
       const body = parsedBody;
-      const grossWithdrawalKes = Math.round(Number(body.amountKes || 0));
+      const rawUsdc = Number(body.amountUsdc || 0);
+      const grossWithdrawalKes = Math.round(Number(body.amountKes || (rawUsdc > 0 ? rawUsdc * 130 : 0)));
       const phone = normalizeKenyaPhone(body.phone);
-      if (!grossWithdrawalKes || grossWithdrawalKes < 150) {
+      if (!grossWithdrawalKes || grossWithdrawalKes < 650) {
         return NextResponse.json(
-          { message: 'Minimum M-PESA withdrawal is KES 150 (KES 100 net payout + KES 50 payout fee).' },
+          { message: 'Minimum M-PESA withdrawal is USDC 5.00 (KES 650) so you receive KES 600 after the KES 50 payout fee.' },
           { status: 400 },
         );
       }
       if (grossWithdrawalKes > 70000) {
         return NextResponse.json(
-          { message: 'Maximum single M-PESA withdrawal is KES 70,000.' },
+          { message: 'Maximum single M-PESA withdrawal is KES 70,000 (~538.46 USDC).' },
           { status: 400 },
         );
       }
@@ -404,11 +410,11 @@ function checkAndRecordDailyWithdrawal(userKey: string, amountKes: number) {
       const isExpress = body.expressPayout === true;
       const expressSurchargeKes = isExpress ? 35 : 0;
       const feeKes = 50 + expressSurchargeKes; // KES 50 Kopo Kopo cost + optional KES 35 pure profit VIP instant fee
-      const minGross = 100 + feeKes;
+      const minGross = 600 + feeKes;
       if (!grossWithdrawalKes || grossWithdrawalKes < minGross) {
         return NextResponse.json(
           {
-            message: `Minimum M-PESA ${isExpress ? 'Express VIP ' : ''}withdrawal is KES ${minGross} (KES 100 net + KES ${feeKes} fee).`,
+            message: `Minimum M-PESA ${isExpress ? 'Express VIP ' : ''}withdrawal is KES ${minGross} (KES 600 net + KES ${feeKes} fee).`,
           },
           { status: 400 },
         );

@@ -57,8 +57,12 @@ export class WebhooksService {
       (totalPaidKes > 0 ? totalPaidKes - computeDepositFeeKes(totalPaidKes) : 0),
     );
 
+    const netCreditUsdcMeta = Number(metadata?.net_credit_usdc || 0);
     if ((status === 'success' || status === 'received') && userId && netCreditKes > 0) {
-      const amountUsd = Math.round((netCreditKes / 130) * 100) / 100;
+      const amountUsd =
+        netCreditUsdcMeta > 0
+          ? Math.round(netCreditUsdcMeta * 100) / 100
+          : Math.round((netCreditKes / 130) * 100) / 100;
       const credit = await this.walletService.creditCrossmintDeposit(
         userId,
         amountUsd,

@@ -57,10 +57,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
 
   String _formatStake(PaymentGatewayMode gw, double usd) {
     if (!_isCash) return '${(usd * 100).round()} PTS';
-    if (gw == PaymentGatewayMode.kopokopo) {
-      return 'KES ${(usd * AppConfig.usdToKesRate).round()}';
-    }
-    return '\$${usd.toStringAsFixed(2)} USDC';
+    return AppConfig.formatUsdc(usd);
   }
 
   Future<void> _launchMatchroom() async {
@@ -324,10 +321,8 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                   activeTextColor: _isCash ? Colors.black : Colors.white,
                   groupValue: _isCash,
                   onChanged: (v) => setState(() => _isCash = v),
-                  segments: {
-                    true: gateway == PaymentGatewayMode.kopokopo
-                        ? 'Real Cash (KES / M-PESA)'
-                        : 'Real Cash (USDC)',
+                  segments: const {
+                    true: 'Real Cash (USDC)',
                     false: 'Demo Practice (PTS)',
                   },
                 ),
@@ -365,7 +360,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                 const SizedBox(height: 10),
                 HigTextField(
                   controller: _customStakeCtrl,
-                  placeholder: 'Or enter custom USD stake amount (optional)',
+                  placeholder: 'Or enter custom USDC stake amount (optional)',
                   prefixIcon: CupertinoIcons.money_dollar_circle,
                   keyboardType: TextInputType.number,
                   errorText: _stakeErr,

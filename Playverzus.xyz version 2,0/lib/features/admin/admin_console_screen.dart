@@ -920,9 +920,9 @@ class _AdminConsoleScreenState extends ConsumerState<AdminConsoleScreen> {
                             ? 'LIVE · KEYS & TILL CONFIGURED'
                             : 'STANDBY',
                     implementedCapabilities: const [
-                      'Switches Top-Bar Wallet, Landing, Duels & Brackets to KES',
-                      'Cashier Deposit: Instant STK Push (POST /api/mpesa/stk-push)',
-                      'Cashier Payout: Safaricom B2C Transfer (POST /api/mpesa/payout)',
+                      'Platform UI displays balances & prizes in USDC (Cashier converts USDC <-> KES at 130)',
+                      'Cashier Deposit: Instant STK Push (POST /api/mpesa/stk-push, Min USDC 5 / KES 650)',
+                      'Cashier Payout: Safaricom B2C Transfer (POST /api/mpesa/payout, KES 50 fixed fee)',
                       'Webhook Settlement: HMAC-SHA256 (/api/webhooks/mpesa)',
                     ],
                     active: isKopo,
@@ -935,9 +935,9 @@ class _AdminConsoleScreenState extends ConsumerState<AdminConsoleScreen> {
                       }
                       if (!mounted) return;
                       ref.read(toastProvider.notifier).show(
-                            'Active payment rail: M-PESA (Kenya Pilot · KES)',
+                            'Active payment rail: M-PESA (Kenya · USDC <-> KES)',
                             body:
-                                'Global platform currency, Cashier STK Push, and B2C payouts switched to M-PESA.',
+                                'Balances remain in USDC while Cashier STK Push & M-PESA B2C payouts handle local KES conversion.',
                             tone: ToastTone.success,
                           );
                     },
@@ -951,9 +951,9 @@ class _AdminConsoleScreenState extends ConsumerState<AdminConsoleScreen> {
                         ? 'LIVE · PRODUCTION KEYS · SVIX READY'
                         : 'ARMED & CONFIGURED',
                     implementedCapabilities: const [
-                      'Switches Top-Bar Wallet, Landing, Duels & Brackets to \$ USD / USDC',
-                      'Cashier Deposit: Hosted Card & USDC Checkout (POST /api/crossmint/order)',
-                      'Cashier Payout: On-Chain Base USDC Transfer (POST /api/wallet/payout)',
+                      'Keeps Top-Bar Wallet, Landing, Duels & Brackets in USDC',
+                      'Cashier Deposit: Hosted Card & USDC Checkout (POST /api/crossmint/order, Min USDC 5)',
+                      'Cashier Payout: On-Chain Base USDC Transfer (POST /api/wallet/payout, Min USDC 5)',
                       'Webhook Settlement: Svix HMAC-SHA256 (/api/webhooks/crossmint)',
                     ],
                     active: !isKopo,
@@ -968,7 +968,7 @@ class _AdminConsoleScreenState extends ConsumerState<AdminConsoleScreen> {
                       ref.read(toastProvider.notifier).show(
                             'Active payment rail: Crossmint (Global Card & USDC)',
                             body:
-                                'Global platform currency, Card/USDC checkout, and on-chain payouts are now live.',
+                                'Global platform USDC, Card/USDC checkout, and on-chain payouts are now live.',
                             tone: ToastTone.success,
                           );
                     },
@@ -1026,17 +1026,17 @@ class _AdminConsoleScreenState extends ConsumerState<AdminConsoleScreen> {
               const SizedBox(height: 12),
               _feeRuleRow(
                 'M-PESA Deposit (Buy Goods STK)',
-                'Min KES 100 · Max KES 250,000/tx · Customer pays +0.55% upfront above KES 200 (capped at KES 200 above KES 36,365; ≤ KES 200 is KES 0).',
+                'Min USDC 5.00 (KES 650) · Max KES 250,000/tx · Customer pays +0.55% upfront (capped at KES 200 above KES 36,365).',
               ),
               const Divider(height: 14),
               _feeRuleRow(
                 'M-PESA Withdrawal (Move Money / PAY)',
-                'Min KES 150 (KES 100 net + flat KES 50 Kopo Kopo PAY fee paid upfront by customer) · Max KES 70,000/tx · Daily limit KES 150,000 (max 3/day).',
+                'Min USDC 5.00 (KES 650: KES 600 net + flat KES 50 Kopo Kopo PAY fee paid upfront; USDC 20+ suggested for <2% fee impact) · Max KES 70,000/tx · Daily limit KES 150,000 (max 3/day).',
               ),
               const Divider(height: 14),
               _feeRuleRow(
                 'Crossmint Global Deposit & Payout',
-                'Deposit: Min \$2.00 · Max \$2,000/tx (+3.5% + \$0.30 upfront card fee) · Withdrawal: Min \$5.00 (\$1.00 flat payout fee) · Max \$1,000/tx · \$2,500/day.',
+                'Deposit: Min USDC 5.00 · Max USDC 2,000/tx (+3.5% + \$0.30 upfront card fee) · Withdrawal: Min USDC 5.00 (\$1.00 flat payout fee) · Max USDC 1,000/tx · USDC 2,500/day.',
               ),
               const Divider(height: 14),
               _feeRuleRow(

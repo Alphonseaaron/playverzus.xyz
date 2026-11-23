@@ -72,18 +72,13 @@ class _TournamentDetailScreenState
 
   String _fmt(PaymentGatewayMode gw, double usd) {
     if (usd == 0) return 'FREE';
-    if (gw == PaymentGatewayMode.kopokopo) {
-      return 'KES ${(usd * AppConfig.usdToKesRate).round()}';
-    }
-    return '\$${usd.toStringAsFixed(0)} USDC';
+    return AppConfig.formatUsdc(usd);
   }
 
   String _displayTournamentName(TournamentModel t, PaymentGatewayMode gw) {
-    if (gw != PaymentGatewayMode.kopokopo) return t.name;
-    final kesEntry = (t.entryFeeUsd * AppConfig.usdToKesRate).round();
-    return t.name.replaceAll(
-      RegExp(r'\$\d+(?:\.\d{1,2})?'),
-      'KES $kesEntry',
+    return t.name.replaceAllMapped(
+      RegExp(r'\$(\d+(?:\.\d{1,2})?)'),
+      (m) => 'USDC ${m.group(1)}',
     );
   }
 

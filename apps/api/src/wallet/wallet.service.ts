@@ -310,7 +310,7 @@ export class WalletService {
       const roundedAmount = Math.round(amount * 100) / 100;
 
       if (roundedAmount < MIN_DEPOSIT_USDC) {
-        throw new BadRequestException(`The minimum deposit amount is $${MIN_DEPOSIT_USDC.toFixed(2)} USDC.`);
+        throw new BadRequestException(`Minimum deposit is ${MIN_DEPOSIT_USDC.toFixed(2)} USDC.`);
       }
 
       if (roundedAmount > MAX_DEPOSIT_USDC) {
@@ -583,7 +583,7 @@ export class WalletService {
       const roundedAmount = Math.round(amount * 100) / 100;
 
       if (roundedAmount < MIN_WITHDRAWAL_USDC) {
-        throw new BadRequestException(`The minimum withdrawal threshold is $${MIN_WITHDRAWAL_USDC.toFixed(2)} USDC.`);
+        throw new BadRequestException(`Minimum withdrawal is ${MIN_WITHDRAWAL_USDC.toFixed(2)} USDC.`);
       }
 
       if (roundedAmount > MAX_WITHDRAWAL_USDC) {
