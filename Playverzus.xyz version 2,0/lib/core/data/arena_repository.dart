@@ -361,27 +361,55 @@ class ArenaDataNotifier extends StateNotifier<ArenaDataState> {
 
   ChallengeModel _parseChallengeFromApi(Map<String, dynamic> m) {
     final gp = m['game_profiles'] as Map<String, dynamic>?;
-    final rawGameId = (gp?['id'] ?? m['profile_id'] ?? 'eafc').toString();
+    final playerAProf = m['player_a_profile'] as Map<String, dynamic>?;
+    final playerBProf = m['player_b_profile'] as Map<String, dynamic>?;
+    final rawGameId =
+        (gp?['id'] ?? m['profile_id'] ?? m['profileId'] ?? 'eafc').toString();
     final game = findOfficialGameById(rawGameId);
-    final fee = (m['entry_fee'] as num?)?.toDouble() ?? 0.0;
+    final fee =
+        ((m['entry_fee'] ?? m['entryFee']) as num?)?.toDouble() ?? 0.0;
     final id = (m['id'] ?? '').toString();
     final modeRaw = (m['mode'] as String?)?.toUpperCase() ?? '1V1';
+    final rawRoomCode = (m['room_code'] ?? m['roomCode']) as String?;
+    final hostNameRaw = m['playerAUsername'] ??
+        playerAProf?['username'] ??
+        m['creator_username'];
+    final oppNameRaw = m['playerBUsername'] ??
+        playerBProf?['username'] ??
+        m['opponent_username'];
+    final country = (m['country_code'] ??
+            m['playerACountry'] ??
+            m['creator_country_code'])
+        ?.toString();
 
     return ChallengeModel(
       id: id,
-      roomCode: (m['room_code'] as String?) ??
-          'PVZ-${id.substring(0, id.length >= 4 ? 4 : id.length).toUpperCase()}',
+      roomCode: (rawRoomCode != null && rawRoomCode.trim().isNotEmpty)
+          ? rawRoomCode.trim()
+          : 'PVZ-${id.substring(0, id.length >= 4 ? 4 : id.length).toUpperCase()}',
       gameId: game.id,
-      hostId: (m['player_a'] ?? m['creator_id'] ?? '').toString(),
-      hostName: (m['creator_username'] as String?) ?? 'Host',
+      hostId: (m['player_a'] ??
+              m['playerA'] ??
+              m['creator_id'] ??
+              m['creatorId'] ??
+              '')
+          .toString(),
+      hostName:
+          (hostNameRaw != null && hostNameRaw.toString().trim().isNotEmpty)
+              ? hostNameRaw.toString().trim()
+              : 'Host',
+      opponentName:
+          (oppNameRaw != null && oppNameRaw.toString().trim().isNotEmpty)
+              ? oppNameRaw.toString().trim()
+              : null,
       hostElo: (m['creator_elo'] as num?)?.toInt() ?? 1200,
       mode: modeRaw == 'PARTY' ? 'PARTY_SQUAD' : '1V1_OPEN',
       squadSize: modeRaw == 'PARTY' ? '2v2' : '1v1',
       format: (m['format'] as String?) ?? 'BO1',
       stakeUsd: fee,
       isCash: fee > 0,
-      region: (m['country_code'] as String?) ?? 'Global',
-      countryLock: m['country_code'] as String?,
+      region: (country != null && country.trim().isNotEmpty) ? country : 'Global',
+      countryLock: country,
       status: (m['status'] as String?) ?? 'OPEN',
     );
   }
@@ -483,7 +511,12 @@ class ArenaDataNotifier extends StateNotifier<ArenaDataState> {
     String username,
   ) async {
     final session = _ref.read(playerSessionProvider);
-    final lower = idOrCode.toLowerCase().trim();
+    final trimmed = idOrCode.trim();
+    final lower = trimmed.toLowerCase();
+    final isUuid = RegExp(
+      r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+      caseSensitive: false,
+    ).hasMatch(trimmed);
     final idx = state.challenges.indexWhere(
       (c) =>
           c.id.toLowerCase() == lower ||
@@ -493,16 +526,28 @@ class ArenaDataNotifier extends StateNotifier<ArenaDataState> {
     );
 
     if (session.accessToken != null && session.accessToken!.isNotEmpty) {
+      dynamic res;
       if (idx >= 0) {
-        await ApiClient.post('/matches/${state.challenges[idx].id}/accept');
+        res = await ApiClient.post('/matches/${state.challenges[idx].id}/accept');
+      } else if (isUuid) {
+        res = await ApiClient.post('/matches/$trimmed/accept');
       } else {
-        final joined =
-            await ApiClient.post('/matches/room/${idOrCode.toUpperCase()}/join');
-        if (joined is Map<String, dynamic>) {
-          final parsed = _parseChallengeFromApi(joined);
-          state = state.copyWith(myMatches: [parsed, ...state.myMatches]);
-          return parsed;
+        res = await ApiClient.post('/matches/room/${trimmed.toUpperCase()}/join');
+      }
+      if (res is Map<String, dynamic>) {
+        final parsed = _parseChallengeFromApi(res);
+        final updatedOpen = [...state.challenges];
+        if (idx >= 0) {
+          updatedOpen[idx] = parsed;
         }
+        state = state.copyWith(
+          challenges: updatedOpen,
+          myMatches: [
+            parsed,
+            ...state.myMatches.where((m) => m.id != parsed.id),
+          ],
+        );
+        return parsed;
       }
     }
 
@@ -515,7 +560,10 @@ class ArenaDataNotifier extends StateNotifier<ArenaDataState> {
       next[idx] = updated;
       state = state.copyWith(
         challenges: next,
-        myMatches: [updated, ...state.myMatches],
+        myMatches: [
+          updated,
+          ...state.myMatches.where((m) => m.id != updated.id),
+        ],
       );
       return updated;
     }

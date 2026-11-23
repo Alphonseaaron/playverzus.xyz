@@ -200,7 +200,9 @@ export class MatchService {
   }
 
   async acceptMatch(matchId: string, userId: string) {
-    return this.coreMatchService.accept(matchId, userId);
+    const accepted = await this.coreMatchService.accept(matchId, userId);
+    const [enriched] = await this.enrichMatchesWithProfiles([accepted]);
+    return enriched || accepted;
   }
 
   async startMatch(matchId: string) {
@@ -412,9 +414,11 @@ export class MatchService {
     if (error || !match) throw new NotFoundException('Open match with this room code not found');
 
     if (match.player_a === userId) {
-      throw new Error('You cannot join your own duel as an opponent');
+      throw new BadRequestException('You cannot join your own duel as an opponent');
     }
 
-    return this.coreMatchService.accept(match.id, userId);
+    const accepted = await this.coreMatchService.accept(match.id, userId);
+    const [enriched] = await this.enrichMatchesWithProfiles([accepted]);
+    return enriched || accepted;
   }
 }

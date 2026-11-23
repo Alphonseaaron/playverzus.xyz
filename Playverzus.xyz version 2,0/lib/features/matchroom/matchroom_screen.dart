@@ -110,9 +110,12 @@ class _MatchRoomScreenState extends ConsumerState<MatchRoomScreen> {
     if (!mounted) return;
 
     final gp = remote?['game_profiles'] as Map<String, dynamic>?;
-    final rawGameId =
-        (gp?['id'] ?? remote?['profile_id'] ?? local?.gameId ?? activeGame.id)
-            .toString();
+    final rawGameId = (gp?['id'] ??
+            remote?['profile_id'] ??
+            remote?['profileId'] ??
+            local?.gameId ??
+            activeGame.id)
+        .toString();
     final game = findOfficialGameById(rawGameId);
     final roomCode = (remote?['room_code'] ??
             remote?['roomCode'] ??
@@ -1232,6 +1235,7 @@ class _MatchRoomScreenState extends ConsumerState<MatchRoomScreen> {
                                     true,
                                     opponentName: session.username,
                                   );
+                              await _loadMatchState(silent: true);
                               ref.read(toastProvider.notifier).show(
                                     'Seated on Side B',
                                     body:
