@@ -18,7 +18,7 @@
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>Playverzus</title>
+  <title>Playverzus.xyz</title>
   <link rel="manifest" href="manifest.json">
   <style>
     html, body {
@@ -29,6 +29,19 @@
       overflow: hidden;
     }
   </style>
+  <script>
+    if (location.pathname !== '/' && !location.pathname.endsWith('.html') && !location.hash) {
+      history.replaceState(null, '', '/#' + location.pathname + location.search);
+    }
+    window.__pvzDeferredInstallPrompt = null;
+    window.addEventListener('beforeinstallprompt', function (e) {
+      e.preventDefault();
+      window.__pvzDeferredInstallPrompt = e;
+    });
+    window.addEventListener('appinstalled', function () {
+      window.__pvzDeferredInstallPrompt = null;
+    });
+  </script>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>

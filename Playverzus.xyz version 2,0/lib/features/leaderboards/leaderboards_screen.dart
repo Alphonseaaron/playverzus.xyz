@@ -210,6 +210,9 @@ class _LeaderboardsScreenState extends ConsumerState<LeaderboardsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<OfficialGame>(activeGameProvider, (prev, next) {
+      if (prev?.id != next.id) _load();
+    });
     final session = ref.watch(playerSessionProvider);
     final activeGame = ref.watch(activeGameProvider);
     final myRankNum = _myRank?['rank'];

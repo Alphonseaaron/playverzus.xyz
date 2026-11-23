@@ -13,3 +13,9 @@ Future<bool> sendWebOsNotification({
   required String body,
 }) async =>
     false;
+
+Future<bool> checkWebAssetAvailable(String url) async => false;
+
+bool isWebAppInstallReady() => false;
+
+Future<bool> promptWebAppInstall() async => false;

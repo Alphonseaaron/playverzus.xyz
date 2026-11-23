@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -10,6 +11,7 @@ import '../../design_system/tokens/hig_tokens.dart';
 import '../../design_system/widgets/brand_logo.dart';
 import '../../design_system/widgets/hig_primitives.dart';
 import '../../platform_channels/device_bridge.dart';
+import '../../platform_channels/web_bridge.dart';
 
 class _PlatformPackageSpec {
   final String key;
@@ -48,6 +50,7 @@ class _DownloadHubScreenState extends ConsumerState<DownloadHubScreen> {
   late String _detectedKey;
   late String _activeKey;
   bool _showPlatformPicker = false;
+  bool _launching = false;
   int? _openFaqIndex;
 
   static const Map<String, _PlatformPackageSpec> _specs = {
@@ -128,22 +131,113 @@ class _DownloadHubScreenState extends ConsumerState<DownloadHubScreen> {
   }
 
   Future<void> _launchDownload(_PlatformPackageSpec spec) async {
-    final uri = Uri.parse(spec.url);
+    if (_launching) return;
+    setState(() => _launching = true);
     try {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-      ref.read(toastProvider.notifier).show(
-            'Download Started',
-            body: 'Fetching ${spec.buttonLabel.toLowerCase()}...',
-            tone: ToastTone.success,
-          );
+      final isExternalUrl =
+          spec.url.startsWith('https://') || spec.url.startsWith('http://');
+      final hasDirectInstaller =
+          isExternalUrl || (kIsWeb && await checkWebAssetAvailable(spec.url));
+
+      if (hasDirectInstaller) {
+        final uri = Uri.parse(spec.url);
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        if (!mounted) return;
+        ref.read(toastProvider.notifier).show(
+              'Download Started',
+              body: 'Opening ${spec.buttonLabel.toLowerCase()}...',
+              tone: ToastTone.success,
+            );
+        return;
+      }
+
+      if (kIsWeb && isWebAppInstallReady()) {
+        final accepted = await promptWebAppInstall();
+        if (!mounted) return;
+        if (accepted) {
+          ref.read(toastProvider.notifier).show(
+                'Installing Playverzus App',
+                body:
+                    'Playverzus is being added to your device as a standalone app.',
+                tone: ToastTone.success,
+              );
+          return;
+        }
+      }
+
+      if (!mounted) return;
+      _showWebAppInstallGuide(spec);
     } catch (_) {
+      if (!mounted) return;
       ref.read(toastProvider.notifier).show(
-            'Could Not Start Download Automatically',
+            'Could Not Start Installer Automatically',
             body:
-                'Your browser may have blocked the file download. Allow downloads for Playverzus and try again.',
+                'Use your browser\'s Install App button in the address bar or menu to install Playverzus directly.',
             tone: ToastTone.warning,
           );
+    } finally {
+      if (mounted) setState(() => _launching = false);
     }
+  }
+
+  void _showWebAppInstallGuide(_PlatformPackageSpec spec) {
+    final steps = switch (spec.key) {
+      'android' => [
+          '1. Tap the 3-dot browser menu (⋮) in Chrome on Android.',
+          '2. Select "Install app" or "Add to Home screen".',
+          '3. Launch Playverzus directly from your Android home screen for full-screen matchrooms and instant match alerts.',
+        ],
+      'ios' => [
+          '1. Tap the Share button (square with up arrow) in Safari.',
+          '2. Scroll down and tap "Add to Home Screen".',
+          '3. Open Playverzus from your iPhone or iPad Home Screen.',
+        ],
+      'macos' => [
+          '1. In Safari: click File -> "Add to Dock" (or in Chrome/Edge, click the Install icon in the address bar).',
+          '2. Pin Playverzus to your macOS Dock for standalone window capture and instant Ready alerts.',
+        ],
+      _ => [
+          '1. In Chrome or Edge: click the "Install Playverzus" icon on the right side of the address bar (or Menu -> Apps -> Install this site).',
+          '2. Pin Playverzus to your Windows Taskbar or Desktop.',
+          '3. Play directly in a dedicated standalone desktop window with screen capture & OS Ready alerts.',
+        ],
+    };
+
+    showCupertinoDialog<void>(
+      context: context,
+      builder: (ctx) => CupertinoAlertDialog(
+        title: Text('Install Playverzus on ${spec.key.toUpperCase()}'),
+        content: Padding(
+          padding: const EdgeInsets.only(top: 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Standalone signed .${spec.isAndroid ? 'apk' : spec.key == 'macos' ? 'dmg' : 'exe'} packages are finalizing release signing. Install the instant standalone app on this device right now:',
+                style: const TextStyle(fontSize: 12.5, height: 1.4),
+              ),
+              const SizedBox(height: 10),
+              for (final s in steps) ...[
+                Text(
+                  s,
+                  textAlign: TextAlign.left,
+                  style: const TextStyle(fontSize: 12.5, height: 1.4),
+                ),
+                const SizedBox(height: 6),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Got it'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -239,6 +333,7 @@ class _DownloadHubScreenState extends ConsumerState<DownloadHubScreen> {
                       label: spec.buttonLabel,
                       size: HigButtonSize.large,
                       variant: HigButtonVariant.primary,
+                      loading: _launching,
                       onPressed: () => _launchDownload(spec),
                     ),
                     if (spec.isAndroid) ...[

@@ -157,12 +157,27 @@ export class MatchService {
     entryFee?: number,
   ) {
     const resolvedProfileId = await resolveAndEnsureGameProfileId(this.supabase, profileId);
+    let resolvedOpponentId = opponentId ? opponentId.trim() : null;
+    if (
+      resolvedOpponentId &&
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(resolvedOpponentId)
+    ) {
+      const { data: oppProfile } = await this.supabase
+        .from('profiles')
+        .select('id')
+        .ilike('username', resolvedOpponentId.replace(/^@/, '').toLowerCase())
+        .maybeSingle();
+      if (!oppProfile?.id) {
+        throw new NotFoundException(`Could not find rival player "@${resolvedOpponentId}".`);
+      }
+      resolvedOpponentId = oppProfile.id;
+    }
     const roomCode = generateRoomCode();
     const match = await this.coreMatchService.create({
       creatorId,
       profileId: resolvedProfileId,
       playerA: creatorId,
-      playerB: opponentId,
+      playerB: resolvedOpponentId,
       format,
       roomCode,
     });

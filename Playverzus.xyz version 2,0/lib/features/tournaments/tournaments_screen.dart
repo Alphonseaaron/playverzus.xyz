@@ -7,6 +7,7 @@ import '../../core/catalog/official_games.dart';
 import '../../core/config/app_config.dart';
 import '../../core/data/arena_repository.dart';
 import '../../core/network/api_client.dart';
+import '../../core/network/friendly_errors.dart';
 import '../../core/storage/app_state.dart';
 import '../../design_system/layout/responsive.dart';
 import '../../design_system/tokens/hig_tokens.dart';
@@ -77,6 +78,12 @@ class _TournamentsScreenState extends ConsumerState<TournamentsScreen> {
     } on ApiException catch (e) {
       if (!mounted) return;
       ref.read(toastProvider.notifier).show(e.message, tone: ToastTone.error);
+    } catch (e) {
+      if (!mounted) return;
+      ref.read(toastProvider.notifier).show(
+            FriendlyError.humanize(e),
+            tone: ToastTone.error,
+          );
     } finally {
       if (mounted) setState(() => _joiningId = null);
     }
@@ -660,7 +667,7 @@ class _TournamentsScreenState extends ConsumerState<TournamentsScreen> {
                                       Clipboard.setData(
                                         ClipboardData(
                                           text:
-                                              'https://playverzus.xyz/#/tournaments/${cup.id}',
+                                              'https://playverzus.xyz/tournaments/${cup.id}',
                                         ),
                                       );
                                       ref.read(toastProvider.notifier).show(

@@ -7,6 +7,7 @@ import '../../core/catalog/official_games.dart';
 import '../../core/config/app_config.dart';
 import '../../core/data/arena_repository.dart';
 import '../../core/network/api_client.dart';
+import '../../core/network/friendly_errors.dart';
 import '../../core/storage/app_state.dart';
 import '../../design_system/layout/responsive.dart';
 import '../../design_system/tokens/hig_tokens.dart';
@@ -147,7 +148,12 @@ class _TournamentDetailScreenState
     final isEnrolled = t.entrants.any((e) => e.username == session.username);
     final isCheckedIn = t.entrants
         .any((e) => e.username == session.username && e.checkedIn);
-    final inviteUrl = 'https://playverzus.xyz/#/tournaments/${t.id}';
+    final organizerId =
+        (_remoteTournament?['created_by'] ?? _remoteTournament?['creator_id'] ?? '')
+            .toString();
+    final canManageBracket = session.isAdmin ||
+        (session.userId.isNotEmpty && organizerId == session.userId);
+    final inviteUrl = 'https://playverzus.xyz/tournaments/${t.id}';
 
     return RefreshIndicator(
       onRefresh: _load,
@@ -274,8 +280,15 @@ class _TournamentDetailScreenState
                                       );
                                   await _load();
                                 } on ApiException catch (e) {
+                                  if (!mounted) return;
                                   ref.read(toastProvider.notifier).show(
                                         e.message,
+                                        tone: ToastTone.error,
+                                      );
+                                } catch (e) {
+                                  if (!mounted) return;
+                                  ref.read(toastProvider.notifier).show(
+                                        FriendlyError.humanize(e),
                                         tone: ToastTone.error,
                                       );
                                 } finally {
@@ -299,8 +312,15 @@ class _TournamentDetailScreenState
                                         tone: ToastTone.success,
                                       );
                                 } on ApiException catch (e) {
+                                  if (!mounted) return;
                                   ref.read(toastProvider.notifier).show(
                                         e.message,
+                                        tone: ToastTone.error,
+                                      );
+                                } catch (e) {
+                                  if (!mounted) return;
+                                  ref.read(toastProvider.notifier).show(
+                                        FriendlyError.humanize(e),
                                         tone: ToastTone.error,
                                       );
                                 } finally {
@@ -308,7 +328,7 @@ class _TournamentDetailScreenState
                                 }
                               },
                             ),
-                          if (t.status == 'REGISTRATION')
+                          if (t.status == 'REGISTRATION' && canManageBracket)
                             HigButton(
                               label: 'Start Bracket',
                               variant: HigButtonVariant.secondary,
@@ -325,8 +345,15 @@ class _TournamentDetailScreenState
                                       );
                                   await _load();
                                 } on ApiException catch (e) {
+                                  if (!mounted) return;
                                   ref.read(toastProvider.notifier).show(
                                         e.message,
+                                        tone: ToastTone.error,
+                                      );
+                                } catch (e) {
+                                  if (!mounted) return;
+                                  ref.read(toastProvider.notifier).show(
+                                        FriendlyError.humanize(e),
                                         tone: ToastTone.error,
                                       );
                                 } finally {

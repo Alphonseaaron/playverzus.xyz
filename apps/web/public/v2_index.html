@@ -33,6 +33,14 @@
     if (location.pathname !== '/' && !location.pathname.endsWith('.html') && !location.hash) {
       history.replaceState(null, '', '/#' + location.pathname + location.search);
     }
+    window.__pvzDeferredInstallPrompt = null;
+    window.addEventListener('beforeinstallprompt', function (e) {
+      e.preventDefault();
+      window.__pvzDeferredInstallPrompt = e;
+    });
+    window.addEventListener('appinstalled', function () {
+      window.__pvzDeferredInstallPrompt = null;
+    });
   </script>
 </head>
 <body>

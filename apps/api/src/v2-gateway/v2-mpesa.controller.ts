@@ -346,7 +346,10 @@ export class V2MpesaController {
     }
 
     const userId = String(body?.userId || '').trim();
-    const userKey = userId || phone;
+    if (!userId) {
+      throw new BadRequestException('Please sign in to your account before requesting an M-PESA withdrawal.');
+    }
+    const userKey = userId;
     const isExpress = body?.expressPayout === true;
     const expressSurchargeKes = isExpress ? 35 : 0;
     const feeKes = 50 + expressSurchargeKes; // KES 50 Kopo Kopo cost + optional KES 35 VIP instant margin

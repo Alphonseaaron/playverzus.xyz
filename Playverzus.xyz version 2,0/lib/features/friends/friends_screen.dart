@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/network/api_client.dart';
+import '../../core/network/friendly_errors.dart';
 import '../../core/storage/app_state.dart';
 import '../../design_system/layout/responsive.dart';
 import '../../design_system/tokens/hig_tokens.dart';
@@ -73,26 +74,49 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen> {
     setState(() => _submitting = true);
     try {
       String targetId = raw;
-      try {
+      final isUuid = RegExp(
+        r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+        caseSensitive: false,
+      ).hasMatch(raw);
+      if (!isUuid) {
         final resolved = await ApiClient.post('/auth/resolve-username', data: {
           'username': raw,
         });
-        if (resolved is Map && resolved['id'] != null) {
-          targetId = resolved['id'].toString();
+        final resolvedId = (resolved is Map)
+            ? (resolved['userId'] ?? resolved['id'])?.toString()
+            : null;
+        if (resolvedId == null || resolvedId.isEmpty) {
+          if (mounted) {
+            ref.read(toastProvider.notifier).show(
+                  'Player not found',
+                  body: 'Could not find a competitor named @$raw.',
+                  tone: ToastTone.error,
+                );
+          }
+          return;
         }
-      } catch (_) {}
+        targetId = resolvedId;
+      }
 
       await ApiClient.post('/social/friends/request', data: {
         'addresseeId': targetId,
       });
       _addCtrl.clear();
+      if (!mounted) return;
       ref.read(toastProvider.notifier).show(
             'Friend request sent to @$raw',
             tone: ToastTone.success,
           );
       await _loadFriends();
     } on ApiException catch (e) {
+      if (!mounted) return;
       ref.read(toastProvider.notifier).show(e.message, tone: ToastTone.error);
+    } catch (e) {
+      if (!mounted) return;
+      ref.read(toastProvider.notifier).show(
+            FriendlyError.humanize(e),
+            tone: ToastTone.error,
+          );
     } finally {
       if (mounted) setState(() => _submitting = false);
     }

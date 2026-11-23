@@ -28,18 +28,22 @@ async function proxyToUpstream(req: Request, pathSuffix: string) {
   const targetUrl = `${UPSTREAM_API}/api/developer/${pathSuffix}${url.search}`;
   const method = req.method.toUpperCase();
   const bodyText =
-    method === 'POST' || method === 'PATCH'
-      ? await req.text()
+    method === 'POST' || method === 'PATCH' || method === 'PUT' || method === 'DELETE'
+      ? await req.text().catch(() => undefined)
       : undefined;
+  const authHeader = req.headers.get('authorization');
 
   try {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    };
+    if (authHeader) headers['Authorization'] = authHeader;
+
     const res = await fetch(targetUrl, {
       method,
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      body: bodyText,
+      headers,
+      body: bodyText && bodyText.length > 0 ? bodyText : undefined,
       signal: AbortSignal.timeout(8_000),
     });
     if (res.status !== 404) {

@@ -413,13 +413,33 @@ class ArenaDataNotifier extends StateNotifier<ArenaDataState> {
     String roomCode =
         'PVZ${DateTime.now().millisecondsSinceEpoch.toString().substring(9)}';
 
+    String? resolvedOpponentId;
+    if (invitedOpponent != null && invitedOpponent.trim().isNotEmpty) {
+      final rawOpp = invitedOpponent.trim().replaceAll('@', '');
+      final isUuid = RegExp(
+        r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+        caseSensitive: false,
+      ).hasMatch(rawOpp);
+      if (isUuid) {
+        resolvedOpponentId = rawOpp;
+      } else if (session.accessToken != null && session.accessToken!.isNotEmpty) {
+        final resolved = await ApiClient.post('/auth/resolve-username', data: {
+          'username': rawOpp,
+        });
+        final uid = (resolved is Map)
+            ? (resolved['userId'] ?? resolved['id'])?.toString()
+            : null;
+        if (uid == null || uid.isEmpty) {
+          throw ApiException('Could not find rival player "@$rawOpp".');
+        }
+        resolvedOpponentId = uid;
+      }
+    }
+
     if (session.accessToken != null && session.accessToken!.isNotEmpty) {
       final res = await ApiClient.post('/matches', data: {
         'profileId': game.uuid,
-        'opponentId':
-            (invitedOpponent != null && invitedOpponent.trim().isNotEmpty)
-                ? invitedOpponent.trim()
-                : null,
+        'opponentId': resolvedOpponentId,
         'format': format,
         'entryFee': isCash ? stakeUsd : 0,
       });

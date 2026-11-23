@@ -7,7 +7,33 @@ const RENDER_API_URL = 'https://playverzus-api.onrender.com/api';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { identifier } = body as { identifier?: string };
+    const { identifier, email, password } = body as {
+      identifier?: string;
+      email?: string;
+      password?: string;
+    };
+
+    // Standard email + password sign-in (Flutter v2.0 & API clients):
+    // Proxy directly to NestJS Render /auth/login so user session + JWT are returned.
+    if (email || password !== undefined) {
+      const loginEmail = (email || identifier || '').trim().toLowerCase();
+      if (!loginEmail || !password) {
+        return NextResponse.json(
+          { message: 'Please enter both your email address and password.' },
+          { status: 400 }
+        );
+      }
+      const res = await fetch(`${RENDER_API_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({ email: loginEmail, password }),
+      });
+      const data = await res.json().catch(() => ({}));
+      return NextResponse.json(data, { status: res.status });
+    }
 
     if (!identifier) {
       return NextResponse.json({ error: 'Email or username is required.' }, { status: 400 });

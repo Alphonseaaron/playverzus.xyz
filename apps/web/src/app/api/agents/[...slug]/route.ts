@@ -382,12 +382,51 @@ function buildOverview() {
   };
 }
 
+const RENDER_API_URL = 'https://playverzus-api.onrender.com/api';
+
+async function proxyAgentsToRender(
+  req: Request,
+  slug: string[],
+  bodyText?: string,
+): Promise<Response | null> {
+  const url = new URL(req.url);
+  const pathSuffix = slug.join('/');
+  const targetUrl = `${RENDER_API_URL}/agents/${pathSuffix}${url.search}`;
+  const method = req.method.toUpperCase();
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+  };
+  const auth = req.headers.get('authorization');
+  if (auth) headers['Authorization'] = auth;
+  try {
+    const res = await fetch(targetUrl, {
+      method,
+      headers,
+      body: bodyText && bodyText.length > 0 ? bodyText : undefined,
+      signal: AbortSignal.timeout(8_000),
+    });
+    if (res.status !== 404 && res.status < 500) {
+      return res;
+    }
+  } catch {}
+  return null;
+}
+
 export async function GET(
   req: Request,
   context: { params: { slug?: string[] } },
 ) {
-  await loadPersistedAgents();
   const slug = context.params?.slug || [];
+  const upstream = await proxyAgentsToRender(req, slug);
+  if (upstream) {
+    const json = await upstream.json().catch(() => ({}));
+    return NextResponse.json(json, {
+      status: upstream.status,
+      headers: { 'Cache-Control': 'no-store' },
+    });
+  }
+  await loadPersistedAgents();
   const action = slug[0] || 'overview';
   const url = new URL(req.url);
 
@@ -425,10 +464,21 @@ export async function POST(
   req: Request,
   context: { params: { slug?: string[] } },
 ) {
-  await loadPersistedAgents();
   const slug = context.params?.slug || [];
+  const rawBody = await req.text().catch(() => '');
+  const upstream = await proxyAgentsToRender(req, slug, rawBody);
+  if (upstream) {
+    const json = await upstream.json().catch(() => ({}));
+    return NextResponse.json(json, { status: upstream.status });
+  }
+  await loadPersistedAgents();
   const action = slug[0] || '';
-  const body = (await req.json().catch(() => ({}))) as Record<string, any>;
+  let body: Record<string, any> = {};
+  if (rawBody) {
+    try {
+      body = JSON.parse(rawBody) as Record<string, any>;
+    } catch {}
+  }
 
   if (action === 'register') {
     const fullName = String(body.fullName || body.username || 'Field Agent').trim();

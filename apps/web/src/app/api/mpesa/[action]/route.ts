@@ -98,11 +98,46 @@ async function getKopoAccessToken(cfg: ReturnType<typeof getKopoConfig>): Promis
   return cachedOAuthToken;
 }
 
+const RENDER_API_URL = 'https://playverzus-api.onrender.com/api';
+
+async function proxyMpesaToRender(
+  req: Request,
+  action: string,
+  bodyText?: string,
+): Promise<Response | null> {
+  const url = new URL(req.url);
+  const targetUrl = `${RENDER_API_URL}/mpesa/${action}${url.search}`;
+  const method = req.method.toUpperCase();
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+  };
+  const auth = req.headers.get('authorization');
+  if (auth) headers['Authorization'] = auth;
+  try {
+    const res = await fetch(targetUrl, {
+      method,
+      headers,
+      body: bodyText && bodyText.length > 0 ? bodyText : undefined,
+      signal: AbortSignal.timeout(8_000),
+    });
+    if (res.status !== 404 && res.status !== 502 && res.status !== 503) {
+      return res;
+    }
+  } catch {}
+  return null;
+}
+
 export async function GET(
   req: Request,
   context: { params: { action: string } },
 ) {
   const action = String(context.params?.action || '');
+  const upstream = await proxyMpesaToRender(req, action);
+  if (upstream) {
+    const json = await upstream.json().catch(() => ({}));
+    return NextResponse.json(json, { status: upstream.status });
+  }
   const cfg = getKopoConfig();
   const url = new URL(req.url);
 
@@ -180,10 +215,22 @@ export async function POST(
   context: { params: { action: string } },
 ) {
   const action = String(context.params?.action || '');
+  const rawBody = await req.text().catch(() => '');
+  const upstream = await proxyMpesaToRender(req, action, rawBody);
+  if (upstream) {
+    const json = await upstream.json().catch(() => ({}));
+    return NextResponse.json(json, { status: upstream.status });
+  }
+  let parsedBody: Record<string, unknown> = {};
+  if (rawBody) {
+    try {
+      parsedBody = JSON.parse(rawBody) as Record<string, unknown>;
+    } catch {}
+  }
   const cfg = getKopoConfig();
 
   if (action === 'gateway') {
-    const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+    const body = parsedBody;
     const updatedGateway = await setPersistedGateway(body.activeGateway);
     const configured = Boolean(cfg.clientId && cfg.clientSecret && cfg.tillNumber);
     return NextResponse.json({
@@ -235,7 +282,7 @@ function checkAndRecordDailyWithdrawal(userKey: string, amountKes: number) {
       );
     }
     try {
-      const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+      const body = parsedBody;
       const netCreditKes = Math.round(Number(body.amountKes || 0));
       const phone = normalizeKenyaPhone(body.phone);
       if (!netCreditKes || netCreditKes < 100) {
@@ -332,7 +379,7 @@ function checkAndRecordDailyWithdrawal(userKey: string, amountKes: number) {
       );
     }
     try {
-      const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+      const body = parsedBody;
       const grossWithdrawalKes = Math.round(Number(body.amountKes || 0));
       const phone = normalizeKenyaPhone(body.phone);
       if (!grossWithdrawalKes || grossWithdrawalKes < 150) {

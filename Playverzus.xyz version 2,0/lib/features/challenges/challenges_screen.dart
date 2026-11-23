@@ -7,6 +7,7 @@ import '../../core/catalog/official_games.dart';
 import '../../core/config/app_config.dart';
 import '../../core/data/arena_repository.dart';
 import '../../core/network/api_client.dart';
+import '../../core/network/friendly_errors.dart';
 import '../../core/storage/app_state.dart';
 import '../../design_system/layout/responsive.dart';
 import '../../design_system/tokens/hig_tokens.dart';
@@ -313,6 +314,10 @@ class _ChallengesScreenState extends ConsumerState<ChallengesScreen> {
                         final isInvitedToMe = c.invitedOpponent != null &&
                             c.invitedOpponent!.toLowerCase() ==
                                 session.username.toLowerCase();
+                        final isMine = (c.hostId.isNotEmpty &&
+                                c.hostId == session.userId) ||
+                            c.hostName.toLowerCase() ==
+                                session.username.toLowerCase();
 
                         return SizedBox(
                           width: cardWidth,
@@ -390,16 +395,27 @@ class _ChallengesScreenState extends ConsumerState<ChallengesScreen> {
                                 ),
                                 const SizedBox(height: 14),
                                 HigButton(
-                                  label: isInvitedToMe
-                                      ? 'Accept Rival Invite'
-                                      : 'Accept Duel & Enter Arena',
-                                  icon: CupertinoIcons.bolt_fill,
+                                  label: isMine
+                                      ? 'Open My Matchroom'
+                                      : isInvitedToMe
+                                          ? 'Accept Rival Invite'
+                                          : 'Accept Duel & Enter Arena',
+                                  icon: isMine
+                                      ? CupertinoIcons.arrow_right_circle_fill
+                                      : CupertinoIcons.bolt_fill,
+                                  variant: isMine
+                                      ? HigButtonVariant.secondary
+                                      : HigButtonVariant.primary,
                                   size: HigButtonSize.small,
                                   fullWidth: true,
                                   onPressed: () async {
                                     ref
                                         .read(activeGameProvider.notifier)
                                         .selectGame(g);
+                                    if (isMine) {
+                                      context.push('/matches/${c.id}');
+                                      return;
+                                    }
                                     try {
                                       await ref
                                           .read(arenaDataProvider.notifier)
@@ -417,6 +433,12 @@ class _ChallengesScreenState extends ConsumerState<ChallengesScreen> {
                                       if (!context.mounted) return;
                                       ref.read(toastProvider.notifier).show(
                                             e.message,
+                                            tone: ToastTone.error,
+                                          );
+                                    } catch (e) {
+                                      if (!context.mounted) return;
+                                      ref.read(toastProvider.notifier).show(
+                                            FriendlyError.humanize(e),
                                             tone: ToastTone.error,
                                           );
                                     }

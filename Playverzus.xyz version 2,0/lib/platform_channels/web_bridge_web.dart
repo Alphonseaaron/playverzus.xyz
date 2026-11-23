@@ -153,3 +153,66 @@ Future<bool> sendWebOsNotification({
     return false;
   }
 }
+
+Future<bool> checkWebAssetAvailable(String url) async {
+  try {
+    final init = JSObject();
+    init.setProperty('method'.toJS, 'HEAD'.toJS);
+    final promise = globalContext.callMethod<JSPromise<JSAny?>?>(
+      'fetch'.toJS,
+      url.toJS,
+      init,
+    );
+    if (promise == null) return false;
+    final res = (await promise.toDart) as JSObject?;
+    if (res == null) return false;
+    final ok = res.getProperty<JSAny?>('ok'.toJS)?.dartify() == true;
+    if (!ok) return false;
+    final headers = res.getProperty<JSObject?>('headers'.toJS);
+    final ct = (headers
+                ?.callMethod<JSAny?>('get'.toJS, 'content-type'.toJS)
+                ?.dartify() ??
+            '')
+        .toString()
+        .toLowerCase();
+    // Avoid mistaking Next.js SPA HTML fallback / 404 pages for a binary installer
+    if (ct.contains('text/html')) return false;
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+bool isWebAppInstallReady() {
+  try {
+    return globalContext.getProperty<JSObject?>('__pvzDeferredInstallPrompt'.toJS) !=
+        null;
+  } catch (_) {
+    return false;
+  }
+}
+
+Future<bool> promptWebAppInstall() async {
+  try {
+    final promptObj =
+        globalContext.getProperty<JSObject?>('__pvzDeferredInstallPrompt'.toJS);
+    if (promptObj == null) return false;
+    final p = promptObj.callMethod<JSPromise<JSAny?>?>('prompt'.toJS);
+    if (p != null) {
+      await p.toDart;
+    }
+    final choicePromise =
+        promptObj.getProperty<JSPromise<JSAny?>?>('userChoice'.toJS);
+    if (choicePromise != null) {
+      final choice = (await choicePromise.toDart) as JSObject?;
+      final outcome =
+          (choice?.getProperty<JSAny?>('outcome'.toJS)?.dartify() ?? '')
+              .toString();
+      globalContext.setProperty('__pvzDeferredInstallPrompt'.toJS, null);
+      return outcome == 'accepted';
+    }
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
