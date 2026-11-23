@@ -79,14 +79,15 @@ export class SocialService {
     if (requesterId === addresseeId) {
       throw new BadRequestException('You cannot send a friend request to yourself');
     }
-    const { data: existing } = await this.supabase
+    const { data: existingRows } = await this.supabase
       .from('friendships')
       .select('id, status')
       .or(
         `and(requester_id.eq.${requesterId},addressee_id.eq.${addresseeId}),and(requester_id.eq.${addresseeId},addressee_id.eq.${requesterId})`,
       )
-      .maybeSingle();
+      .limit(1);
 
+    const existing = existingRows?.[0];
     if (existing) {
       if (existing.status === 'ACCEPTED') {
         throw new BadRequestException('You are already connected with this player');
@@ -97,7 +98,15 @@ export class SocialService {
       throw new BadRequestException('A friend request is already pending with this player');
     }
 
-    return this.friendshipService.sendRequest(requesterId, addresseeId);
+    try {
+      return await this.friendshipService.sendRequest(requesterId, addresseeId);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err ?? '');
+      if (msg.toLowerCase().includes('duplicate') || msg.toLowerCase().includes('unique')) {
+        throw new BadRequestException('A friend request already exists with this player');
+      }
+      throw new BadRequestException(msg || 'Could not send friend request');
+    }
   }
 
   async acceptFriend(friendshipId: string, userId: string) {
