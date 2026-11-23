@@ -119,7 +119,7 @@ async function proxyMpesaToRender(
       method,
       headers,
       body: bodyText && bodyText.length > 0 ? bodyText : undefined,
-      signal: AbortSignal.timeout(8_000),
+      signal: AbortSignal.timeout(25_000),
     });
     if (res.status !== 404 && res.status !== 502 && res.status !== 503) {
       return res;
@@ -272,15 +272,6 @@ function checkAndRecordDailyWithdrawal(userKey: string, amountKes: number) {
 }
 
   if (action === 'stk-push') {
-    if (!cfg.clientId || !cfg.clientSecret || !cfg.tillNumber) {
-      return NextResponse.json(
-        {
-          message:
-            'Live M-PESA gateway requires KOPOKOPO_CLIENT_ID, KOPOKOPO_CLIENT_SECRET, and KOPOKOPO_TILL_NUMBER configured in environment variables.',
-        },
-        { status: 503 },
-      );
-    }
     try {
       const body = parsedBody;
       const rawUsdc = Number(body.amountUsdc || 0);
@@ -304,6 +295,15 @@ function checkAndRecordDailyWithdrawal(userKey: string, amountKes: number) {
         return NextResponse.json(
           { message: 'Enter a valid Kenyan M-PESA phone number (+2547XXXXXXXX).' },
           { status: 400 },
+        );
+      }
+      if (!cfg.clientId || !cfg.clientSecret || !cfg.tillNumber) {
+        return NextResponse.json(
+          {
+            message:
+              'M-PESA deposits are temporarily unavailable while mobile-money checkout finishes connecting on the server. Try Card / USDC or check back shortly.',
+          },
+          { status: 503 },
         );
       }
       const feeKes = computeMpesaDepositFeeKes(netCreditKes);
@@ -377,12 +377,6 @@ function checkAndRecordDailyWithdrawal(userKey: string, amountKes: number) {
   }
 
   if (action === 'payout') {
-    if (!cfg.clientId || !cfg.clientSecret) {
-      return NextResponse.json(
-        { message: 'Live M-PESA payouts require server credentials configured.' },
-        { status: 503 },
-      );
-    }
     try {
       const body = parsedBody;
       const rawUsdc = Number(body.amountUsdc || 0);
@@ -417,6 +411,12 @@ function checkAndRecordDailyWithdrawal(userKey: string, amountKes: number) {
             message: `Minimum M-PESA ${isExpress ? 'Express VIP ' : ''}withdrawal is KES ${minGross} (KES 600 net + KES ${feeKes} fee).`,
           },
           { status: 400 },
+        );
+      }
+      if (!cfg.clientId || !cfg.clientSecret) {
+        return NextResponse.json(
+          { message: 'M-PESA payouts are temporarily unavailable while mobile-money settlement finishes connecting on the server. Please check back shortly.' },
+          { status: 503 },
         );
       }
       const commitDaily = checkAndRecordDailyWithdrawal(userKey, grossWithdrawalKes);

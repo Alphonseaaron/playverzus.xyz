@@ -254,12 +254,6 @@ export class V2MpesaController {
 
   @Post('stk-push')
   async stkPush(@Body() body: any) {
-    const cfg = this.getKopoConfig();
-    if (!cfg.clientId || !cfg.clientSecret || !cfg.tillNumber) {
-      throw new ServiceUnavailableException(
-        'Live M-PESA gateway requires KOPOKOPO_CLIENT_ID, KOPOKOPO_CLIENT_SECRET, and KOPOKOPO_TILL_NUMBER configured on the server.',
-      );
-    }
     const rawUsdc = Number(body?.amountUsdc || 0);
     const netCreditKes = Math.round(Number(body?.amountKes || (rawUsdc > 0 ? rawUsdc * 130 : 0)));
     const netCreditUsdc =
@@ -273,6 +267,13 @@ export class V2MpesaController {
     }
     if (!/^\+254\d{9}$/.test(phone)) {
       throw new BadRequestException('Enter a valid Kenyan M-PESA phone number (+2547XXXXXXXX).');
+    }
+
+    const cfg = this.getKopoConfig();
+    if (!cfg.clientId || !cfg.clientSecret || !cfg.tillNumber) {
+      throw new ServiceUnavailableException(
+        'M-PESA deposits are temporarily unavailable while mobile-money checkout finishes connecting on the server. Try Card / USDC or check back shortly.',
+      );
     }
 
     const feeKes = this.computeMpesaDepositFeeKes(netCreditKes);
@@ -334,12 +335,6 @@ export class V2MpesaController {
 
   @Post('payout')
   async payout(@Body() body: any) {
-    const cfg = this.getKopoConfig();
-    if (!cfg.clientId || !cfg.clientSecret) {
-      throw new ServiceUnavailableException(
-        'Live M-PESA payouts require KOPOKOPO_CLIENT_ID and KOPOKOPO_CLIENT_SECRET configured on the server.',
-      );
-    }
     const rawUsdc = Number(body?.amountUsdc || 0);
     const grossWithdrawalKes = Math.round(Number(body?.amountKes || (rawUsdc > 0 ? rawUsdc * 130 : 0)));
     const phone = this.normalizeKenyaPhone(body?.phone);
@@ -359,7 +354,6 @@ export class V2MpesaController {
     if (!userId) {
       throw new BadRequestException('Please sign in to your account before requesting an M-PESA withdrawal.');
     }
-    const userKey = userId;
     const isExpress = body?.expressPayout === true;
     const expressSurchargeKes = isExpress ? 35 : 0;
     const feeKes = 50 + expressSurchargeKes; // KES 50 Kopo Kopo cost + optional KES 35 VIP instant margin
@@ -369,6 +363,14 @@ export class V2MpesaController {
         `Minimum M-PESA ${isExpress ? 'Express VIP ' : ''}withdrawal is KES ${minGross} (KES 600 net payout + KES ${feeKes} fee).`,
       );
     }
+
+    const cfg = this.getKopoConfig();
+    if (!cfg.clientId || !cfg.clientSecret) {
+      throw new ServiceUnavailableException(
+        'M-PESA payouts are temporarily unavailable while mobile-money settlement finishes connecting on the server. Please check back shortly.',
+      );
+    }
+    const userKey = userId;
     const commitDaily = this.checkAndRecordDailyWithdrawal(userKey, grossWithdrawalKes);
     const netPayoutKes = grossWithdrawalKes - feeKes;
 
