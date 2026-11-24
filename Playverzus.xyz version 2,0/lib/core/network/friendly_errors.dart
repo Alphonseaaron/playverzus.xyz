@@ -148,7 +148,15 @@ class FriendlyError {
 
     // 7. Server errors (never expose HTTP codes like 500/502/503)
     if (statusCode == 503 &&
-        _matchesAny(lower, ['temporarily unavailable', 'm-pesa deposits', 'm-pesa payouts'])) {
+        _matchesAny(lower, [
+          'temporarily unavailable',
+          'm-pesa deposits',
+          'm-pesa payouts',
+          'crossmint',
+          'base usdc',
+          'direct usdc',
+          'treasury',
+        ])) {
       return trimmed;
     }
     if ((statusCode != null && statusCode >= 500) ||

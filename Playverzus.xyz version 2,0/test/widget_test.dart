@@ -1034,10 +1034,18 @@ void main() {
   testWidgets(
       'Cashier Direct Base USDC (No-KYB) mode renders zero-fee Base instructions and validates 0x payout addresses',
       (WidgetTester tester) async {
-    tester.view.physicalSize = const Size(1280, 960);
+    tester.view.physicalSize = const Size(375, 812);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
+
+    expect(
+      FriendlyError.fromText(
+        'Crossmint Wallets permissions are not enabled yet on the server API key.',
+        statusCode: 503,
+      ),
+      contains('Crossmint Wallets permissions'),
+    );
 
     await tester.pumpWidget(
       const ProviderScope(
@@ -1046,8 +1054,8 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 120));
 
-    // Switch Cashier rail directly to USDC (Base · No KYC)
-    await tester.tap(find.text('USDC (Base · No KYC)'));
+    // Switch Cashier rail directly to USDC (Base) on mobile 375px with zero overflow
+    await tester.tap(find.text('USDC (Base)'));
     await tester.pumpAndSettle();
 
     expect(find.text('Deposit USDC Directly on Base'), findsOneWidget);
@@ -1060,6 +1068,7 @@ void main() {
     expect(find.text('Withdraw USDC on Base'), findsOneWidget);
 
     // Selecting USDC 20 · Best Value shows flat USDC 1.00 on-chain payout fee
+    await tester.ensureVisible(find.text('USDC 20 · Best Value'));
     await tester.tap(find.text('USDC 20 · Best Value'));
     await tester.pumpAndSettle();
     expect(find.textContaining('On-Chain Payout Fee'), findsOneWidget);

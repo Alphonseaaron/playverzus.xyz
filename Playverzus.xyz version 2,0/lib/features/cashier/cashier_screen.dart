@@ -564,19 +564,25 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          isMpesa
-                              ? const BrandLogo.kopokopo(height: 26)
-                              : const BrandLogo.crossmint(height: 22),
-                          HigBadge(
-                            label: isMpesa
-                                ? 'M-PESA · USDC <-> KES'
-                                : 'CARD / USDC RAIL',
-                            tone: HigBadgeTone.emerald,
-                          ),
-                        ],
+                      SizedBox(
+                        width: double.infinity,
+                        child: Wrap(
+                          alignment: WrapAlignment.spaceBetween,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 10,
+                          runSpacing: 8,
+                          children: [
+                            isMpesa
+                                ? const BrandLogo.kopokopo(height: 26)
+                                : const BrandLogo.crossmint(height: 22),
+                            HigBadge(
+                              label: isMpesa
+                                  ? 'M-PESA · USDC <-> KES'
+                                  : 'BASE USDC · NO KYC',
+                              tone: HigBadgeTone.emerald,
+                            ),
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 18),
                       Wrap(
@@ -705,8 +711,8 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                             }
                           },
                           segments: const {
-                            true: 'M-PESA (KES <-> USDC)',
-                            false: 'USDC (Base · No KYC)',
+                            true: 'M-PESA (KES)',
+                            false: 'USDC (Base)',
                           },
                         ),
                         const SizedBox(height: 14),
@@ -723,8 +729,8 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                               if (!val) _loadDepositWallet();
                             },
                             segments: const {
-                              false: 'Direct USDC Transfer (Ready)',
-                              true: 'Card / Apple Pay (KYB Pending)',
+                              false: 'Direct USDC (0% Fee)',
+                              true: 'Card / Apple Pay',
                             },
                           ),
                           const SizedBox(height: 14),
@@ -1353,8 +1359,8 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
               ),
               const Divider(height: 14),
               _feeLine(
-                'Net You Receive in Wallet',
-                '100% of sent USDC (≈ ${AppConfig.formatUsdc(usd, alwaysDecimals: true)})',
+                'Net You Receive',
+                '${AppConfig.formatUsdc(usd, alwaysDecimals: true)} (100%)',
                 HigColors.emerald,
                 bold: true,
               ),
@@ -1486,9 +1492,11 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                     color: HigColors.emerald,
                   ),
                   const SizedBox(width: 6),
-                  Text(
-                    netLabel,
-                    style: HigTypography.headline().copyWith(fontSize: 13.5),
+                  Flexible(
+                    child: Text(
+                      netLabel,
+                      style: HigTypography.headline().copyWith(fontSize: 13.5),
+                    ),
                   ),
                 ],
               ),
@@ -1506,7 +1514,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
             )
           else if (_loadingDepositWallet)
             const HigLoadingCard(
-              message: 'Preparing your Base USDC deposit address...',
+              message: 'Loading Base USDC address...',
             )
           else if (_walletLoadErr != null)
             HigErrorBanner(
@@ -1613,8 +1621,10 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
       {bool bold = false}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Flexible(
+        Expanded(
+          flex: 3,
           child: Text(
             label,
             style: HigTypography.caption(
@@ -1622,13 +1632,17 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
             ).copyWith(fontWeight: bold ? FontWeight.w700 : FontWeight.w500),
           ),
         ),
-        const SizedBox(width: 8),
-        Text(
-          value,
-          style: HigTypography.mono(
-            size: bold ? 13 : 11.5,
-            color: valueColor,
-          ).copyWith(fontWeight: bold ? FontWeight.w800 : FontWeight.w600),
+        const SizedBox(width: 10),
+        Flexible(
+          flex: 3,
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            style: HigTypography.mono(
+              size: bold ? 13 : 11.5,
+              color: valueColor,
+            ).copyWith(fontWeight: bold ? FontWeight.w800 : FontWeight.w600),
+          ),
         ),
       ],
     );

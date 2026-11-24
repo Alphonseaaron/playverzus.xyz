@@ -698,7 +698,14 @@ class HigLoadingCard extends StatelessWidget {
         children: [
           const CupertinoActivityIndicator(radius: 10),
           const SizedBox(width: 12),
-          Text(message, style: HigTypography.subheadline()),
+          Flexible(
+            child: Text(
+              message,
+              style: HigTypography.subheadline(),
+              softWrap: true,
+              textAlign: TextAlign.center,
+            ),
+          ),
         ],
       ),
     );
