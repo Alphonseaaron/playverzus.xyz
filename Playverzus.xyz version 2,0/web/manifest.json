@@ -1,6 +1,6 @@
 {
-  "name": "Playverzus.xyz v2.0",
-  "short_name": "Playverzus",
+  "name": "playverzus.xyz",
+  "short_name": "playverzus.xyz",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#0B0C10",

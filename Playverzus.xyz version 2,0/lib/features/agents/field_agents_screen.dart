@@ -346,7 +346,7 @@ class _AdminGroundAgentsPanelState
               ),
               const SizedBox(height: 4),
               Text(
-                'Duels, 5-Player Blitz Pools, and Tournaments charge differentiated rakes (12.5% – 22.0%). Playverzus locks the first 80%–82% of all collected rake for Cost of Production & Company Profit before allocating Direct Agent (15%–18% of rake) and Lead Agent Wing Override (5% of rake) commissions.',
+                'Duels, 5-Player Blitz Pools, and Tournaments charge differentiated rakes (12.5% – 22.0%). playverzus.xyz locks the first 80%–82% of all collected rake for Cost of Production & Company Profit before allocating Direct Agent (15%–18% of rake) and Lead Agent Wing Override (5% of rake) commissions.',
                 style: HigTypography.footnote(),
               ),
               const SizedBox(height: 12),

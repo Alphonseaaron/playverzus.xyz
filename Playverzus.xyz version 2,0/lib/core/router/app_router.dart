@@ -115,9 +115,9 @@ class _PublicPageShell extends ConsumerWidget {
                           const SizedBox(width: 10),
                           GestureDetector(
                             onTap: () => context.go('/'),
-                            child: MediaQuery.sizeOf(context).width < 460
+                            child: MediaQuery.sizeOf(context).width < 360
                                 ? const BrandLogo.mark(height: 24)
-                                : const BrandLogo.full(height: 24),
+                                : const BrandLogo.full(height: 22),
                           ),
                           const Spacer(),
                           HigButton(

@@ -106,7 +106,7 @@ class DeviceBridge {
       case 'android':
         return 'Download Android App (.apk)';
       case 'ios':
-        return 'Get Playverzus iOS App';
+        return 'Get playverzus.xyz iOS App';
       case 'macos':
         return 'Download macOS App (.dmg)';
       case 'linux':
@@ -129,7 +129,7 @@ class DeviceBridge {
           recommendedMode: DeviceCaptureMode.mobileWebSnapshot,
           modeTitle: 'Mobile Web Match Sync',
           modeDescription:
-              'Quick match confirmation in mobile browser, or install the Playverzus mobile companion for instant launches.',
+              'Quick match confirmation in mobile browser, or install the playverzus.xyz mobile app for instant launches.',
         );
       }
       final desktopLabel = switch (osKey) {
@@ -238,15 +238,36 @@ class DeviceBridge {
     );
   }
 
-  /// Inspects live Notification permission state (`'granted'`, `'denied'`, `'default'`).
+  /// Inspects live browser Notification permission state (`'granted'`, `'denied'`, `'default'`).
   static String getNotificationPermissionState() {
     if (kIsWeb) {
       return getWebNotificationPermissionState();
     }
-    return 'granted';
+    return 'default';
   }
 
-  /// Requests OS notification permission cleanly without silently faking approval.
+  /// Queries real OS notification authorization asynchronously across Web & native builds.
+  static Future<String> fetchNotificationPermissionState() async {
+    if (kIsWeb) {
+      return getWebNotificationPermissionState();
+    }
+    try {
+      final state = await _channel.invokeMethod<String>(
+        'getNotificationPermissionState',
+      );
+      if (state != null && state.isNotEmpty) return state;
+    } catch (_) {}
+    return 'default';
+  }
+
+  /// Whether this runtime supports real screen/window sharing for live match verification.
+  static bool supportsLiveScreenShare() {
+    if (!kIsWeb) return true;
+    final osKey = detectWebOsKey();
+    return osKey != 'android' && osKey != 'ios';
+  }
+
+  /// Requests real OS notification permission without silently faking approval.
   static Future<bool> requestNotificationPermission() async {
     if (kIsWeb) {
       return requestWebNotificationPermission();
@@ -255,29 +276,24 @@ class DeviceBridge {
       final ok = await _channel.invokeMethod<bool>(
         'requestNotificationPermission',
       );
-      return ok ?? true;
+      return ok ?? false;
     } catch (_) {
-      return true;
+      return false;
     }
   }
 
-  /// Requests browser Screen/Window Share permission (`getDisplayMedia` on Desktop Web)
-  /// or native OS capture readiness. Returns true ONLY if user actually grants access.
+  /// Requests real OS Screen/Window Share permission (`getDisplayMedia` on Web
+  /// or native OS MediaProjection/ScreenCapture). Returns true ONLY if user grants access.
   static Future<bool> requestScreenCapturePermission() async {
     if (kIsWeb) {
-      final osKey = detectWebOsKey();
-      if (osKey == 'android' || osKey == 'ios') {
-        // Mobile browsers cannot invoke getDisplayMedia in background; allow screenshot upload mode after explicit consent.
-        return true;
-      }
       return requestWebDisplayCapturePermission();
     }
     try {
       final ok =
           await _channel.invokeMethod<bool>('requestCapturePermission');
-      return ok ?? true;
+      return ok ?? false;
     } catch (_) {
-      return true;
+      return false;
     }
   }
 

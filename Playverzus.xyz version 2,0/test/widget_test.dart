@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:playverzus_v2/app.dart';
@@ -709,15 +710,15 @@ void main() {
     await tester.tap(find.byIcon(CupertinoIcons.bell_fill).first);
     await tester.pump(const Duration(milliseconds: 350));
 
-    expect(find.text('FIRST-TIME SETUP & PERMISSIONS'), findsOneWidget);
-    expect(find.text('Setup Featured Games'), findsOneWidget);
+    expect(find.text('DEVICE & APP ACTIONS'), findsOneWidget);
+    expect(find.text('Confirm Installed Games'), findsOneWidget);
 
-    // Confirming games clears the "Setup Featured Games" notification immediately
+    // Confirming games clears the "Confirm Installed Games" notification immediately
     await tester.runAsync(
       () => authNotifier.markGamesSetupConfirmed(gameIds: ['chess']),
     );
     await tester.pump(const Duration(milliseconds: 100));
-    expect(find.text('Setup Featured Games'), findsNothing);
+    expect(find.text('Confirm Installed Games'), findsNothing);
   });
 
   testWidgets(
@@ -844,8 +845,8 @@ void main() {
       buildNumber: 1,
     );
     notifier.applyRemoteManifest(
-      latestVersion: '2.0.2',
-      latestBuildNumber: 3,
+      latestVersion: '2.0.5',
+      latestBuildNumber: 6,
       releaseNotes: 'Better onboarding & 1-tap tournament launch.',
     );
 
@@ -854,13 +855,13 @@ void main() {
     expect(pending.hasNewerDownloadedRelease, isTrue);
     expect(pending.hasPendingUpdate, isTrue);
 
-    // Dismissing 2.0.2 hides that version until a newer release (2.0.3) arrives
+    // Dismissing 2.0.5 hides that version until a newer release (2.0.6) arrives
     await notifier.dismissCurrentUpdate();
     expect(container.read(appUpdateProvider).hasPendingUpdate, isFalse);
 
     notifier.applyRemoteManifest(
-      latestVersion: '2.0.3',
-      latestBuildNumber: 4,
+      latestVersion: '2.0.6',
+      latestBuildNumber: 7,
     );
     expect(container.read(appUpdateProvider).hasPendingUpdate, isTrue);
   });
@@ -904,8 +905,130 @@ void main() {
     await tester.tap(find.byIcon(CupertinoIcons.bell_fill).first);
     await tester.pump(const Duration(milliseconds: 350));
 
-    expect(find.text('Update Available: Playverzus v2.1.0'), findsOneWidget);
+    expect(find.text('Update Available · playverzus.xyz v2.1.0'), findsOneWidget);
     expect(find.text('Download Update'), findsOneWidget);
+  });
+
+  test(
+      'DeviceBridge & MachineAuthNotifier enforce real OS Allow/Deny permission outcomes instead of faking approval',
+      () async {
+    const channel = MethodChannel('xyz.playverzus.v2/device_bridge');
+    var osNotifAllow = false;
+    var osCaptureAllow = false;
+
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (call) async {
+      switch (call.method) {
+        case 'getNotificationPermissionState':
+          return osNotifAllow ? 'granted' : 'denied';
+        case 'requestNotificationPermission':
+          return osNotifAllow;
+        case 'requestCapturePermission':
+          return osCaptureAllow;
+        case 'scanInstalledGames':
+          return <String>[];
+        case 'getDeviceFingerprint':
+          return <String, dynamic>{
+            'fingerprint': 'PVZ-AND-REALTEST',
+            'deviceModel': 'Pixel Test',
+            'osVersion': 'Android 15',
+            'hardwareAttested': true,
+          };
+      }
+      return null;
+    });
+    addTearDown(() {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, null);
+    });
+
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    final notifier = container.read(machineAuthProvider.notifier);
+    await notifier.bootstrapOnRegistration(userId: 'u_perm_1', username: 'ada');
+
+    // Denied on device -> MUST remain false (zero simulation)
+    expect(await notifier.promptNotificationPermission(), isFalse);
+    expect(await notifier.promptScreenCapturePermission(), isFalse);
+    expect(container.read(machineAuthProvider).alertsAuthorized, isFalse);
+    expect(container.read(machineAuthProvider).captureAuthorized, isFalse);
+
+    // User subsequently grants on device -> flips cleanly to true
+    osNotifAllow = true;
+    osCaptureAllow = true;
+    expect(await notifier.promptNotificationPermission(), isTrue);
+    expect(await notifier.promptScreenCapturePermission(), isTrue);
+    expect(container.read(machineAuthProvider).alertsAuthorized, isTrue);
+    expect(container.read(machineAuthProvider).captureAuthorized, isTrue);
+  });
+
+  testWidgets(
+      'AuthScreen & LegalScreen enforce scrolling through Terms of Service & Privacy Policy before unlocking agreement checkbox',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(520, 920);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: MaterialApp(home: AuthScreen(isSignUp: true)),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 120));
+
+    // Tapping READ TERMS opens the iOS Agreement Reader instead of checking blindly
+    final readTermsPill = find.text('READ TERMS');
+    await tester.ensureVisible(readTermsPill);
+    await tester.tap(readTermsPill);
+    await tester.pump(const Duration(milliseconds: 250));
+
+    expect(find.text('Read Agreements Before Accepting'), findsOneWidget);
+    expect(find.text('Read to Bottom'), findsOneWidget);
+
+    // Tapping disabled button before reading does NOT advance
+    await tester.tap(find.text('Read to Bottom'));
+    await tester.pump();
+    expect(find.text('TERMS OF SERVICE & RULES'), findsOneWidget);
+
+    // Partial scroll must NOT unlock accept button
+    final docScroll = find.byKey(const ValueKey('legal_doc_scroll'));
+    await tester.drag(docScroll, const Offset(0, -350));
+    await tester.pumpAndSettle();
+    expect(find.text('Read to Bottom'), findsOneWidget);
+
+    // Jump to final section and scroll all the way to bottom -> button unlocks
+    final tocTerm = find.text('09 Contact');
+    await tester.ensureVisible(tocTerm);
+    await tester.tap(tocTerm);
+    await tester.pumpAndSettle();
+    await tester.drag(docScroll, const Offset(0, -500));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Accept Terms & Next: Privacy Policy'), findsOneWidget);
+    await tester.tap(find.text('Accept Terms & Next: Privacy Policy'));
+    await tester.pump(const Duration(milliseconds: 250));
+
+    // Now on Privacy Policy (step 2) -> must also read to bottom
+    expect(find.text('PLAYER PRIVACY POLICY'), findsOneWidget);
+    expect(find.text('Read to Bottom'), findsOneWidget);
+
+    final privacyScroll = find.byKey(const ValueKey('legal_doc_scroll'));
+    final tocPrivacy = find.text('08 DPO Contact');
+    await tester.ensureVisible(tocPrivacy);
+    await tester.tap(tocPrivacy);
+    await tester.pumpAndSettle();
+    await tester.drag(privacyScroll, const Offset(0, -500));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Accept Privacy Policy & Agree'), findsOneWidget);
+    await tester.tap(find.text('Accept Privacy Policy & Agree'));
+    await tester.pump(const Duration(milliseconds: 250));
+
+    // Modal closed & both policies now marked reviewed on signup form
+    expect(find.text('TERMS READ'), findsOneWidget);
+    expect(find.text('PRIVACY READ'), findsOneWidget);
   });
 }
 

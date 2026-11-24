@@ -104,7 +104,7 @@ class _DeveloperStatsTesterScreenState
                         style: HigTypography.title1()),
                     const SizedBox(height: 6),
                     Text(
-                      'Select any API-configured game, choose the target platform, and pull live player or match stats directly through the Playverzus server connector.',
+                      'Select any API-configured game, choose the target platform, and pull live player or match stats directly through the playverzus.xyz server connector.',
                       style: HigTypography.footnote(),
                     ),
                   ],

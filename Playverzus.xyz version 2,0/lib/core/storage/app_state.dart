@@ -289,7 +289,7 @@ class MachineAuthState {
 
   String get deviceBindingSummary {
     if (!isRunningInstalledApp) {
-      return 'Browser session active ($deviceFingerprint). Install the Playverzus Companion App for one-tap game launches and instant Ready alerts.';
+      return 'Browser session active ($deviceFingerprint). Install the playverzus.xyz App for one-tap game launches and live alerts.';
     }
     if (capabilities.isWeb) {
       return 'Installed App session active ($deviceFingerprint). ${featuredInstalledGames.length} featured titles synced.';
@@ -414,13 +414,10 @@ class MachineAuthNotifier extends StateNotifier<MachineAuthState> {
 
     // 2. Collect real device fingerprint & inspect actual Notification permission state
     final fp = await DeviceBridge.collectDeviceFingerprint();
-    final notifState = DeviceBridge.getNotificationPermissionState();
+    final notifState = await DeviceBridge.fetchNotificationPermissionState();
     final osNotifOk = notifState == 'granted';
     final runningInstalledApp =
         !state.capabilities.isWeb || DeviceBridge.isRunningInstalledApp();
-    final isMobileWeb = state.capabilities.isWeb &&
-        (state.capabilities.platformKey == 'android' ||
-            state.capabilities.platformKey == 'ios');
 
     // 3. Scan installed games ONLY when running on a native OS that supports it
     final officialIds = officialGames.map((g) => g.id).toSet();
@@ -439,9 +436,8 @@ class MachineAuthNotifier extends StateNotifier<MachineAuthState> {
       hardwareAttested: fp.hardwareAttested,
       osNotificationsGranted: osNotifOk,
       alertsAuthorized: osNotifOk,
-      captureAuthorized: !kIsWeb ||
-          savedStreamChannel.isNotEmpty ||
-          (isMobileWeb && savedCaptureAuthorized),
+      captureAuthorized: savedStreamChannel.isNotEmpty ||
+          (savedCaptureAuthorized && !DeviceBridge.supportsLiveScreenShare()),
       autoEscrowEnabled: true,
       installedGameIds: verifiedGames,
       gamesConfirmed: savedGamesConfirmed || verifiedGames.isNotEmpty,
@@ -524,6 +520,19 @@ class MachineAuthNotifier extends StateNotifier<MachineAuthState> {
     await _persist();
   }
 
+  /// Syncs live OS/browser permission state (reflecting any external Accept/Block change).
+  Future<void> syncLivePermissionStates() async {
+    final notifState = await DeviceBridge.fetchNotificationPermissionState();
+    final granted = notifState == 'granted';
+    if (granted != state.osNotificationsGranted ||
+        granted != state.alertsAuthorized) {
+      state = state.copyWith(
+        osNotificationsGranted: granted,
+        alertsAuthorized: granted,
+      );
+    }
+  }
+
   /// Explicitly prompts the user for live match OS/Web notification permission.
   Future<bool> promptNotificationPermission() async {
     HapticFeedback.selectionClick();
@@ -536,11 +545,14 @@ class MachineAuthNotifier extends StateNotifier<MachineAuthState> {
     return granted;
   }
 
-  /// Explicitly prompts the user for screen/window verification feed permission
-  /// (`getDisplayMedia` on Desktop Web or OS foreground/screenshot capture consent).
+  /// Explicitly prompts the user for real OS Screen/Window Share permission
+  /// (`getDisplayMedia` on Web or native OS screen capture), or records explicit
+  /// mobile-browser fallback consent when browser screen capture is unsupported.
   Future<bool> promptScreenCapturePermission() async {
     HapticFeedback.selectionClick();
-    final granted = await DeviceBridge.requestScreenCapturePermission();
+    final granted = DeviceBridge.supportsLiveScreenShare()
+        ? await DeviceBridge.requestScreenCapturePermission()
+        : true;
     state = state.copyWith(captureAuthorized: granted);
     await _persist();
     return granted;

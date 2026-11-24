@@ -45,7 +45,7 @@ class BrandLogo extends StatelessWidget {
           height: height,
           fit: BoxFit.contain,
           filterQuality: FilterQuality.high,
-          semanticLabel: 'Playverzus Logo',
+          semanticLabel: 'playverzus.xyz Logo',
         );
       case _BrandLogoVariant.playverzusMark:
         return Image.asset(
@@ -53,7 +53,7 @@ class BrandLogo extends StatelessWidget {
           height: height,
           fit: BoxFit.contain,
           filterQuality: FilterQuality.high,
-          semanticLabel: 'Playverzus Mark',
+          semanticLabel: 'playverzus.xyz Mark',
         );
       case _BrandLogoVariant.crossmint:
         return Image.asset(

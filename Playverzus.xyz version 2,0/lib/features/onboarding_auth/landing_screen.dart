@@ -289,9 +289,9 @@ class _LandingNavBar extends StatelessWidget {
                   children: [
                     GestureDetector(
                       onTap: onPlayNow,
-                      child: ultraNarrow
-                          ? const BrandLogo.mark(height: 26)
-                          : const BrandLogo.full(height: 24),
+                      child: width < 360
+                          ? const BrandLogo.mark(height: 24)
+                          : const BrandLogo.full(height: 22),
                     ),
                     const Spacer(),
                     if (showCenterNav) ...[
@@ -615,7 +615,7 @@ class _HeroCopyColumn extends StatelessWidget {
         ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 460),
           child: Text(
-            'Players come to Playverzus for competitive gaming at its best. Queue 1v1 duels, Blitz pools, or team rankings with zero ceiling.',
+            'Players come to playverzus.xyz for competitive gaming at its best. Queue 1v1 duels, Blitz pools, or team rankings with zero ceiling.',
             style: HigTypography.body(color: HigColors.labelSecondary)
                 .copyWith(fontSize: compact ? 14.5 : 15.5, height: 1.5),
           ),
@@ -926,7 +926,7 @@ class _MoreThanMatchmakingSection extends StatelessWidget {
         badgeDot: true,
         title: '1v1 & Squad Matchmaking',
         description:
-            'Solo duels or squad lobbies in ${selectedGame.shortName} protected by Playverzus verification.',
+            'Solo duels or squad lobbies in ${selectedGame.shortName} protected by playverzus.xyz verification.',
         primaryActionLabel: 'PLAY NOW',
         onPrimaryAction: onPlayNow,
       ),
@@ -978,7 +978,7 @@ class _MoreThanMatchmakingSection extends StatelessWidget {
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 500),
             child: Text(
-              'Playverzus is home to every ambition, offering distinct competitive formats across supported titles for every player and squad.',
+              'playverzus.xyz is home to every ambition, offering distinct competitive formats across supported titles for every player and squad.',
               style: HigTypography.body(color: HigColors.labelSecondary)
                   .copyWith(fontSize: 14.5),
             ),
@@ -1742,7 +1742,7 @@ class _BiggerThanOneTitleSection extends StatelessWidget {
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 580),
             child: Text(
-              'Every game on Playverzus carries its own competitive formats: 1v1 duels, 5-player Blitz pools, and Cups across ${games.length}+ PC, console, and mobile titles — rolling out first in Kenya with M-PESA and ready for the world.',
+              'Every game on playverzus.xyz carries its own competitive formats: 1v1 duels, 5-player Blitz pools, and Cups across ${games.length}+ PC, console, and mobile titles — rolling out first in Kenya with M-PESA and ready for the world.',
               textAlign: TextAlign.center,
               style: HigTypography.footnote(color: HigColors.labelSecondary)
                   .copyWith(fontSize: 14, height: 1.55),
@@ -1949,7 +1949,7 @@ class _LandingFooter extends StatelessWidget {
         const BrandLogo.full(height: 24),
         const SizedBox(height: 18),
         Text(
-          'Playverzus Companion',
+          'playverzus.xyz App',
           style: HigTypography.caption(color: HigColors.labelTertiary),
         ),
         const SizedBox(height: 8),
@@ -2062,7 +2062,7 @@ class _LandingFooter extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              'Disclaimer: EA SPORTS FC, Counter-Strike, Apex Legends, Marvel Rivals, Valorant, Rocket League, Call of Duty, Tekken, Fortnite, League of Legends, Dota 2, Mobile Legends: Bang Bang, and Subway Surfers are trademarks of their respective owners (Electronic Arts Inc., Valve Corporation, Riot Games, Epic Games, Activision Publishing, Bandai Namco, NetEase, Moonton, SYBO Games). Playverzus is an independent skill competition platform not sponsored by or affiliated with those publishers.',
+              'Disclaimer: EA SPORTS FC, Counter-Strike, Apex Legends, Marvel Rivals, Valorant, Rocket League, Call of Duty, Tekken, Fortnite, League of Legends, Dota 2, Mobile Legends: Bang Bang, and Subway Surfers are trademarks of their respective owners (Electronic Arts Inc., Valve Corporation, Riot Games, Epic Games, Activision Publishing, Bandai Namco, NetEase, Moonton, SYBO Games). playverzus.xyz is an independent skill competition platform not sponsored by or affiliated with those publishers.',
               style: HigTypography.caption(color: HigColors.labelTertiary)
                   .copyWith(fontSize: 10.5, height: 1.45),
             ),
@@ -2400,7 +2400,7 @@ class _CookieAndPermissionsDialogState
               ),
               const SizedBox(height: 8),
               Text(
-                'Playverzus uses essential authentication cookies only — zero third-party ad trackers. Optional features requiring device access (such as Live Match Alerts) prompt you explicitly before enabling.',
+                'playverzus.xyz uses essential authentication cookies only — zero third-party ad trackers. Optional features requiring device access (such as Live Match Alerts) prompt you explicitly before enabling.',
                 style: HigTypography.footnote(color: HigColors.labelSecondary),
               ),
               const SizedBox(height: 16),

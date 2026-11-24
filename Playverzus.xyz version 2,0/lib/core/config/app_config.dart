@@ -48,8 +48,8 @@ class AppConfig {
     defaultValue: 'https://testflight.apple.com/join/playverzus',
   );
 
-  static const String appVersion = '2.0.1';
-  static const int appBuildNumber = 2;
+  static const String appVersion = '2.0.2';
+  static const int appBuildNumber = 3;
   static const double usdToKesRate = 130.0;
 
   /// Canonical platform currency formatter: always renders USDC cleanly.

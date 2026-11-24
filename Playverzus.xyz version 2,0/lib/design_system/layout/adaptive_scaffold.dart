@@ -335,6 +335,7 @@ class _AdaptiveScaffoldState extends ConsumerState<AdaptiveScaffold> {
   void _showNotificationsSheet(BuildContext context) {
     HapticFeedback.selectionClick();
     final rootContext = context;
+    ref.read(machineAuthProvider.notifier).syncLivePermissionStates();
 
     showModalBottomSheet<void>(
       context: context,
@@ -362,7 +363,7 @@ class _AdaptiveScaffoldState extends ConsumerState<AdaptiveScaffold> {
                         accent: HigColors.emerald,
                         title: canInstantReload
                             ? 'App Update Ready (v${appUpdate.latestVersion})'
-                            : 'Update Available: Playverzus v${appUpdate.latestVersion}',
+                            : 'Update Available · playverzus.xyz v${appUpdate.latestVersion}',
                         detail: appUpdate.releaseNotes,
                         primaryLabel: canInstantReload
                             ? 'Reload to Update'
@@ -394,7 +395,7 @@ class _AdaptiveScaffoldState extends ConsumerState<AdaptiveScaffold> {
                         icon: CupertinoIcons.device_phone_portrait,
                         accent: HigColors.copper,
                         title:
-                            'Install Playverzus App (${machine.capabilities.osLabel})',
+                            'Install playverzus.xyz (${machine.capabilities.osLabel})',
                         detail:
                             '${DeviceBridge.recommendedAppActionLabel()} for one-tap game launches and fewer browser interruptions.',
                         primaryLabel:
@@ -407,7 +408,7 @@ class _AdaptiveScaffoldState extends ConsumerState<AdaptiveScaffold> {
                                   .read(machineAuthProvider.notifier)
                                   .dismissDownloadPrompt();
                               sheetRef.read(toastProvider.notifier).show(
-                                    'Playverzus app installed',
+                                    'playverzus.xyz app installed',
                                     tone: ToastTone.success,
                                   );
                             }
@@ -431,22 +432,30 @@ class _AdaptiveScaffoldState extends ConsumerState<AdaptiveScaffold> {
                   }
 
                   if (!machine.alertsAuthorized) {
+                    final isBlocked = DeviceBridge.getNotificationPermissionState() == 'denied';
                     setupAlerts.add(
                       _setupAlertCard(
                         icon: CupertinoIcons.bell_fill,
                         accent: HigColors.copper,
-                        title: 'Permission Needed: Live Match Alerts',
-                        detail:
-                            'Allow notifications so Playverzus can alert you when opponents Ready up, matches start, or prizes settle.',
-                        primaryLabel: 'Allow Alerts',
+                        title: isBlocked
+                            ? 'Match Alerts Blocked on Device'
+                            : 'Allow Match Notifications',
+                        detail: isBlocked
+                            ? 'Notifications are blocked in device/browser Settings. Allow notifications for playverzus.xyz, then tap Retry.'
+                            : 'Enable device notifications so playverzus.xyz alerts you when opponents Ready up, matches kick off, or prizes settle.',
+                        primaryLabel: isBlocked ? 'Retry Check' : 'Ask Device',
                         onPrimary: () async {
                           final ok = await sheetRef
                               .read(machineAuthProvider.notifier)
                               .promptNotificationPermission();
+                          final liveState =
+                              await DeviceBridge.fetchNotificationPermissionState();
                           sheetRef.read(toastProvider.notifier).show(
                                 ok
-                                    ? 'Match alerts enabled'
-                                    : 'Enable notifications in your browser or device settings',
+                                    ? 'Notifications enabled'
+                                    : (liveState == 'denied'
+                                        ? 'Blocked in browser/device settings — allow notifications and retry'
+                                        : 'Notification permission dismissed — we will remind you in Matchrooms'),
                                 tone:
                                     ok ? ToastTone.success : ToastTone.warning,
                               );
@@ -460,10 +469,10 @@ class _AdaptiveScaffoldState extends ConsumerState<AdaptiveScaffold> {
                       _setupAlertCard(
                         icon: CupertinoIcons.checkmark_shield_fill,
                         accent: HigColors.indigo,
-                        title: 'Permission Needed: Match Verification',
+                        title: 'Match Verification Permission Needed',
                         detail:
-                            'Grant one-time match verification permission before competing in Duels or Tournaments so results confirm smoothly.',
-                        primaryLabel: 'Allow Access',
+                            'Grant live screen/match access when entering a Duel or Tournament so outcomes settle automatically.',
+                        primaryLabel: 'Verify Access',
                         onPrimary: () async {
                           final activeGame = sheetRef.read(activeGameProvider);
                           final ok = await PreMatchPermissionsDialog
@@ -488,11 +497,11 @@ class _AdaptiveScaffoldState extends ConsumerState<AdaptiveScaffold> {
                       _setupAlertCard(
                         icon: CupertinoIcons.game_controller_solid,
                         accent: HigColors.emerald,
-                        title: 'Setup Featured Games',
+                        title: 'Confirm Installed Games',
                         detail: machine.canAutoScanGames
                             ? 'Scan this ${machine.capabilities.osLabel} device or confirm installed games for 1-tap launch in Duels & Tournaments.'
                             : 'Confirm which featured games you play on this device or console for fast 1-tap launch.',
-                        primaryLabel: 'Setup Games',
+                        primaryLabel: 'Select Games',
                         onPrimary: () async {
                           await showInstalledGamesSetupSheet(ctx);
                         },
@@ -599,7 +608,7 @@ class _AdaptiveScaffoldState extends ConsumerState<AdaptiveScaffold> {
                                   children: [
                                     if (setupAlerts.isNotEmpty) ...[
                                       Text(
-                                        'FIRST-TIME SETUP & PERMISSIONS',
+                                        'DEVICE & APP ACTIONS',
                                         style: HigTypography.caption(
                                           color: HigColors.copperBright,
                                         ).copyWith(
@@ -833,7 +842,7 @@ class _AdaptiveScaffoldState extends ConsumerState<AdaptiveScaffold> {
                       _menuTile(
                         icon: CupertinoIcons.person_2_fill,
                         title: 'Friends & Squads',
-                        subtitle: 'Party code & friend challenges',
+                        subtitle: 'Add rivals, accept requests & send challenges',
                         onTap: () => nav('/friends'),
                       ),
                       _menuTile(
@@ -1133,7 +1142,9 @@ class _AdaptiveScaffoldState extends ConsumerState<AdaptiveScaffold> {
                               ? defaultAdminRouteForRole(session.role)
                               : '/dashboard',
                         ),
-                        child: const BrandLogo.mark(height: 24),
+                        child: MediaQuery.sizeOf(context).width >= 430
+                            ? const BrandLogo.full(height: 21)
+                            : const BrandLogo.mark(height: 24),
                       ),
                       const SizedBox(width: 8),
                     ],

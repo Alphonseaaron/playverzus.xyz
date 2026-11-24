@@ -636,7 +636,7 @@ class _MatchRoomScreenState extends ConsumerState<MatchRoomScreen> {
               ),
               const SizedBox(height: 6),
               Text(
-                'While you play ${game.shortName}, Playverzus keeps your match synchronized and sends real-time Ready & payout alerts.',
+                'While you play ${game.shortName}, playverzus.xyz keeps your match synchronized and sends real-time Ready & payout alerts.',
                 style: HigTypography.caption(),
               ),
               const SizedBox(height: 14),
@@ -895,7 +895,7 @@ class _MatchRoomScreenState extends ConsumerState<MatchRoomScreen> {
                               ? 'Launched ${game.displayName}'
                               : 'Switch to ${game.displayName}',
                           body:
-                              '${res.channelLabel}. Playverzus remains active in background.',
+                              '${res.channelLabel}. playverzus.xyz remains active in background.',
                           tone: ToastTone.info,
                         );
                   },

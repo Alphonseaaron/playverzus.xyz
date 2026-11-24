@@ -51,6 +51,17 @@ class _PreMatchPermissionsDialogState
     extends ConsumerState<PreMatchPermissionsDialog> {
   bool _requestingScreen = false;
   bool _requestingNotifs = false;
+  String _notifState = DeviceBridge.getNotificationPermissionState();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await ref.read(machineAuthProvider.notifier).syncLivePermissionStates();
+      final live = await DeviceBridge.fetchNotificationPermissionState();
+      if (mounted) setState(() => _notifState = live);
+    });
+  }
 
   ({String label, IconData icon, String screenTip, String pushTip})
       _platformCopy(String osKey) {
@@ -60,7 +71,7 @@ class _PreMatchPermissionsDialogState
           label: 'macOS Desktop',
           icon: CupertinoIcons.device_laptop,
           screenTip:
-              'Approve match access when prompted so ${widget.gameName} duels confirm smoothly.',
+              'Approve your browser/macOS screen share prompt so ${widget.gameName} duels confirm smoothly.',
           pushTip:
               'macOS notifications alert you immediately when your opponent readies up or a match settles.',
         );
@@ -69,18 +80,18 @@ class _PreMatchPermissionsDialogState
           label: 'Android Mobile',
           icon: CupertinoIcons.device_phone_portrait,
           screenTip: kIsWeb
-              ? 'Allow quick match confirmation when prompted, or install the Playverzus Android app for seamless matches.'
-              : 'Keeps live match sync active while you play.',
+              ? 'Mobile browsers do not support background screen sharing. Confirm match-room mode below or install the playverzus.xyz Android app.'
+              : 'Approve Android screen projection when prompted so live ${widget.gameName} matches verify cleanly.',
           pushTip:
-              'Heads-up Android alerts notify you immediately on match updates and payouts.',
+              'Android alerts notify you immediately on opponent Ready checks, kickoffs, and payouts.',
         );
       case 'ios':
         return (
           label: 'iPhone & iPad',
           icon: CupertinoIcons.device_phone_portrait,
           screenTip: kIsWeb
-              ? 'Authorize quick 1-tap match confirmation for fast, automatic payouts.'
-              : 'Keeps your ${widget.gameName} match synced automatically.',
+              ? 'Mobile browsers do not support background screen sharing. Confirm match-room mode below for ${widget.gameName}.'
+              : 'Approve screen verification when prompted so ${widget.gameName} matches sync smoothly.',
           pushTip:
               'iOS alerts notify you as soon as opponents join or your match finishes.',
         );
@@ -89,7 +100,7 @@ class _PreMatchPermissionsDialogState
           label: 'Linux Desktop',
           icon: CupertinoIcons.desktopcomputer,
           screenTip:
-              'Approve the browser prompt when starting so matches verify automatically.',
+              'Approve the system screen/window share prompt when starting so ${widget.gameName} matches verify automatically.',
           pushTip:
               'Desktop notifications keep you synced when full-screen matches start or end.',
         );
@@ -98,7 +109,7 @@ class _PreMatchPermissionsDialogState
           label: 'Windows PC',
           icon: CupertinoIcons.desktopcomputer,
           screenTip:
-              'Approve the browser prompt when starting ${widget.gameName} so your match verifies automatically.',
+              'Approve the Windows/browser screen share prompt so ${widget.gameName} duels confirm automatically.',
           pushTip:
               'Windows notification alerts ping you during gameplay when Ready locks or settlement completes.',
         );
@@ -114,9 +125,9 @@ class _PreMatchPermissionsDialogState
       if (!mounted) return;
       if (!ok) {
         ref.read(toastProvider.notifier).show(
-              'Permission Required',
+              'Screen Share Required',
               body:
-                  'Approve the prompt when your browser asks so Playverzus can confirm ${widget.gameName} matches automatically.',
+                  'Your device prompt was dismissed. Tap Allow Access and pick your game window or screen to continue.',
               tone: ToastTone.warning,
             );
       }
@@ -131,16 +142,17 @@ class _PreMatchPermissionsDialogState
       final ok = await ref
           .read(machineAuthProvider.notifier)
           .promptNotificationPermission();
+      final live = await DeviceBridge.fetchNotificationPermissionState();
       if (!mounted) return;
+      setState(() => _notifState = live);
       if (!ok) {
-        final state = DeviceBridge.getNotificationPermissionState();
         ref.read(toastProvider.notifier).show(
-              state == 'denied'
-                  ? 'Notifications Blocked in Browser'
+              live == 'denied'
+                  ? 'Notifications Blocked in Device Settings'
                   : 'Notification Permission Required',
-              body: state == 'denied'
-                  ? 'Click the lock/settings icon in your browser address bar, allow Notifications, then tap Allow Alerts again.'
-                  : 'Allow live alerts so you do not miss opponent Ready checks or payout events.',
+              body: live == 'denied'
+                  ? 'Notifications were previously blocked for playverzus.xyz. Enable them in browser/device Settings, then tap Retry Check.'
+                  : 'Tap Allow on the device prompt so playverzus.xyz can notify you when opponents Ready up.',
               tone: ToastTone.warning,
             );
       }
@@ -154,12 +166,12 @@ class _PreMatchPermissionsDialogState
     final machine = ref.watch(machineAuthProvider);
     final osKey = DeviceBridge.detectVisitorPlatformKey();
     final info = _platformCopy(osKey);
+    final supportsLiveShare = DeviceBridge.supportsLiveScreenShare();
     final screenDone = machine.captureAuthorized;
     final notifsDone = machine.alertsAuthorized;
     final grantedCount = (screenDone ? 1 : 0) + (notifsDone ? 1 : 0);
     final allGranted = screenDone && notifsDone;
-    final browserNotifDenied =
-        kIsWeb && DeviceBridge.getNotificationPermissionState() == 'denied';
+    final notifDenied = _notifState == 'denied';
 
     return Dialog(
       backgroundColor: HigColors.surfacePrimary,
@@ -222,14 +234,18 @@ class _PreMatchPermissionsDialogState
               // Permission 1: Live Match Verification Access
               _PermissionTile(
                 index: '1',
-                title: 'Live Match Verification Access',
+                title: supportsLiveShare
+                    ? 'Screen Share Verification Access'
+                    : 'Match-Room Score Confirmation',
                 subtitle: info.screenTip,
                 privacyNote:
                     'Used strictly during active duels for automatic verification. Zero videos are recorded or stored.',
                 icon: CupertinoIcons.desktopcomputer,
                 granted: screenDone,
                 loading: _requestingScreen,
-                actionLabel: screenDone ? 'Connected' : 'Allow Access',
+                actionLabel: screenDone
+                    ? 'Connected'
+                    : (supportsLiveShare ? 'Ask Device' : 'Acknowledge'),
                 onTap: _grantScreenCapture,
               ),
               const SizedBox(height: 12),
@@ -237,18 +253,18 @@ class _PreMatchPermissionsDialogState
               // Permission 2: Device Alerts & Live Match Pings
               _PermissionTile(
                 index: '2',
-                title: 'Device Alerts & Match Pings',
+                title: 'Device Notifications',
                 subtitle: info.pushTip,
-                privacyNote: browserNotifDenied
-                    ? 'Notifications are currently blocked in browser site permissions — allow them in site settings, then tap Retry.'
-                    : 'Sends instant alerts for opponent Ready, kickoff, and payout locks.',
-                warningTone: browserNotifDenied && !notifsDone,
+                privacyNote: notifDenied
+                    ? 'Blocked in your browser or OS settings — allow Notifications for playverzus.xyz in Settings, then tap Retry Check.'
+                    : 'Requests your device\'s real notification prompt for opponent Ready, kickoff, and payout alerts.',
+                warningTone: notifDenied && !notifsDone,
                 icon: CupertinoIcons.bell_fill,
                 granted: notifsDone,
                 loading: _requestingNotifs,
                 actionLabel: notifsDone
                     ? 'Allowed'
-                    : (browserNotifDenied ? 'Retry Check' : 'Allow Alerts'),
+                    : (notifDenied ? 'Retry Check' : 'Ask Device'),
                 onTap: _grantNotifications,
               ),
               const SizedBox(height: 16),

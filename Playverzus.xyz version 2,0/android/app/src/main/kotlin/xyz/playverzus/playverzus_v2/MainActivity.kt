@@ -1,6 +1,7 @@
 package xyz.playverzus.playverzus_v2
 
 import android.Manifest
+import android.app.Activity
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -8,6 +9,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.projection.MediaProjectionManager
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
@@ -21,6 +23,11 @@ class MainActivity : FlutterActivity() {
     private val liveChannelId = "playverzus_live_match"
     private val ongoingNotificationId = 9001
     private var liveEventNotificationId = 9100
+    private val notifReqCode = 4041
+    private val captureReqCode = 4042
+    private var pendingNotificationResult: MethodChannel.Result? = null
+    private var pendingCaptureResult: MethodChannel.Result? = null
+    private var captureConsentGrantedInSession = false
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -53,16 +60,49 @@ class MainActivity : FlutterActivity() {
                         )
                     }
 
+                    "getNotificationPermissionState" -> {
+                        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                        val postOk = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+                        } else {
+                            true
+                        }
+                        val granted = postOk && (Build.VERSION.SDK_INT < Build.VERSION_CODES.N || nm.areNotificationsEnabled())
+                        result.success(if (granted) "granted" else "denied")
+                    }
+
                     "requestNotificationPermission" -> {
+                        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                            if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+                                result.success(nm.areNotificationsEnabled())
+                            } else {
+                                pendingNotificationResult?.success(false)
+                                pendingNotificationResult = result
                                 requestPermissions(
                                     arrayOf(Manifest.permission.POST_NOTIFICATIONS),
-                                    4041
+                                    notifReqCode
                                 )
                             }
+                        } else {
+                            val enabled = Build.VERSION.SDK_INT < Build.VERSION_CODES.N || nm.areNotificationsEnabled()
+                            result.success(enabled)
                         }
-                        result.success(true)
+                    }
+
+                    "requestCapturePermission" -> {
+                        if (captureConsentGrantedInSession) {
+                            result.success(true)
+                        } else {
+                            try {
+                                val mpm = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+                                pendingCaptureResult?.success(false)
+                                pendingCaptureResult = result
+                                startActivityForResult(mpm.createScreenCaptureIntent(), captureReqCode)
+                            } catch (_: Exception) {
+                                result.success(false)
+                            }
+                        }
                     }
 
                     "scanInstalledGames" -> {
@@ -113,8 +153,8 @@ class MainActivity : FlutterActivity() {
                         val roomCode = call.argument<String>("roomCode") ?: "LIVE"
                         postLiveNotification(
                             id = ongoingNotificationId,
-                            title = "Playverzus Live · $gameTitle ($roomCode)",
-                            body = "Background HUD verification active. Play normally — score updates & payouts run automatically.",
+                            title = "playverzus.xyz Live · $gameTitle ($roomCode)",
+                            body = "Match verification active. Play normally — score updates & payouts run automatically.",
                             ongoing = true
                         )
                         result.success(true)
@@ -127,7 +167,7 @@ class MainActivity : FlutterActivity() {
                     }
 
                     "sendMatchNotification" -> {
-                        val title = call.argument<String>("title") ?: "Playverzus Match Update"
+                        val title = call.argument<String>("title") ?: "playverzus.xyz Match Update"
                         val body = call.argument<String>("body") ?: ""
                         val ongoing = call.argument<Boolean>("ongoing") ?: false
                         val id = if (ongoing) ongoingNotificationId else ++liveEventNotificationId
@@ -204,6 +244,30 @@ class MainActivity : FlutterActivity() {
 
         val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         nm.notify(id, builder.build())
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == notifReqCode) {
+            val granted = grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED
+            pendingNotificationResult?.success(granted)
+            pendingNotificationResult = null
+        }
+    }
+
+    @Deprecated("Required for FlutterActivity MediaProjection consent callback")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == captureReqCode) {
+            val granted = resultCode == Activity.RESULT_OK && data != null
+            captureConsentGrantedInSession = granted
+            pendingCaptureResult?.success(granted)
+            pendingCaptureResult = null
+        }
     }
 
     private fun sha256Hex(input: String): String {

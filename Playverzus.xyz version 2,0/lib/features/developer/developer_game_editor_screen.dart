@@ -462,7 +462,7 @@ class _DeveloperGameEditorScreenState
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Select the platform(s) where your game runs and supply your Stats API endpoints. Playverzus handles live stats fetching & match verification automatically.',
+                      'Select the platform(s) where your game runs and supply your Stats API endpoints. playverzus.xyz handles live stats fetching & match verification automatically.',
                       style: HigTypography.footnote(),
                     ),
                   ],
@@ -941,7 +941,7 @@ class _DeveloperGameEditorScreenState
                         style: HigTypography.title3()),
                     const SizedBox(height: 4),
                     Text(
-                      'Tell Playverzus which dot-notation JSON keys contain each stat in your API response (e.g. data.stats.score or chess_blitz.last.rating).',
+                      'Tell playverzus.xyz which dot-notation JSON keys contain each stat in your API response (e.g. data.stats.score or chess_blitz.last.rating).',
                       style: HigTypography.caption(),
                     ),
                     const SizedBox(height: 14),
@@ -988,7 +988,7 @@ class _DeveloperGameEditorScreenState
                         style: HigTypography.title3()),
                     const SizedBox(height: 4),
                     Text(
-                      'Verify Playverzus can reach your $activeKey API server-side and extract mapped stats in real time.',
+                      'Verify playverzus.xyz can reach your $activeKey API server-side and extract mapped stats in real time.',
                       style: HigTypography.caption(),
                     ),
                     const SizedBox(height: 14),
@@ -1015,7 +1015,7 @@ class _DeveloperGameEditorScreenState
                         HigButton(
                           label: _isEdit
                               ? 'Save Game API Configuration'
-                              : 'Publish Game to Playverzus',
+                              : 'Publish Game to playverzus.xyz',
                           icon: CupertinoIcons.checkmark_seal_fill,
                           loading: _saving,
                           onPressed: _saveGame,

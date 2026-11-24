@@ -531,7 +531,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                             );
                                       } else {
                                         ref.read(toastProvider.notifier).show(
-                                              'Up to date · Playverzus v${AppConfig.appVersion}',
+                                              'Up to date · playverzus.xyz v${AppConfig.appVersion}',
                                               tone: ToastTone.success,
                                             );
                                       }
@@ -619,7 +619,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                     .ensureAuthorized(
                                   context,
                                   ref,
-                                  gameName: 'Playverzus Arena',
+                                  gameName: 'playverzus.xyz Arena',
                                 );
                                 if (!ok || !mounted) return;
                                 ref.read(toastProvider.notifier).show(

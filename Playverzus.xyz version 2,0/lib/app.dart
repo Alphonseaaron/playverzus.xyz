@@ -10,7 +10,7 @@ class PlayverzusV2App extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(appRouterProvider);
     return MaterialApp.router(
-      title: 'Playverzus v2.0',
+      title: 'playverzus.xyz',
       debugShowCheckedModeBanner: false,
       theme: PlayverzusTheme.darkTheme,
       darkTheme: PlayverzusTheme.darkTheme,

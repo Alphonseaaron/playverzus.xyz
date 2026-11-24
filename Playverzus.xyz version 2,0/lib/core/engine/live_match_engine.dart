@@ -359,7 +359,7 @@ class LiveMatchEngineNotifier extends StateNotifier<LiveMatchState> {
     await _pushLiveEvent(
       title: 'KICKOFF · ${game.shortName} AUTO-LAUNCHED',
       detail:
-          '${res.channelLabel}. Playverzus is running in background — live winning/losing alerts active.',
+          '${res.channelLabel}. playverzus.xyz is running in background — live winning/losing alerts active.',
       scoreA: state.scoreA,
       scoreB: state.scoreB,
       confidencePct: 98,

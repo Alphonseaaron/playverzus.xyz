@@ -91,7 +91,7 @@ class DeveloperPortalScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'Register your games by connecting platform-specific Stats APIs (PC, Console, Mobile, Web). Playverzus automatically fetches player stats & match results from your endpoints.',
+                        'Register your games by connecting platform-specific Stats APIs (PC, Console, Mobile, Web). playverzus.xyz automatically fetches player stats & match results from your endpoints.',
                         style: HigTypography.footnote(),
                       ),
                       const SizedBox(height: 16),
@@ -313,7 +313,7 @@ class DeveloperPortalScreen extends ConsumerWidget {
               'Supply your base URL, player/match endpoints, and API key or Bearer token (stored server-side only).'),
           const SizedBox(height: 10),
           _stepRow('3', 'Map JSON Stats & Go Live',
-              'Point Playverzus to score, wins, losses, rank, or winner fields, run a live test fetch, and publish.'),
+              'Point playverzus.xyz to score, wins, losses, rank, or winner fields, run a live test fetch, and publish.'),
           const SizedBox(height: 18),
           HigButton(
             label: 'Add & Configure Game API',

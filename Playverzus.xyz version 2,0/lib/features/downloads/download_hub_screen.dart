@@ -57,7 +57,7 @@ class _DownloadHubScreenState extends ConsumerState<DownloadHubScreen> {
   static const Map<String, _PlatformPackageSpec> _specs = {
     'windows': _PlatformPackageSpec(
       key: 'windows',
-      displayTitle: 'PLAYVERZUS COMPANION\nFOR WINDOWS PC',
+      displayTitle: 'PLAYVERZUS.XYZ APP\nFOR WINDOWS PC',
       targetSubtitle: 'for Windows 10 / 11 (x64 Installer) · v${AppConfig.appVersion}',
       summary:
           'Seamless sync for Steam, EA App, Epic & Riot titles, dedicated desktop matchrooms, and instant Ready & settlement alerts.',
@@ -67,7 +67,7 @@ class _DownloadHubScreenState extends ConsumerState<DownloadHubScreen> {
     ),
     'android': _PlatformPackageSpec(
       key: 'android',
-      displayTitle: 'PLAYVERZUS COMPANION\nFOR ANDROID',
+      displayTitle: 'PLAYVERZUS.XYZ APP\nFOR ANDROID',
       targetSubtitle: 'for Android 10+ Direct Signed (.apk) · v${AppConfig.appVersion}',
       summary:
           'Built for FC Mobile, PUBG Mobile, MLBB, eFootball & 8 Ball Pool with live match notifications and one-tap duel launches.',
@@ -78,7 +78,7 @@ class _DownloadHubScreenState extends ConsumerState<DownloadHubScreen> {
     ),
     'macos': _PlatformPackageSpec(
       key: 'macos',
-      displayTitle: 'PLAYVERZUS COMPANION\nFOR MACOS',
+      displayTitle: 'PLAYVERZUS.XYZ APP\nFOR MACOS',
       targetSubtitle: 'for Apple Silicon & Intel (.dmg) · v${AppConfig.appVersion}',
       summary:
           'Clean macOS desktop matchrooms, automatic title sync across supported games, and instant Ready & payout notifications.',
@@ -88,7 +88,7 @@ class _DownloadHubScreenState extends ConsumerState<DownloadHubScreen> {
     ),
     'ios': _PlatformPackageSpec(
       key: 'ios',
-      displayTitle: 'PLAYVERZUS COMPANION\nFOR IPHONE & IPAD',
+      displayTitle: 'PLAYVERZUS.XYZ APP\nFOR IPHONE & IPAD',
       targetSubtitle: 'for iOS / iPadOS 16+ (TestFlight) · v${AppConfig.appVersion}',
       summary:
           'Fast mobile sync, real-time OS match alerts, and instant Proof of Victory share cards.',
@@ -98,7 +98,7 @@ class _DownloadHubScreenState extends ConsumerState<DownloadHubScreen> {
     ),
     'linux': _PlatformPackageSpec(
       key: 'linux',
-      displayTitle: 'PLAYVERZUS COMPANION\nFOR LINUX',
+      displayTitle: 'PLAYVERZUS.XYZ APP\nFOR LINUX',
       targetSubtitle: 'for Ubuntu / Fedora / Arch (x64) · v${AppConfig.appVersion}',
       summary:
           'Clean Linux desktop matchrooms paired with native Ready notifications and Steam/Lutris library sync.',
@@ -110,16 +110,16 @@ class _DownloadHubScreenState extends ConsumerState<DownloadHubScreen> {
 
   static const List<(String, String)> _faqItems = [
     (
-      'What does the Playverzus Companion Client do?',
-      'It connects your Playverzus account directly to supported games on your device, launches matches faster, and delivers instant Ready and payout notifications.',
+      'What does the playverzus.xyz App do?',
+      'It connects your playverzus.xyz account directly to supported games on your device, launches matches faster, and delivers instant Ready and payout notifications.',
     ),
     (
-      'Does Playverzus keep gameplay videos or personal files?',
-      'No. Playverzus focuses strictly on final match results and player privacy. We never save, store, or archive personal desktop or gameplay recordings.',
+      'Does playverzus.xyz keep gameplay videos or personal files?',
+      'No. playverzus.xyz focuses strictly on final match results and player privacy. We never save, store, or archive personal desktop or gameplay recordings.',
     ),
     (
       'How do PS5, Xbox & Switch console players join?',
-      'Link your Twitch or YouTube channel once in Settings, or run your console match alongside the Playverzus Companion app for instant result confirmation.',
+      'Link your Twitch or YouTube channel once in Settings, or run your console match alongside the playverzus.xyz app for instant result confirmation.',
     ),
   ];
 
@@ -163,9 +163,9 @@ class _DownloadHubScreenState extends ConsumerState<DownloadHubScreen> {
               .read(appUpdateProvider.notifier)
               .recordDownloadedCurrentVersion();
           ref.read(toastProvider.notifier).show(
-                'Installing Playverzus App',
+                'Installing playverzus.xyz App',
                 body:
-                    'Playverzus is being added to your device as a standalone app.',
+                    'playverzus.xyz is being added to your device as a standalone app.',
                 tone: ToastTone.success,
               );
           return;
@@ -179,7 +179,7 @@ class _DownloadHubScreenState extends ConsumerState<DownloadHubScreen> {
       ref.read(toastProvider.notifier).show(
             'Could Not Start Installer Automatically',
             body:
-                'Use your browser\'s Install App button in the address bar or menu to install Playverzus directly.',
+                'Use your browser\'s Install App button in the address bar or menu to install playverzus.xyz directly.',
             tone: ToastTone.warning,
           );
     } finally {
@@ -192,20 +192,20 @@ class _DownloadHubScreenState extends ConsumerState<DownloadHubScreen> {
       'android' => [
           '1. Tap the 3-dot browser menu (⋮) in Chrome on Android.',
           '2. Select "Install app" or "Add to Home screen".',
-          '3. Launch Playverzus directly from your Android home screen for full-screen matchrooms and instant match alerts.',
+          '3. Launch playverzus.xyz directly from your Android home screen for full-screen matchrooms and instant match alerts.',
         ],
       'ios' => [
           '1. Tap the Share button (square with up arrow) in Safari.',
           '2. Scroll down and tap "Add to Home Screen".',
-          '3. Open Playverzus from your iPhone or iPad Home Screen.',
+          '3. Open playverzus.xyz from your iPhone or iPad Home Screen.',
         ],
       'macos' => [
           '1. In Safari: click File -> "Add to Dock" (or in Chrome/Edge, click the Install icon in the address bar).',
-          '2. Pin Playverzus to your macOS Dock for standalone matchrooms and instant Ready alerts.',
+          '2. Pin playverzus.xyz to your macOS Dock for standalone matchrooms and instant Ready alerts.',
         ],
       _ => [
-          '1. In Chrome or Edge: click the "Install Playverzus" icon on the right side of the address bar (or Menu -> Apps -> Install this site).',
-          '2. Pin Playverzus to your Windows Taskbar or Desktop.',
+          '1. In Chrome or Edge: click the "Install playverzus.xyz" icon on the right side of the address bar (or Menu -> Apps -> Install this site).',
+          '2. Pin playverzus.xyz to your Windows Taskbar or Desktop.',
           '3. Play directly in a dedicated standalone window with instant OS Ready & payout alerts.',
         ],
     };
@@ -213,7 +213,7 @@ class _DownloadHubScreenState extends ConsumerState<DownloadHubScreen> {
     showCupertinoDialog<void>(
       context: context,
       builder: (ctx) => CupertinoAlertDialog(
-        title: Text('Install Playverzus on ${spec.key.toUpperCase()}'),
+        title: Text('Install playverzus.xyz on ${spec.key.toUpperCase()}'),
         content: Padding(
           padding: const EdgeInsets.only(top: 10),
           child: Column(
@@ -279,8 +279,10 @@ class _DownloadHubScreenState extends ConsumerState<DownloadHubScreen> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Container(
-                      width: 68,
-                      height: 68,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 14,
+                      ),
                       decoration: BoxDecoration(
                         color: HigColors.surfacePrimary,
                         borderRadius: BorderRadius.circular(18),
@@ -296,8 +298,7 @@ class _DownloadHubScreenState extends ConsumerState<DownloadHubScreen> {
                           ),
                         ],
                       ),
-                      alignment: Alignment.center,
-                      child: const BrandLogo.mark(height: 34),
+                      child: const BrandLogo.full(height: 28),
                     ),
                     const SizedBox(height: 20),
                     HigBadge(
@@ -380,7 +381,7 @@ class _DownloadHubScreenState extends ConsumerState<DownloadHubScreen> {
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Text(
-                                  "You're already running the Playverzus App on ${machine.capabilities.osLabel} (v${AppConfig.appVersion}). Alerts and 1-tap game launches are ready here.",
+                                  "You're already running the playverzus.xyz App on ${machine.capabilities.osLabel} (v${AppConfig.appVersion}). Alerts and 1-tap game launches are ready here.",
                                   style: HigTypography.footnote(
                                     color: HigColors.labelPrimary,
                                   ),
@@ -434,7 +435,7 @@ class _DownloadHubScreenState extends ConsumerState<DownloadHubScreen> {
                       ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 460),
                         child: Text(
-                          'Install guide: Download playverzus-v2-android.apk -> Allow "Install unknown apps" for your browser -> Sign in once to detect installed games.',
+                          'Install guide: Download the Android APK -> Allow "Install unknown apps" for your browser -> Sign in once to detect installed games.',
                           textAlign: TextAlign.center,
                           style: HigTypography.caption(
                             color: HigColors.labelSecondary,

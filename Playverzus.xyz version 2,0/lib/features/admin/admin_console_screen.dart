@@ -1020,7 +1020,7 @@ class _AdminConsoleScreenState extends ConsumerState<AdminConsoleScreen> {
               ),
               const SizedBox(height: 4),
               Text(
-                'Customers pay 100% of Kopo Kopo M-PESA and Crossmint processing fees upfront at deposit and withdrawal. Playverzus absorbs KES 0 / \$0.00 in gateway drag and collects differentiated 12.5%–22.0% match/Blitz/tournament rakes (with 80%+ locked for Company Cost of Production & Profit first before paying Ground Agents).',
+                'Customers pay 100% of Kopo Kopo M-PESA and Crossmint processing fees upfront at deposit and withdrawal. playverzus.xyz absorbs KES 0 / \$0.00 in gateway drag and collects differentiated 12.5%–22.0% match/Blitz/tournament rakes (with 80%+ locked for Company Cost of Production & Profit first before paying Ground Agents).',
                 style: HigTypography.footnote(),
               ),
               const SizedBox(height: 12),
@@ -1040,7 +1040,7 @@ class _AdminConsoleScreenState extends ConsumerState<AdminConsoleScreen> {
               ),
               const Divider(height: 14),
               _feeRuleRow(
-                'Playverzus Differentiated Company Earning Model',
+                'playverzus.xyz Differentiated Company Earning Model',
                 '1v1/Squad Duels: 15.0% Starter / 12.5% Pro rake · 5-Player Blitz Sit & Go: Tier 1 (16%), Tier 2 (18%), Tier 3 & 4 (20%), Tier 5 (22%) · Tournaments & Cups: 20.0%. First 80%–82% of all rake is locked for Company Cost of Production & Profit before Field Agent commission.',
               ),
               const Divider(height: 14),

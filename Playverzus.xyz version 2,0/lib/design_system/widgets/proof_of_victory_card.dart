@@ -66,8 +66,8 @@ class ProofOfVictoryCard extends ConsumerWidget {
         : (viewerWon ? 'OFFICIAL VICTORY · SETTLED' : 'DEFEAT · SETTLED');
 
     final bragSnippet = viewerWon
-        ? 'Verified Victory on Playverzus! $playerAName $scoreA - $scoreB $playerBName in ${game.displayName} (${showCashDelta ? relativeText : 'Advancing'}) — playverzus.xyz/matches/$matchId'
-        : 'GGs on Playverzus! $playerAName $scoreA - $scoreB $playerBName in ${game.displayName} — playverzus.xyz/matches/$matchId';
+        ? 'Verified Victory on playverzus.xyz! $playerAName $scoreA - $scoreB $playerBName in ${game.displayName} (${showCashDelta ? relativeText : 'Advancing'}) — playverzus.xyz/matches/$matchId'
+        : 'GGs on playverzus.xyz! $playerAName $scoreA - $scoreB $playerBName in ${game.displayName} — playverzus.xyz/matches/$matchId';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -254,7 +254,7 @@ class ProofOfVictoryCard extends ConsumerWidget {
                 size: HigButtonSize.medium,
                 fullWidth: true,
                 onPressed: () {
-                  Share.share(bragSnippet, subject: 'Playverzus Verified Match');
+                  Share.share(bragSnippet, subject: 'playverzus.xyz Verified Match');
                 },
               ),
             ),

@@ -10,6 +10,7 @@ import '../../design_system/widgets/brand_logo.dart';
 import '../../design_system/widgets/country_flag.dart';
 import '../../design_system/widgets/hig_primitives.dart';
 import '../admin/admin_models.dart';
+import '../legal/legal_screen.dart';
 
 /// Exact v1.0 Login & Sign Up form parity:
 /// - Sign In: Email Address or Username + Password (Admin/Staff roles are detected
@@ -43,7 +44,34 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   late bool _registerAsDeveloper;
   String _countryCode = '';
   bool _ageConfirmed = false;
+  bool _termsReviewed = false;
+  bool _privacyReviewed = false;
   bool _loading = false;
+
+  bool get _bothPoliciesReviewed => _termsReviewed && _privacyReviewed;
+
+  Future<void> _openLegalReview({
+    LegalDocType initialDoc = LegalDocType.terms,
+  }) async {
+    final res = await showSignupLegalReviewModal(
+      context,
+      initialTermsAccepted: _termsReviewed,
+      initialPrivacyAccepted: _privacyReviewed,
+      initialDoc: initialDoc,
+    );
+    if (res != null && mounted) {
+      setState(() {
+        _termsReviewed = res.termsAccepted;
+        _privacyReviewed = res.privacyAccepted;
+        if (_termsReviewed && _privacyReviewed) {
+          _ageConfirmed = true;
+          _termsErr = null;
+        } else {
+          _ageConfirmed = false;
+        }
+      });
+    }
+  }
   String? _error;
 
   String? _identifierErr;
@@ -262,8 +290,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
         _countryErr = 'Select your country so we can match local currencies and ladders.';
         hasLocalIssue = true;
       }
-      if (!_ageConfirmed) {
-        _termsErr = 'Tick this box to confirm your age and accept our Terms & Privacy Policy.';
+      if (!_bothPoliciesReviewed || !_ageConfirmed) {
+        _termsErr = _bothPoliciesReviewed
+            ? 'Tick this box to confirm your age and accept our Terms & Privacy Policy.'
+            : 'Please open and read our Terms of Service & Privacy Policy to the end before accepting.';
         hasLocalIssue = true;
       }
       if (hasLocalIssue) {
@@ -426,7 +456,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                             Text(
                               widget.isSignUp
                                   ? (_registerAsDeveloper
-                                      ? 'Connect your platform Stats APIs (PC, Console, Mobile, Web) and launch your games on Playverzus.'
+                                      ? 'Connect your platform Stats APIs (PC, Console, Mobile, Web) and launch your games on playverzus.xyz.'
                                       : '10,000 free practice points credited upon signup.')
                                   : 'Access your wallet, matches, tournaments, or developer studio.',
                               textAlign: TextAlign.center,
@@ -731,75 +761,170 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                               ),
                               const SizedBox(height: 14),
 
-                              // Age & Terms Checkbox
+                              // Age & Terms Checkbox (Enforces reading Terms & Privacy before accepting)
                               GestureDetector(
-                                onTap: () => setState(() {
-                                  _ageConfirmed = !_ageConfirmed;
-                                  if (_ageConfirmed) _termsErr = null;
-                                }),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Container(
-                                      width: 20,
-                                      height: 20,
-                                      margin: const EdgeInsets.only(top: 2),
-                                      decoration: BoxDecoration(
-                                        color: _ageConfirmed
-                                            ? HigColors.brand
-                                            : HigColors.surfaceGrouped,
-                                        borderRadius: BorderRadius.circular(5),
-                                        border: Border.all(
-                                          color: _ageConfirmed
-                                              ? HigColors.brand
-                                              : (_termsErr != null
-                                                  ? HigColors.crimson
-                                                  : HigColors.separator),
-                                          width: _termsErr != null && !_ageConfirmed
-                                              ? 1.5
-                                              : 1.0,
-                                        ),
-                                      ),
-                                      child: _ageConfirmed
-                                          ? const Icon(
-                                              CupertinoIcons.checkmark_alt,
-                                              size: 14,
-                                              color: Colors.white,
-                                            )
-                                          : null,
+                                onTap: () {
+                                  if (!_bothPoliciesReviewed) {
+                                    _openLegalReview();
+                                    return;
+                                  }
+                                  setState(() {
+                                    _ageConfirmed = !_ageConfirmed;
+                                    if (_ageConfirmed) _termsErr = null;
+                                  });
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: HigColors.surfaceGrouped
+                                        .withValues(alpha: 0.65),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: _termsErr != null && !_ageConfirmed
+                                          ? HigColors.crimson
+                                          : HigColors.separator,
+                                      width: _termsErr != null && !_ageConfirmed
+                                          ? 1.4
+                                          : 0.8,
                                     ),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: Wrap(
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
-                                          Text(
-                                            'I confirm I am at least 13 years old (18+ for cash competitions) and agree to the ',
-                                            style: HigTypography.caption(),
+                                          Container(
+                                            width: 20,
+                                            height: 20,
+                                            margin:
+                                                const EdgeInsets.only(top: 2),
+                                            decoration: BoxDecoration(
+                                              color: (_ageConfirmed &&
+                                                      _bothPoliciesReviewed)
+                                                  ? HigColors.brand
+                                                  : HigColors.surfacePrimary,
+                                              borderRadius:
+                                                  BorderRadius.circular(5),
+                                              border: Border.all(
+                                                color: (_ageConfirmed &&
+                                                        _bothPoliciesReviewed)
+                                                    ? HigColors.brand
+                                                    : (_termsErr != null
+                                                        ? HigColors.crimson
+                                                        : HigColors.separator),
+                                                width: _termsErr != null &&
+                                                        !_ageConfirmed
+                                                    ? 1.5
+                                                    : 1.0,
+                                              ),
+                                            ),
+                                            child: (_ageConfirmed &&
+                                                    _bothPoliciesReviewed)
+                                                ? const Icon(
+                                                    CupertinoIcons.checkmark_alt,
+                                                    size: 14,
+                                                    color: Colors.white,
+                                                  )
+                                                : null,
                                           ),
-                                          GestureDetector(
-                                            onTap: () => context.go('/terms'),
-                                            child: Text(
-                                              'Terms of Service',
-                                              style: HigTypography.caption(
-                                                  color: HigColors.brandBright),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: Wrap(
+                                              children: [
+                                                Text(
+                                                  'I confirm I am at least 13 years old (18+ for cash competitions) and have read & agree to the ',
+                                                  style:
+                                                      HigTypography.caption(),
+                                                ),
+                                                GestureDetector(
+                                                  onTap: () => _openLegalReview(
+                                                    initialDoc:
+                                                        LegalDocType.terms,
+                                                  ),
+                                                  child: Text(
+                                                    'Terms of Service',
+                                                    style: HigTypography.caption(
+                                                      color:
+                                                          HigColors.brandBright,
+                                                    ).copyWith(
+                                                      decoration: TextDecoration
+                                                          .underline,
+                                                    ),
+                                                  ),
+                                                ),
+                                                Text(' & ',
+                                                    style: HigTypography
+                                                        .caption()),
+                                                GestureDetector(
+                                                  onTap: () => _openLegalReview(
+                                                    initialDoc:
+                                                        LegalDocType.privacy,
+                                                  ),
+                                                  child: Text(
+                                                    'Privacy Policy',
+                                                    style: HigTypography.caption(
+                                                      color:
+                                                          HigColors.brandBright,
+                                                    ).copyWith(
+                                                      decoration: TextDecoration
+                                                          .underline,
+                                                    ),
+                                                  ),
+                                                ),
+                                                Text('.',
+                                                    style: HigTypography
+                                                        .caption()),
+                                              ],
                                             ),
                                           ),
-                                          Text(' & ',
-                                              style: HigTypography.caption()),
-                                          GestureDetector(
-                                            onTap: () => context.go('/privacy'),
-                                            child: Text(
-                                              'Privacy Policy',
-                                              style: HigTypography.caption(
-                                                  color: HigColors.brandBright),
-                                            ),
-                                          ),
-                                          Text('.',
-                                              style: HigTypography.caption()),
                                         ],
                                       ),
-                                    ),
-                                  ],
+                                      const SizedBox(height: 8),
+                                      Wrap(
+                                        spacing: 6,
+                                        runSpacing: 6,
+                                        children: [
+                                          GestureDetector(
+                                            onTap: () => _openLegalReview(
+                                              initialDoc: LegalDocType.terms,
+                                            ),
+                                            child: HigBadge(
+                                              label: _termsReviewed
+                                                  ? 'TERMS READ'
+                                                  : 'READ TERMS',
+                                              icon: _termsReviewed
+                                                  ? CupertinoIcons
+                                                      .checkmark_circle_fill
+                                                  : CupertinoIcons.doc_text,
+                                              tone: _termsReviewed
+                                                  ? HigBadgeTone.emerald
+                                                  : HigBadgeTone.neutral,
+                                            ),
+                                          ),
+                                          GestureDetector(
+                                            onTap: () => _openLegalReview(
+                                              initialDoc: LegalDocType.privacy,
+                                            ),
+                                            child: HigBadge(
+                                              label: _privacyReviewed
+                                                  ? 'PRIVACY READ'
+                                                  : 'READ PRIVACY',
+                                              icon: _privacyReviewed
+                                                  ? CupertinoIcons
+                                                      .checkmark_circle_fill
+                                                  : CupertinoIcons.lock_shield,
+                                              tone: _privacyReviewed
+                                                  ? HigBadgeTone.emerald
+                                                  : HigBadgeTone.neutral,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                               if (_termsErr != null) ...[

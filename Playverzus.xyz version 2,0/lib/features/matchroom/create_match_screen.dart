@@ -71,7 +71,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
 
     if (_mode == 'DIRECT_RIVAL' && _rivalCtrl.text.trim().isEmpty) {
       setState(() => _rivalErr =
-          'Type the opponent’s Playverzus username here so we know who to invite.');
+          'Type the opponent’s playverzus.xyz username here so we know who to invite.');
       return;
     }
 

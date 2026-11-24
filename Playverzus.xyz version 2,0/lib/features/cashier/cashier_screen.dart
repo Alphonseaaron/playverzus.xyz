@@ -1051,7 +1051,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                 ),
               ),
             _feeLine(
-              'Credited to Playverzus Wallet',
+              'Credited to playverzus.xyz Wallet',
               '${AppConfig.formatUsdc(previewUsdc, alwaysDecimals: true)} (KES ${b.netCreditKes})',
               HigColors.labelPrimary,
             ),

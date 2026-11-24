@@ -25,7 +25,7 @@ class DashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
-  static String? _announcedForUserId;
+  static String? _promptedNotifsForUserId;
   static String? _announcedUpdateForVersion;
 
   double _selectedStakeUsd = 5.0;
@@ -42,7 +42,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadLedger();
-      _maybeShowFirstTimeOnboardingToast();
+      _syncPermissionsAndMaybeAskNative();
       _checkAppUpdates();
     });
   }
@@ -53,32 +53,32 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     if (_announcedUpdateForVersion == update.latestVersion) return;
     _announcedUpdateForVersion = update.latestVersion;
     ref.read(toastProvider.notifier).show(
-          'Update Available · Playverzus v${update.latestVersion}',
+          'Update Available · playverzus.xyz v${update.latestVersion}',
           body:
-              'Tap Notifications or Download Update to get the newest version.',
+              'Open Notifications or Download Update to install the newest version.',
           tone: ToastTone.info,
           duration: const Duration(seconds: 6),
         );
   }
 
-  void _maybeShowFirstTimeOnboardingToast() {
+  Future<void> _syncPermissionsAndMaybeAskNative() async {
+    if (!mounted) return;
+    await ref.read(machineAuthProvider.notifier).syncLivePermissionStates();
     if (!mounted) return;
     final session = ref.read(playerSessionProvider);
     final machine = ref.read(machineAuthProvider);
     if (!session.isAuthenticated || session.userId.isEmpty) return;
-    if (_announcedForUserId == session.userId) return;
-    if (!machine.needsFirstTimePermissions && !machine.needsGameSetup) return;
-    _announcedForUserId = session.userId;
-    final missing = <String>[
-      if (machine.needsFirstTimePermissions) 'grant required permissions',
-      if (machine.needsGameSetup) 'sync your featured games',
-    ];
-    ref.read(toastProvider.notifier).show(
-          'Finish ${machine.capabilities.osLabel} setup',
-          body: 'Check the notification bell or setup card to ${missing.join(' & ')}.',
-          tone: ToastTone.info,
-          duration: const Duration(seconds: 6),
-        );
+    if (_promptedNotifsForUserId == session.userId) return;
+    _promptedNotifsForUserId = session.userId;
+
+    // On native mobile/desktop builds, ask OS notification permission directly
+    // once after sign-in if still ungranted. On Web, browsers require a tap
+    // gesture so the slim inline prompt bar asks without blocking home content.
+    if (!machine.capabilities.isWeb && !machine.alertsAuthorized) {
+      await ref
+          .read(machineAuthProvider.notifier)
+          .promptNotificationPermission();
+    }
   }
 
   @override
@@ -119,32 +119,23 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return AppConfig.formatUsdc(usd);
   }
 
-  Widget _onboardingStepTile({
-    required bool done,
-    required String title,
-    required String subtitle,
-    Widget? trailing,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: done
-            ? HigColors.emerald.withValues(alpha: 0.08)
-            : HigColors.surfaceElevated,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: done
-              ? HigColors.emerald.withValues(alpha: 0.32)
-              : HigColors.separator,
-        ),
-      ),
+  Widget _buildAppDownloadStrip(
+    BuildContext context,
+    MachineAuthState machine,
+  ) {
+    final canInstantInstall = isWebAppInstallReady();
+    return GlassCard(
+      radius: 14,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      borderColor: HigColors.brand.withValues(alpha: 0.38),
+      backgroundColor: HigColors.brand.withValues(alpha: 0.08),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(
-            done ? CupertinoIcons.checkmark_circle_fill : CupertinoIcons.circle,
-            size: 18,
-            color: done ? HigColors.emerald : HigColors.copper,
+          const Icon(
+            CupertinoIcons.device_phone_portrait,
+            color: HigColors.brandBright,
+            size: 20,
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -152,244 +143,131 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
+                  'playverzus.xyz for ${machine.capabilities.osLabel}',
                   style: HigTypography.headline().copyWith(fontSize: 13.5),
                 ),
-                const SizedBox(height: 2),
-                Text(subtitle, style: HigTypography.caption()),
+                Text(
+                  'Get one-tap game launches and native match alerts.',
+                  style: HigTypography.caption(),
+                ),
               ],
             ),
           ),
-          if (trailing != null) ...[
-            const SizedBox(width: 8),
-            trailing,
-          ],
+          const SizedBox(width: 8),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              HigButton(
+                label: canInstantInstall
+                    ? 'Install'
+                    : DeviceBridge.recommendedAppActionLabel(),
+                size: HigButtonSize.small,
+                onPressed: () async {
+                  if (canInstantInstall) {
+                    final installed = await promptWebAppInstall();
+                    if (installed && mounted) {
+                      await ref
+                          .read(machineAuthProvider.notifier)
+                          .dismissDownloadPrompt();
+                      ref.read(toastProvider.notifier).show(
+                            'playverzus.xyz app installed',
+                            tone: ToastTone.success,
+                          );
+                    }
+                    return;
+                  }
+                  if (context.mounted) context.push('/download');
+                },
+              ),
+              HigButton(
+                label: 'Already in App',
+                size: HigButtonSize.small,
+                variant: HigButtonVariant.secondary,
+                onPressed: () => ref
+                    .read(machineAuthProvider.notifier)
+                    .dismissDownloadPrompt(),
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildOnboardingChecklistCard(
+  Widget _buildNotificationAskBar(
     BuildContext context,
     MachineAuthState machine,
-    OfficialGame activeGame,
-    bool isCompact,
   ) {
-    final stepsDone = machine.onboardingStepsDone;
-    final step1Done =
-        machine.isRunningInstalledApp || machine.dismissedDownloadBanner;
-    final canInstantInstall = isWebAppInstallReady();
-
+    final blocked = DeviceBridge.getNotificationPermissionState() == 'denied';
     return GlassCard(
-      radius: 18,
-      padding: const EdgeInsets.all(16),
-      borderColor: HigColors.copper.withValues(alpha: 0.42),
-      backgroundColor: HigColors.surfacePrimary,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      radius: 14,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      borderColor: (blocked ? HigColors.amber : HigColors.copper)
+          .withValues(alpha: 0.35),
+      backgroundColor: (blocked ? HigColors.amber : HigColors.copper)
+          .withValues(alpha: 0.08),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: HigColors.copper.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  machine.isRunningInstalledApp
-                      ? CupertinoIcons.checkmark_shield_fill
-                      : CupertinoIcons.device_phone_portrait,
-                  color: HigColors.copperBright,
-                  size: 18,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 4,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        Text(
-                          'Device Setup · ${machine.capabilities.osLabel}',
-                          style: HigTypography.headline(),
-                        ),
-                        HigBadge(
-                          label: '$stepsDone / 3 READY',
-                          tone: stepsDone == 3
-                              ? HigBadgeTone.emerald
-                              : HigBadgeTone.copper,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      machine.isRunningInstalledApp
-                          ? 'Playverzus App detected — no download needed. Finish permissions & game sync below.'
-                          : 'Detected ${machine.capabilities.osLabel}. Complete these 3 steps once for 1-tap game launches and alerts.',
-                      style: HigTypography.footnote(),
-                    ),
-                  ],
-                ),
-              ),
-              CupertinoButton(
-                padding: EdgeInsets.zero,
-                minimumSize: const Size(28, 28),
-                onPressed: () =>
-                    ref.read(machineAuthProvider.notifier).dismissOnboarding(),
-                child: const Icon(
-                  CupertinoIcons.xmark,
-                  size: 15,
-                  color: HigColors.labelTertiary,
-                ),
-              ),
-            ],
+          Icon(
+            CupertinoIcons.bell_fill,
+            color: blocked ? HigColors.amber : HigColors.copperBright,
+            size: 19,
           ),
-          const SizedBox(height: 12),
-
-          // Step 1: Device / App status (Hidden download CTA if already inside installed app)
-          _onboardingStepTile(
-            done: step1Done,
-            title: machine.isRunningInstalledApp
-                ? '1. Playverzus App Active'
-                : machine.needsAppDownloadPrompt
-                    ? '1. Get Playverzus App (${machine.capabilities.osLabel})'
-                    : '1. Playing in Browser Mode',
-            subtitle: machine.isRunningInstalledApp
-                ? 'Running natively on ${machine.capabilities.osLabel}'
-                : machine.needsAppDownloadPrompt
-                    ? 'Recommended for 1-tap launches & alerts'
-                    : 'Download anytime from Account Menu if desired',
-            trailing: machine.isRunningInstalledApp
-                ? const HigBadge(label: 'ACTIVE', tone: HigBadgeTone.emerald)
-                : machine.needsAppDownloadPrompt
-                    ? Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        children: [
-                          HigButton(
-                            label: canInstantInstall
-                                ? 'Install App'
-                                : DeviceBridge.recommendedAppActionLabel(),
-                            icon: CupertinoIcons.arrow_down_circle,
-                            size: HigButtonSize.small,
-                            onPressed: () async {
-                              if (canInstantInstall) {
-                                final installed = await promptWebAppInstall();
-                                if (installed && mounted) {
-                                  await ref
-                                      .read(machineAuthProvider.notifier)
-                                      .dismissDownloadPrompt();
-                                  ref.read(toastProvider.notifier).show(
-                                        'Playverzus app installed',
-                                        tone: ToastTone.success,
-                                      );
-                                }
-                                return;
-                              }
-                              if (context.mounted) context.push('/download');
-                            },
-                          ),
-                          HigButton(
-                            label: 'Already in App',
-                            size: HigButtonSize.small,
-                            variant: HigButtonVariant.secondary,
-                            onPressed: () => ref
-                                .read(machineAuthProvider.notifier)
-                                .dismissDownloadPrompt(),
-                          ),
-                        ],
-                      )
-                    : const HigBadge(label: 'WEB', tone: HigBadgeTone.neutral),
-          ),
-          const SizedBox(height: 8),
-
-          // Step 2: Required First-Time Permissions
-          _onboardingStepTile(
-            done: !machine.needsFirstTimePermissions,
-            title: machine.needsFirstTimePermissions
-                ? '2. Grant Required Permissions'
-                : '2. Permissions Granted',
-            subtitle: machine.needsFirstTimePermissions
-                ? (!machine.alertsAuthorized && !machine.captureAuthorized
-                    ? 'Allow Match Alerts & Match Verification Access'
-                    : !machine.alertsAuthorized
-                        ? 'Allow Live Match Alerts for Ready pings & payouts'
-                        : 'Allow Match Verification Access before Duels/Tournaments')
-                : 'Live Match Alerts & Verification Access ready',
-            trailing: !machine.needsFirstTimePermissions
-                ? const HigBadge(label: 'READY', tone: HigBadgeTone.emerald)
-                : HigButton(
-                    label: 'Allow Permissions',
-                    icon: CupertinoIcons.checkmark_shield,
-                    size: HigButtonSize.small,
-                    onPressed: () async {
-                      final ok =
-                          await PreMatchPermissionsDialog.ensureAuthorized(
-                        context,
-                        ref,
-                        gameName: activeGame.shortName,
-                      );
-                      if (ok && mounted) {
-                        ref.read(toastProvider.notifier).show(
-                              'Permissions active for matches',
-                              tone: ToastTone.success,
-                            );
-                      }
-                    },
-                  ),
-          ),
-          const SizedBox(height: 8),
-
-          // Step 3: Featured Games Auto-Sync / Manual Confirm
-          _onboardingStepTile(
-            done: !machine.needsGameSetup,
-            title:
-                '3. Featured Games (${machine.featuredInstalledGames.length} / ${officialGames.length} Confirmed)',
-            subtitle: machine.needsGameSetup
-                ? (machine.canAutoScanGames
-                    ? 'Auto-scan your installed games or confirm manually for Duels & Tournaments'
-                    : 'Confirm installed titles on your device/console for 1-tap & auto-launch')
-                : 'Ready for 1-tap & auto-launch across Duels and Tournaments',
-            trailing: Wrap(
-              spacing: 6,
-              runSpacing: 6,
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (machine.canAutoScanGames)
-                  HigButton(
-                    label: 'Auto-Scan',
-                    icon: CupertinoIcons.arrow_2_circlepath,
-                    size: HigButtonSize.small,
-                    variant: HigButtonVariant.secondary,
-                    onPressed: () async {
-                      final found = await ref
-                          .read(machineAuthProvider.notifier)
-                          .rescanInstalledGames();
-                      if (mounted) {
-                        ref.read(toastProvider.notifier).show(
-                              'Synced $found installed featured game(s)',
-                              tone: ToastTone.success,
-                            );
-                      }
-                    },
-                  ),
-                HigButton(
-                  label: machine.needsGameSetup ? 'Setup Games' : 'Manage',
-                  icon: CupertinoIcons.game_controller,
-                  size: HigButtonSize.small,
-                  variant: machine.needsGameSetup
-                      ? HigButtonVariant.emerald
-                      : HigButtonVariant.secondary,
-                  onPressed: () => showInstalledGamesSetupSheet(context),
+                Text(
+                  blocked
+                      ? 'Notifications blocked on ${machine.capabilities.osLabel}'
+                      : 'Enable playverzus.xyz match alerts',
+                  style: HigTypography.headline().copyWith(fontSize: 13.5),
+                ),
+                Text(
+                  blocked
+                      ? 'Allow Notifications for playverzus.xyz in browser settings to receive Ready and payout pings.'
+                      : 'Let your device alert you when opponents Ready up or matches settle.',
+                  style: HigTypography.caption(),
                 ),
               ],
             ),
+          ),
+          const SizedBox(width: 8),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              HigButton(
+                label: blocked ? 'Retry' : 'Allow Alerts',
+                size: HigButtonSize.small,
+                onPressed: () async {
+                  final ok = await ref
+                      .read(machineAuthProvider.notifier)
+                      .promptNotificationPermission();
+                  final live =
+                      await DeviceBridge.fetchNotificationPermissionState();
+                  if (!mounted) return;
+                  ref.read(toastProvider.notifier).show(
+                        ok
+                            ? 'Match alerts enabled'
+                            : (live == 'denied'
+                                ? 'Blocked in browser settings — allow notifications and retry'
+                                : 'Notification prompt dismissed — we will ask again when joining a match'),
+                        tone: ok ? ToastTone.success : ToastTone.warning,
+                      );
+                },
+              ),
+              HigButton(
+                label: 'Not Now',
+                size: HigButtonSize.small,
+                variant: HigButtonVariant.secondary,
+                onPressed: () =>
+                    ref.read(machineAuthProvider.notifier).dismissOnboarding(),
+              ),
+            ],
           ),
         ],
       ),
@@ -452,7 +330,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Update Available · Playverzus v${appUpdate.latestVersion}',
+                                'Update Available · playverzus.xyz v${appUpdate.latestVersion}',
                                 style: HigTypography.headline().copyWith(
                                   fontSize: 14,
                                 ),
@@ -503,14 +381,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   const SizedBox(height: 16),
                 ],
 
-                // 0. SMART DEVICE, PERMISSIONS & FEATURED GAMES ONBOARDING
-                if (machine.needsOnboardingGuide) ...[
-                  _buildOnboardingChecklistCard(
-                    context,
-                    machine,
-                    activeGame,
-                    isCompact,
-                  ),
+                // 0. CLEAN DEVICE APP BANNER & NATURAL PERMISSION PROMPT (Zero robotic checklists)
+                if (machine.needsAppDownloadPrompt) ...[
+                  _buildAppDownloadStrip(context, machine),
+                  const SizedBox(height: 12),
+                ],
+                if (machine.capabilities.isWeb &&
+                    !machine.alertsAuthorized &&
+                    !machine.onboardingDismissed) ...[
+                  _buildNotificationAskBar(context, machine),
                   const SizedBox(height: 16),
                 ],
 
