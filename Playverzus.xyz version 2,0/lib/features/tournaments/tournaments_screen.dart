@@ -89,6 +89,7 @@ class _TournamentsScreenState extends ConsumerState<TournamentsScreen> {
   @override
   Widget build(BuildContext context) {
     final activeGame = ref.watch(activeGameProvider);
+    final machine = ref.watch(machineAuthProvider);
     final gateway = ref.watch(paymentGatewayProvider);
     final arena = ref.watch(arenaDataProvider);
     final session = ref.watch(playerSessionProvider);
@@ -617,6 +618,12 @@ class _TournamentsScreenState extends ConsumerState<TournamentsScreen> {
                                         'PRIZE ${_fmt(gateway, cup.prizePoolUsd)}',
                                     tone: HigBadgeTone.emerald,
                                   ),
+                                  if (machine.installedGameIds
+                                      .contains(cup.gameId))
+                                    const HigBadge(
+                                      label: 'INSTALLED',
+                                      tone: HigBadgeTone.emerald,
+                                    ),
                                 ],
                               ),
                               const SizedBox(height: 12),

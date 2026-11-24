@@ -19,3 +19,11 @@ Future<bool> checkWebAssetAvailable(String url) async => false;
 bool isWebAppInstallReady() => false;
 
 Future<bool> promptWebAppInstall() async => false;
+
+bool isRunningStandaloneApp() => true;
+
+bool hasPendingWebUpdate() => false;
+
+void checkWebServiceWorkerUpdate() {}
+
+void applyWebAppUpdate() {}

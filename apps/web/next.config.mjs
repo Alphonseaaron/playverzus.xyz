@@ -114,6 +114,7 @@ const nextConfig = {
       { source: '/flutter_bootstrap.js', headers: noStoreHeaders },
       { source: '/flutter_service_worker.js', headers: noStoreHeaders },
       { source: '/main.dart.js', headers: noStoreHeaders },
+      { source: '/version.json', headers: noStoreHeaders },
       {
         source: '/_next/static/:path*',
         headers: [

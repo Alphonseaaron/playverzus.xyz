@@ -12,6 +12,9 @@ import '../../core/storage/app_state.dart';
 import '../../design_system/layout/responsive.dart';
 import '../../design_system/tokens/hig_tokens.dart';
 import '../../design_system/widgets/hig_primitives.dart';
+import '../../platform_channels/device_bridge.dart';
+import '../games/installed_games_sheet.dart';
+import '../matchroom/pre_match_permissions_sheet.dart';
 
 /// Tournament Detail & Live Bracket View (`/tournaments/:id` and `/tournaments/:id/bracket`).
 /// Fetches real tournament & bracket data from `GET /tournaments/:id` + `GET /tournaments/:id/bracket`.
@@ -149,6 +152,8 @@ class _TournamentDetailScreenState
 
     final t = tournament;
     final game = findOfficialGameById(t.gameId);
+    final machine = ref.watch(machineAuthProvider);
+    final gameInstalled = machine.installedGameIds.contains(game.id);
     final isEnrolled = t.entrants.any((e) => e.username == session.username);
     final isCheckedIn = t.entrants
         .any((e) => e.username == session.username && e.checkedIn);
@@ -241,6 +246,20 @@ class _TournamentDetailScreenState
                                           ? HigBadgeTone.emerald
                                           : HigBadgeTone.neutral,
                                     ),
+                                    GestureDetector(
+                                      onTap: () => showInstalledGamesSetupSheet(
+                                        context,
+                                        highlightGameId: game.id,
+                                      ),
+                                      child: HigBadge(
+                                        label: gameInstalled
+                                            ? 'INSTALLED'
+                                            : 'CONFIRM INSTALL',
+                                        tone: gameInstalled
+                                            ? HigBadgeTone.emerald
+                                            : HigBadgeTone.neutral,
+                                      ),
+                                    ),
                                   ],
                                 ),
                                 const SizedBox(height: 6),
@@ -307,6 +326,13 @@ class _TournamentDetailScreenState
                               variant: HigButtonVariant.emerald,
                               loading: _acting,
                               onPressed: () async {
+                                final ok = await PreMatchPermissionsDialog
+                                    .ensureAuthorized(
+                                  context,
+                                  ref,
+                                  gameName: game.shortName,
+                                );
+                                if (!ok || !mounted) return;
                                 setState(() => _acting = true);
                                 try {
                                   await ref
@@ -331,6 +357,46 @@ class _TournamentDetailScreenState
                                 } finally {
                                   if (mounted) setState(() => _acting = false);
                                 }
+                              },
+                            ),
+                          if (!gameInstalled)
+                            HigButton(
+                              label: 'Confirm Installed',
+                              icon: CupertinoIcons.checkmark_circle,
+                              variant: HigButtonVariant.secondary,
+                              onPressed: () => showInstalledGamesSetupSheet(
+                                context,
+                                highlightGameId: game.id,
+                              ),
+                            )
+                          else if (game.effectiveLaunchUri != null &&
+                              game.effectiveLaunchUri!.isNotEmpty)
+                            HigButton(
+                              label: 'Launch ${game.shortName}',
+                              icon: CupertinoIcons.play_fill,
+                              variant: HigButtonVariant.secondary,
+                              onPressed: () async {
+                                final ok = await PreMatchPermissionsDialog
+                                    .ensureAuthorized(
+                                  context,
+                                  ref,
+                                  gameName: game.shortName,
+                                );
+                                if (!ok || !mounted) return;
+                                final res =
+                                    await DeviceBridge.forceAutoLaunchGame(
+                                  game,
+                                  matchId: t.id,
+                                );
+                                if (!mounted) return;
+                                ref.read(toastProvider.notifier).show(
+                                      res.launched
+                                          ? 'Opening ${game.shortName} via ${res.channelLabel}'
+                                          : 'Open ${game.shortName} on your device to play',
+                                      tone: res.launched
+                                          ? ToastTone.success
+                                          : ToastTone.info,
+                                    );
                               },
                             ),
                           if (t.status == 'REGISTRATION' && canManageBracket)

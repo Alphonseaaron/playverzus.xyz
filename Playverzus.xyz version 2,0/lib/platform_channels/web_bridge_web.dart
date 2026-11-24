@@ -209,10 +209,71 @@ Future<bool> promptWebAppInstall() async {
           (choice?.getProperty<JSAny?>('outcome'.toJS)?.dartify() ?? '')
               .toString();
       globalContext.setProperty('__pvzDeferredInstallPrompt'.toJS, null);
+      if (outcome == 'accepted') {
+        try {
+          final ls = globalContext.getProperty<JSObject?>('localStorage'.toJS);
+          ls?.callMethod<JSAny?>(
+            'setItem'.toJS,
+            'playverzus_app_installed'.toJS,
+            '1'.toJS,
+          );
+        } catch (_) {}
+      }
       return outcome == 'accepted';
     }
     return true;
   } catch (_) {
     return false;
   }
+}
+
+/// Returns true when running inside the installed PWA standalone window,
+/// iOS home-screen web app, or after user completed PWA install on this device.
+bool isRunningStandaloneApp() {
+  try {
+    final nav = globalContext.getProperty<JSObject?>('navigator'.toJS);
+    if (nav?.getProperty<JSAny?>('standalone'.toJS)?.dartify() == true) {
+      return true;
+    }
+    for (final q in const [
+      '(display-mode: standalone)',
+      '(display-mode: window-controls-overlay)',
+      '(display-mode: fullscreen)',
+    ]) {
+      final mq = globalContext.callMethod<JSObject?>('matchMedia'.toJS, q.toJS);
+      if (mq?.getProperty<JSAny?>('matches'.toJS)?.dartify() == true) {
+        return true;
+      }
+    }
+    final ls = globalContext.getProperty<JSObject?>('localStorage'.toJS);
+    final flag = ls
+        ?.callMethod<JSAny?>('getItem'.toJS, 'playverzus_app_installed'.toJS)
+        ?.dartify()
+        ?.toString();
+    if (flag == '1') return true;
+  } catch (_) {}
+  return false;
+}
+
+bool hasPendingWebUpdate() {
+  try {
+    final ready = globalContext
+        .getProperty<JSAny?>('__pvzSwUpdateReady'.toJS)
+        ?.dartify();
+    return ready == true;
+  } catch (_) {
+    return false;
+  }
+}
+
+void checkWebServiceWorkerUpdate() {
+  try {
+    globalContext.callMethod<JSAny?>('__pvzCheckSwUpdate'.toJS);
+  } catch (_) {}
+}
+
+void applyWebAppUpdate() {
+  try {
+    globalContext.callMethod<JSAny?>('__pvzApplySwUpdate'.toJS);
+  } catch (_) {}
 }

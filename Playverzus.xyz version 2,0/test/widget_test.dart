@@ -1,19 +1,27 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:playverzus_v2/app.dart';
 import 'package:playverzus_v2/core/catalog/official_games.dart';
 import 'package:playverzus_v2/core/config/app_config.dart';
+import 'package:playverzus_v2/core/data/arena_repository.dart';
 import 'package:playverzus_v2/core/network/friendly_errors.dart';
 import 'package:playverzus_v2/core/security/anti_fraud_engine.dart';
 import 'package:playverzus_v2/core/storage/app_state.dart';
+import 'package:playverzus_v2/core/storage/app_update_provider.dart';
+import 'package:playverzus_v2/design_system/layout/adaptive_scaffold.dart';
 import 'package:playverzus_v2/design_system/tokens/hig_tokens.dart';
 import 'package:playverzus_v2/features/admin/admin_models.dart';
 import 'package:playverzus_v2/features/cashier/cashier_screen.dart';
+import 'package:playverzus_v2/features/dashboard/dashboard_screen.dart';
 import 'package:playverzus_v2/features/developer/developer_models.dart';
 import 'package:playverzus_v2/features/downloads/download_hub_screen.dart';
+import 'package:playverzus_v2/features/games/installed_games_sheet.dart';
 import 'package:playverzus_v2/features/legal/legal_screen.dart';
+import 'package:playverzus_v2/features/matchroom/pre_match_permissions_sheet.dart';
 import 'package:playverzus_v2/features/onboarding_auth/auth_screen.dart';
+import 'package:playverzus_v2/features/tournaments/tournament_detail_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -623,4 +631,304 @@ void main() {
     expect(find.textContaining('Suggested best withdrawal: USDC 20+'),
         findsOneWidget);
   });
+
+  test(
+      'Onboarding MachineAuthState tracks installed app mode, permissions, and featured game confirmation persistently',
+      () async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    await container
+        .read(machineAuthProvider.notifier)
+        .bootstrapOnRegistration(userId: 'player_onboard_1', username: 'kibet');
+
+    final initial = container.read(machineAuthProvider);
+    // Test runner is native Dart VM (!kIsWeb), so installed app mode is active and download prompt stays hidden
+    expect(initial.isRunningInstalledApp, isTrue);
+    expect(initial.needsAppDownloadPrompt, isFalse);
+    expect(initial.needsOnboardingGuide, isTrue);
+
+    await container
+        .read(machineAuthProvider.notifier)
+        .markGamesSetupConfirmed(gameIds: ['chess', 'eafc']);
+    final afterSync = container.read(machineAuthProvider);
+    expect(afterSync.gamesConfirmed, isTrue);
+    expect(afterSync.needsGameSetup, isFalse);
+    expect(afterSync.installedGameIds, containsAll(['chess', 'eafc']));
+
+    // Re-hydrating the same user preserves gamesConfirmed and selected featured titles
+    container.read(machineAuthProvider.notifier).clearForSignOut();
+    await container
+        .read(machineAuthProvider.notifier)
+        .bootstrapOnRegistration(userId: 'player_onboard_1', username: 'kibet');
+    final reloaded = container.read(machineAuthProvider);
+    expect(reloaded.gamesConfirmed, isTrue);
+    expect(reloaded.installedGameIds, containsAll(['chess', 'eafc']));
+
+    await container.read(machineAuthProvider.notifier).dismissOnboarding();
+    expect(container.read(machineAuthProvider).onboardingDismissed, isTrue);
+    expect(container.read(machineAuthProvider).needsOnboardingGuide, isFalse);
+  });
+
+  testWidgets(
+      'Bell Notification Center shows missing permission & game-setup alerts and auto-clears once confirmed',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1280, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    final authNotifier = container.read(machineAuthProvider.notifier);
+    await tester.runAsync(() async {
+      await container
+          .read(playerSessionProvider.notifier)
+          .signInSandboxRole(asAdmin: false);
+      // Ensure initial permissions & gamesConfirmed are false so first-time alerts appear in Notification Center
+      await authNotifier.bootstrapOnRegistration(
+        userId: container.read(playerSessionProvider).userId,
+        username: container.read(playerSessionProvider).username,
+      );
+    });
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(
+          home: AdaptiveScaffold(
+            currentPath: '/challenges',
+            child: Center(child: Text('Arena Body')),
+          ),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 100));
+
+    // Open Notification Center via top-bar bell icon
+    await tester.tap(find.byIcon(CupertinoIcons.bell_fill).first);
+    await tester.pump(const Duration(milliseconds: 350));
+
+    expect(find.text('FIRST-TIME SETUP & PERMISSIONS'), findsOneWidget);
+    expect(find.text('Setup Featured Games'), findsOneWidget);
+
+    // Confirming games clears the "Setup Featured Games" notification immediately
+    await tester.runAsync(
+      () => authNotifier.markGamesSetupConfirmed(gameIds: ['chess']),
+    );
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('Setup Featured Games'), findsNothing);
+  });
+
+  testWidgets(
+      'InstalledGamesSetupSheet filters & saves featured games and TournamentDetailScreen exposes Confirm Installed / Launch',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1280, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final container = ProviderContainer(
+      overrides: [
+        arenaDataProvider.overrideWith((ref) => _TestArenaNotifier(ref)),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(
+          home: Scaffold(body: InstalledGamesSetupSheet(isSheet: false)),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 120));
+
+    expect(find.text('Setup Featured Games'), findsOneWidget);
+    // Search for Chess.com and select it
+    await tester.enterText(find.byType(EditableText).first, 'Chess.com');
+    await tester.pump();
+    await tester.tap(find.text('SELECT').first);
+    await tester.pump();
+
+    expect(find.text('Save & Confirm (1)'), findsOneWidget);
+    await tester.tap(find.text('Save & Confirm (1)'));
+    await tester.pump(const Duration(milliseconds: 120));
+    expect(container.read(machineAuthProvider).installedGameIds,
+        contains('chess'));
+    expect(container.read(machineAuthProvider).gamesConfirmed, isTrue);
+
+    // Clear 4-second FrostedToast timer scheduled on save
+    await tester.pump(const Duration(seconds: 5));
+
+    // Render TournamentDetailScreen for confirmed game ('chess') -> shows INSTALLED badge & Launch CHESS button
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(
+          home: Scaffold(
+            body: TournamentDetailScreen(tournamentId: 't_chess_test'),
+          ),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(find.text('INSTALLED'), findsOneWidget);
+    expect(find.text('Launch CHESS'), findsOneWidget);
+
+    // Ensure confidential internal words remain completely hidden on new/updated widgets
+    final forbidden = [
+      'volatile RAM',
+      'dHash',
+      'HMAC-SHA256',
+      'Regions of Interest',
+      'ScreenCaptureKit',
+      'MediaProjection',
+      'ReplayKit',
+    ];
+    for (final term in forbidden) {
+      expect(find.textContaining(term), findsNothing);
+    }
+
+    // Also mount DashboardScreen and flush any onboarding toast timer cleanly
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(home: Scaffold(body: DashboardScreen())),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 150));
+    expect(find.byType(PreMatchPermissionsDialog), findsNothing);
+    await tester.pump(const Duration(seconds: 7));
+  });
+
+  test(
+      'AppUpdateNotifier compares semver/builds and alerts users who already downloaded/installed when a newer version ships',
+      () async {
+    expect(
+      isNewerAppVersion(
+        currentVersion: '2.0.1',
+        currentBuild: 2,
+        remoteVersion: '2.0.2',
+        remoteBuild: 3,
+      ),
+      isTrue,
+    );
+    expect(
+      isNewerAppVersion(
+        currentVersion: '2.0.1',
+        currentBuild: 2,
+        remoteVersion: '2.0.1',
+        remoteBuild: 3,
+      ),
+      isTrue,
+    );
+    expect(
+      isNewerAppVersion(
+        currentVersion: '2.0.1',
+        currentBuild: 2,
+        remoteVersion: '2.0.1',
+        remoteBuild: 2,
+      ),
+      isFalse,
+    );
+
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    final notifier = container.read(appUpdateProvider.notifier);
+    await notifier.recordDownloadedCurrentVersion(
+      version: '2.0.0',
+      buildNumber: 1,
+    );
+    notifier.applyRemoteManifest(
+      latestVersion: '2.0.2',
+      latestBuildNumber: 3,
+      releaseNotes: 'Better onboarding & 1-tap tournament launch.',
+    );
+
+    final pending = container.read(appUpdateProvider);
+    expect(pending.hasInstalledOrDownloadedApp, isTrue);
+    expect(pending.hasNewerDownloadedRelease, isTrue);
+    expect(pending.hasPendingUpdate, isTrue);
+
+    // Dismissing 2.0.2 hides that version until a newer release (2.0.3) arrives
+    await notifier.dismissCurrentUpdate();
+    expect(container.read(appUpdateProvider).hasPendingUpdate, isFalse);
+
+    notifier.applyRemoteManifest(
+      latestVersion: '2.0.3',
+      latestBuildNumber: 4,
+    );
+    expect(container.read(appUpdateProvider).hasPendingUpdate, isTrue);
+  });
+
+  testWidgets(
+      'Bell Notification Center and DownloadHub surface App Update notification when an update is pending',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1280, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    await tester.runAsync(() async {
+      await container
+          .read(playerSessionProvider.notifier)
+          .signInSandboxRole(asAdmin: false);
+    });
+    container.read(appUpdateProvider.notifier).applyRemoteManifest(
+          latestVersion: '2.1.0',
+          latestBuildNumber: 5,
+          releaseNotes: 'Faster bracket sync & new update alert.',
+        );
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(
+          home: AdaptiveScaffold(
+            currentPath: '/challenges',
+            child: DownloadHubScreen(),
+          ),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 120));
+
+    expect(find.text('UPDATE AVAILABLE · V2.1.0'), findsOneWidget);
+
+    await tester.tap(find.byIcon(CupertinoIcons.bell_fill).first);
+    await tester.pump(const Duration(milliseconds: 350));
+
+    expect(find.text('Update Available: Playverzus v2.1.0'), findsOneWidget);
+    expect(find.text('Download Update'), findsOneWidget);
+  });
+}
+
+class _TestArenaNotifier extends ArenaDataNotifier {
+  _TestArenaNotifier(super.ref) {
+    state = const ArenaDataState(
+      tournaments: [
+        TournamentModel(
+          id: 't_chess_test',
+          name: 'Nairobi Chess Blitz Open',
+          gameId: 'chess',
+          format: 'SINGLE_ELIM',
+          size: 8,
+          entryFeeUsd: 5.0,
+          prizePoolUsd: 36.0,
+          status: 'REGISTRATION',
+          isBlitz: false,
+          entrants: [],
+        ),
+      ],
+    );
+  }
+
+  @override
+  Future<void> refreshFromApi() async {}
 }

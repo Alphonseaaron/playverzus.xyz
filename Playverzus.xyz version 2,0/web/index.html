@@ -40,7 +40,46 @@
     });
     window.addEventListener('appinstalled', function () {
       window.__pvzDeferredInstallPrompt = null;
+      try { localStorage.setItem('playverzus_app_installed', '1'); } catch (_) {}
     });
+    window.__pvzSwUpdateReady = false;
+    window.__pvzSwWaiting = null;
+    window.__pvzApplySwUpdate = function () {
+      try {
+        if (window.__pvzSwWaiting) {
+          window.__pvzSwWaiting.postMessage('skipWaiting');
+        }
+      } catch (_) {}
+      setTimeout(function () { window.location.reload(); }, 250);
+    };
+    window.__pvzCheckSwUpdate = function () {
+      try {
+        if (!('serviceWorker' in navigator)) return false;
+        navigator.serviceWorker.getRegistration().then(function (reg) {
+          if (!reg) return;
+          if (reg.waiting) {
+            window.__pvzSwWaiting = reg.waiting;
+            window.__pvzSwUpdateReady = true;
+          }
+          if (!reg.__pvzBound) {
+            reg.__pvzBound = true;
+            reg.addEventListener('updatefound', function () {
+              var sw = reg.installing;
+              if (!sw) return;
+              sw.addEventListener('statechange', function () {
+                if (sw.state === 'installed' && navigator.serviceWorker.controller) {
+                  window.__pvzSwWaiting = sw;
+                  window.__pvzSwUpdateReady = true;
+                }
+              });
+            });
+          }
+          reg.update().catch(function () {});
+        }).catch(function () {});
+      } catch (_) {}
+      return !!window.__pvzSwUpdateReady;
+    };
+    setTimeout(function () { window.__pvzCheckSwUpdate(); }, 1500);
   </script>
 </head>
 <body>

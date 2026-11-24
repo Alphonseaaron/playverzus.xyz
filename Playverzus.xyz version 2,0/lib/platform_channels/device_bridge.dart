@@ -94,6 +94,28 @@ class DeviceBridge {
     }
   }
 
+  /// True when the user is running a native mobile/desktop build OR an installed standalone PWA.
+  static bool isRunningInstalledApp() {
+    if (!kIsWeb) return true;
+    return isRunningStandaloneApp();
+  }
+
+  /// Concise, device-tailored companion download button label.
+  static String recommendedAppActionLabel() {
+    switch (detectVisitorPlatformKey()) {
+      case 'android':
+        return 'Download Android App (.apk)';
+      case 'ios':
+        return 'Get Playverzus iOS App';
+      case 'macos':
+        return 'Download macOS App (.dmg)';
+      case 'linux':
+        return 'Download Linux App';
+      default:
+        return 'Download Windows PC App';
+    }
+  }
+
   static DeviceCapabilities detectCapabilities() {
     if (kIsWeb) {
       final osKey = detectWebOsKey();
@@ -364,24 +386,34 @@ class DeviceBridge {
       } catch (_) {}
     }
 
-    // 2. Cross-platform deep-link / Steam / Epic / Riot / Web Arena launch
-    if (uriStr != null && !uriStr.startsWith('android-app://')) {
-      try {
-        final uri = Uri.parse(uriStr);
-        if (await canLaunchUrl(uri)) {
-          final launched = await launchUrl(
-            uri,
-            mode: LaunchMode.externalApplication,
-          );
-          if (launched) {
-            return AutoLaunchResult(
-              launched: true,
-              channelLabel: 'Launcher Protocol Deep-Link',
-              targetUri: uriStr,
+    // 2. Cross-platform deep-link / Steam / Epic / Riot / Mobile / Web Arena launch
+    if (uriStr != null && uriStr.isNotEmpty) {
+      String targetLaunch = uriStr;
+      if (uriStr.startsWith('android-app://') &&
+          kIsWeb &&
+          detectVisitorPlatformKey() == 'android' &&
+          game.androidPackageId != null) {
+        targetLaunch =
+            'intent://#Intent;package=${game.androidPackageId};end';
+      }
+      if (!targetLaunch.startsWith('android-app://')) {
+        try {
+          final uri = Uri.parse(targetLaunch);
+          if (await canLaunchUrl(uri)) {
+            final launched = await launchUrl(
+              uri,
+              mode: LaunchMode.externalApplication,
             );
+            if (launched) {
+              return AutoLaunchResult(
+                launched: true,
+                channelLabel: 'Launcher Protocol Deep-Link',
+                targetUri: targetLaunch,
+              );
+            }
           }
-        }
-      } catch (_) {}
+        } catch (_) {}
+      }
     }
 
     // 3. Fallback: Background Watch Mode armed cleanly while user switches into game

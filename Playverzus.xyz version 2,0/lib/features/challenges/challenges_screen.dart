@@ -63,6 +63,7 @@ class _ChallengesScreenState extends ConsumerState<ChallengesScreen> {
   @override
   Widget build(BuildContext context) {
     final activeGame = ref.watch(activeGameProvider);
+    final machine = ref.watch(machineAuthProvider);
     final gateway = ref.watch(paymentGatewayProvider);
     final arena = ref.watch(arenaDataProvider);
     final session = ref.watch(playerSessionProvider);
@@ -388,6 +389,12 @@ class _ChallengesScreenState extends ConsumerState<ChallengesScreen> {
                                     else
                                       HigBadge(label: c.region),
                                     HigBadge(label: c.roomCode),
+                                    if (machine.installedGameIds
+                                        .contains(c.gameId))
+                                      const HigBadge(
+                                        label: 'INSTALLED',
+                                        tone: HigBadgeTone.emerald,
+                                      ),
                                   ],
                                 ),
                                 const SizedBox(height: 14),

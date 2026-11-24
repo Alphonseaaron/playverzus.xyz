@@ -7,7 +7,12 @@ import 'package:go_router/go_router.dart';
 import '../../core/config/app_config.dart';
 import '../../core/engine/live_match_engine.dart';
 import '../../core/storage/app_state.dart';
+import '../../core/storage/app_update_provider.dart';
 import '../../features/admin/admin_models.dart';
+import '../../features/games/installed_games_sheet.dart';
+import '../../features/matchroom/pre_match_permissions_sheet.dart';
+import '../../platform_channels/device_bridge.dart';
+import '../../platform_channels/web_bridge.dart';
 import '../tokens/hig_tokens.dart';
 import '../widgets/active_game_switcher.dart';
 import '../widgets/brand_logo.dart';
@@ -242,9 +247,94 @@ class _AdaptiveScaffoldState extends ConsumerState<AdaptiveScaffold> {
     context.go('/');
   }
 
+  int _pendingSetupNotificationCount(
+    MachineAuthState machine,
+    PlayerSession session,
+    AppUpdateState appUpdate,
+  ) {
+    if (!session.isAuthenticated || session.isAdmin) return 0;
+    var count = 0;
+    if (appUpdate.hasPendingUpdate) count++;
+    if (machine.needsAppDownloadPrompt) count++;
+    if (!machine.alertsAuthorized) count++;
+    if (!machine.captureAuthorized) count++;
+    if (machine.needsGameSetup) count++;
+    return count;
+  }
+
+  Widget _setupAlertCard({
+    required IconData icon,
+    required Color accent,
+    required String title,
+    required String detail,
+    required String primaryLabel,
+    required VoidCallback onPrimary,
+    String? secondaryLabel,
+    VoidCallback? onSecondary,
+  }) {
+    return GlassCard(
+      radius: 12,
+      padding: const EdgeInsets.all(12),
+      backgroundColor: accent.withValues(alpha: 0.08),
+      borderColor: accent.withValues(alpha: 0.32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, size: 15, color: accent),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: HigTypography.headline().copyWith(fontSize: 13),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(detail, style: HigTypography.caption()),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              HigButton(
+                label: primaryLabel,
+                size: HigButtonSize.small,
+                onPressed: onPrimary,
+              ),
+              if (secondaryLabel != null && onSecondary != null)
+                HigButton(
+                  label: secondaryLabel,
+                  size: HigButtonSize.small,
+                  variant: HigButtonVariant.secondary,
+                  onPressed: onSecondary,
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showNotificationsSheet(BuildContext context) {
     HapticFeedback.selectionClick();
-    final history = ref.read(liveMatchEngineProvider).notificationHistory;
+    final rootContext = context;
 
     showModalBottomSheet<void>(
       context: context,
@@ -253,141 +343,354 @@ class _AdaptiveScaffoldState extends ConsumerState<AdaptiveScaffold> {
       builder: (ctx) {
         return StatefulBuilder(
           builder: (ctx, setSheetState) {
-            return ClipRRect(
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(20)),
-              child: Container(
-                constraints: const BoxConstraints(maxHeight: 480),
-                decoration: const BoxDecoration(
-                  color: HigColors.surfacePrimary,
-                  border: Border(
-                    top: BorderSide(color: HigColors.separator, width: 1),
-                  ),
-                ),
-                  child: SafeArea(
-                    top: false,
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Center(
-                            child: Container(
-                              width: 36,
-                              height: 4,
-                              decoration: BoxDecoration(
-                                color: HigColors.separator,
-                                borderRadius: BorderRadius.circular(2),
+            return Consumer(
+              builder: (ctx, sheetRef, _) {
+                final machine = sheetRef.watch(machineAuthProvider);
+                final session = sheetRef.watch(playerSessionProvider);
+                final appUpdate = sheetRef.watch(appUpdateProvider);
+                final history =
+                    sheetRef.watch(liveMatchEngineProvider).notificationHistory;
+
+                final setupAlerts = <Widget>[];
+                if (session.isAuthenticated && !session.isAdmin) {
+                  if (appUpdate.hasPendingUpdate) {
+                    final canInstantReload =
+                        appUpdate.swUpdateReady && isRunningStandaloneApp();
+                    setupAlerts.add(
+                      _setupAlertCard(
+                        icon: CupertinoIcons.arrow_up_circle_fill,
+                        accent: HigColors.emerald,
+                        title: canInstantReload
+                            ? 'App Update Ready (v${appUpdate.latestVersion})'
+                            : 'Update Available: Playverzus v${appUpdate.latestVersion}',
+                        detail: appUpdate.releaseNotes,
+                        primaryLabel: canInstantReload
+                            ? 'Reload to Update'
+                            : 'Download Update',
+                        onPrimary: () async {
+                          if (canInstantReload) {
+                            applyWebAppUpdate();
+                            return;
+                          }
+                          if (ctx.mounted) Navigator.of(ctx).pop();
+                          if (rootContext.mounted) {
+                            rootContext.go('/download');
+                          }
+                        },
+                        secondaryLabel:
+                            appUpdate.isForcedUpdate ? null : 'Later',
+                        onSecondary: appUpdate.isForcedUpdate
+                            ? null
+                            : () => sheetRef
+                                .read(appUpdateProvider.notifier)
+                                .dismissCurrentUpdate(),
+                      ),
+                    );
+                  }
+                  if (machine.needsAppDownloadPrompt) {
+                    final canInstantInstall = isWebAppInstallReady();
+                    setupAlerts.add(
+                      _setupAlertCard(
+                        icon: CupertinoIcons.device_phone_portrait,
+                        accent: HigColors.copper,
+                        title:
+                            'Install Playverzus App (${machine.capabilities.osLabel})',
+                        detail:
+                            '${DeviceBridge.recommendedAppActionLabel()} for one-tap game launches and fewer browser interruptions.',
+                        primaryLabel:
+                            canInstantInstall ? 'Install App' : 'Get App',
+                        onPrimary: () async {
+                          if (canInstantInstall) {
+                            final installed = await promptWebAppInstall();
+                            if (installed) {
+                              await sheetRef
+                                  .read(machineAuthProvider.notifier)
+                                  .dismissDownloadPrompt();
+                              sheetRef.read(toastProvider.notifier).show(
+                                    'Playverzus app installed',
+                                    tone: ToastTone.success,
+                                  );
+                            }
+                            return;
+                          }
+                          if (ctx.mounted) Navigator.of(ctx).pop();
+                          if (rootContext.mounted) rootContext.go('/download');
+                        },
+                        secondaryLabel: 'Already in App',
+                        onSecondary: () async {
+                          await sheetRef
+                              .read(machineAuthProvider.notifier)
+                              .dismissDownloadPrompt();
+                          sheetRef.read(toastProvider.notifier).show(
+                                'Install prompt hidden for this browser',
+                                tone: ToastTone.info,
+                              );
+                        },
+                      ),
+                    );
+                  }
+
+                  if (!machine.alertsAuthorized) {
+                    setupAlerts.add(
+                      _setupAlertCard(
+                        icon: CupertinoIcons.bell_fill,
+                        accent: HigColors.copper,
+                        title: 'Permission Needed: Live Match Alerts',
+                        detail:
+                            'Allow notifications so Playverzus can alert you when opponents Ready up, matches start, or prizes settle.',
+                        primaryLabel: 'Allow Alerts',
+                        onPrimary: () async {
+                          final ok = await sheetRef
+                              .read(machineAuthProvider.notifier)
+                              .promptNotificationPermission();
+                          sheetRef.read(toastProvider.notifier).show(
+                                ok
+                                    ? 'Match alerts enabled'
+                                    : 'Enable notifications in your browser or device settings',
+                                tone:
+                                    ok ? ToastTone.success : ToastTone.warning,
+                              );
+                        },
+                      ),
+                    );
+                  }
+
+                  if (!machine.captureAuthorized) {
+                    setupAlerts.add(
+                      _setupAlertCard(
+                        icon: CupertinoIcons.checkmark_shield_fill,
+                        accent: HigColors.indigo,
+                        title: 'Permission Needed: Match Verification',
+                        detail:
+                            'Grant one-time match verification permission before competing in Duels or Tournaments so results confirm smoothly.',
+                        primaryLabel: 'Allow Access',
+                        onPrimary: () async {
+                          final activeGame = sheetRef.read(activeGameProvider);
+                          final ok = await PreMatchPermissionsDialog
+                              .ensureAuthorized(
+                            ctx,
+                            sheetRef,
+                            gameName: activeGame.shortName,
+                          );
+                          if (ok) {
+                            sheetRef.read(toastProvider.notifier).show(
+                                  'Device permissions ready for competing',
+                                  tone: ToastTone.success,
+                                );
+                          }
+                        },
+                      ),
+                    );
+                  }
+
+                  if (machine.needsGameSetup) {
+                    setupAlerts.add(
+                      _setupAlertCard(
+                        icon: CupertinoIcons.game_controller_solid,
+                        accent: HigColors.emerald,
+                        title: 'Setup Featured Games',
+                        detail: machine.canAutoScanGames
+                            ? 'Scan this ${machine.capabilities.osLabel} device or confirm installed games for 1-tap launch in Duels & Tournaments.'
+                            : 'Confirm which featured games you play on this device or console for fast 1-tap launch.',
+                        primaryLabel: 'Setup Games',
+                        onPrimary: () async {
+                          await showInstalledGamesSetupSheet(ctx);
+                        },
+                      ),
+                    );
+                  }
+                }
+
+                final hasAny = setupAlerts.isNotEmpty || history.isNotEmpty;
+
+                return ClipRRect(
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(20)),
+                  child: Container(
+                    constraints: const BoxConstraints(maxHeight: 540),
+                    decoration: const BoxDecoration(
+                      color: HigColors.surfacePrimary,
+                      border: Border(
+                        top: BorderSide(color: HigColors.separator, width: 1),
+                      ),
+                    ),
+                    child: SafeArea(
+                      top: false,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Center(
+                              child: Container(
+                                width: 36,
+                                height: 4,
+                                decoration: BoxDecoration(
+                                  color: HigColors.separator,
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 14),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text('Notifications',
-                                  style: HigTypography.title3()),
-                              Row(
-                                children: [
-                                  Text('Sound', style: HigTypography.caption()),
-                                  const SizedBox(width: 6),
-                                  CupertinoSwitch(
-                                    value: _soundAlertsEnabled,
-                                    activeTrackColor: HigColors.brand,
-                                    onChanged: (v) {
-                                      setSheetState(
-                                          () => _soundAlertsEnabled = v);
-                                      setState(() => _soundAlertsEnabled = v);
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 14),
-                          if (history.isEmpty)
-                            Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 28),
-                              child: Column(
-                                children: [
-                                  const Icon(
-                                    CupertinoIcons.bell_slash,
-                                    color: HigColors.labelTertiary,
-                                    size: 24,
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'No notifications yet',
-                                    style: HigTypography.headline(),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Match updates, score verifications, and bracket alerts appear here.',
-                                    textAlign: TextAlign.center,
-                                    style: HigTypography.caption(),
-                                  ),
-                                ],
-                              ),
-                            )
-                          else
-                            Flexible(
-                              child: ListView.separated(
-                                shrinkWrap: true,
-                                itemCount: history.length,
-                                separatorBuilder: (_, __) =>
+                            const SizedBox(height: 14),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text('Notifications',
+                                        style: HigTypography.title3()),
+                                    if (setupAlerts.isNotEmpty) ...[
+                                      const SizedBox(width: 8),
+                                      HigBadge(
+                                        label: '${setupAlerts.length} ACTION',
+                                        tone: HigBadgeTone.copper,
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                                Row(
+                                  children: [
+                                    Text('Sound', style: HigTypography.caption()),
+                                    const SizedBox(width: 6),
+                                    CupertinoSwitch(
+                                      value: _soundAlertsEnabled,
+                                      activeTrackColor: HigColors.brand,
+                                      onChanged: (v) {
+                                        setSheetState(
+                                            () => _soundAlertsEnabled = v);
+                                        setState(() => _soundAlertsEnabled = v);
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 14),
+                            if (!hasAny)
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 28),
+                                child: Column(
+                                  children: [
+                                    const Icon(
+                                      CupertinoIcons.bell_slash,
+                                      color: HigColors.labelTertiary,
+                                      size: 24,
+                                    ),
                                     const SizedBox(height: 8),
-                                itemBuilder: (_, i) {
-                                  final evt = history[i];
-                                  final toneColor = evt.leadStatus ==
-                                          MatchLeadStatus.winning
-                                      ? HigColors.emerald
-                                      : evt.leadStatus == MatchLeadStatus.losing
-                                          ? HigColors.crimson
-                                          : HigColors.brand;
-                                  return GlassCard(
-                                    radius: 12,
-                                    padding: const EdgeInsets.all(12),
-                                    backgroundColor: HigColors.surfaceGrouped,
-                                    child: Row(
-                                      children: [
-                                        Container(
-                                          width: 8,
-                                          height: 8,
-                                          decoration: BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            color: toneColor,
+                                    Text(
+                                      'All caught up',
+                                      style: HigTypography.headline(),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Permissions, app setup alerts, match kickoffs, and payouts appear here.',
+                                      textAlign: TextAlign.center,
+                                      style: HigTypography.caption(),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            else
+                              Flexible(
+                                child: ListView(
+                                  shrinkWrap: true,
+                                  children: [
+                                    if (setupAlerts.isNotEmpty) ...[
+                                      Text(
+                                        'FIRST-TIME SETUP & PERMISSIONS',
+                                        style: HigTypography.caption(
+                                          color: HigColors.copperBright,
+                                        ).copyWith(
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: 0.6,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      ...setupAlerts.map(
+                                        (w) => Padding(
+                                          padding:
+                                              const EdgeInsets.only(bottom: 8),
+                                          child: w,
+                                        ),
+                                      ),
+                                      if (history.isNotEmpty) ...[
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'RECENT MATCH ALERTS',
+                                          style: HigTypography.caption(
+                                            color: HigColors.labelTertiary,
+                                          ).copyWith(
+                                            fontWeight: FontWeight.w700,
+                                            letterSpacing: 0.6,
                                           ),
                                         ),
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
+                                        const SizedBox(height: 8),
+                                      ],
+                                    ],
+                                    ...history.map((evt) {
+                                      final toneColor = evt.leadStatus ==
+                                              MatchLeadStatus.winning
+                                          ? HigColors.emerald
+                                          : evt.leadStatus ==
+                                                  MatchLeadStatus.losing
+                                              ? HigColors.crimson
+                                              : HigColors.brand;
+                                      return Padding(
+                                        padding:
+                                            const EdgeInsets.only(bottom: 8),
+                                        child: GlassCard(
+                                          radius: 12,
+                                          padding: const EdgeInsets.all(12),
+                                          backgroundColor:
+                                              HigColors.surfaceGrouped,
+                                          child: Row(
                                             children: [
-                                              Text(
-                                                evt.title,
-                                                style: HigTypography.headline()
-                                                    .copyWith(fontSize: 13),
+                                              Container(
+                                                width: 8,
+                                                height: 8,
+                                                decoration: BoxDecoration(
+                                                  shape: BoxShape.circle,
+                                                  color: toneColor,
+                                                ),
                                               ),
-                                              Text(
-                                                evt.detail,
-                                                style: HigTypography.caption(),
+                                              const SizedBox(width: 10),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      evt.title,
+                                                      style: HigTypography
+                                                              .headline()
+                                                          .copyWith(
+                                                              fontSize: 13),
+                                                    ),
+                                                    Text(
+                                                      evt.detail,
+                                                      style: HigTypography
+                                                          .caption(),
+                                                    ),
+                                                  ],
+                                                ),
                                               ),
                                             ],
                                           ),
                                         ),
-                                      ],
-                                    ),
-                                  );
-                                },
+                                      );
+                                    }),
+                                  ],
+                                ),
                               ),
-                            ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
+                );
+              },
             );
           },
         );
@@ -548,16 +851,42 @@ class _AdaptiveScaffoldState extends ConsumerState<AdaptiveScaffold> {
                       _menuTile(
                         icon: CupertinoIcons.gear_solid,
                         title: 'Settings & Device',
-                        subtitle: 'Device fingerprint, console sync & limits',
+                        subtitle: 'Device permissions, console sync & installed games',
                         onTap: () => nav('/settings'),
                       ),
-                      if (kIsWeb)
-                        _menuTile(
-                          icon: CupertinoIcons.arrow_down_circle_fill,
-                          title: 'Download App (APK / Desktop)',
-                          subtitle: 'One-tap launches & live match alerts',
-                          onTap: () => nav('/download'),
-                        ),
+                      _menuTile(
+                        icon: CupertinoIcons.game_controller_solid,
+                        title: 'Setup Featured Games',
+                        subtitle: 'Auto-sync or confirm installed titles for 1-tap launch',
+                        onTap: () {
+                          Navigator.of(ctx).pop();
+                          showInstalledGamesSetupSheet(context);
+                        },
+                      ),
+                      Builder(
+                        builder: (_) {
+                          final appUpdate = ref.read(appUpdateProvider);
+                          final installed = ref
+                              .read(machineAuthProvider)
+                              .isRunningInstalledApp;
+                          if (!appUpdate.hasPendingUpdate &&
+                              (!kIsWeb || installed)) {
+                            return const SizedBox.shrink();
+                          }
+                          return _menuTile(
+                            icon: appUpdate.hasPendingUpdate
+                                ? CupertinoIcons.arrow_up_circle_fill
+                                : CupertinoIcons.arrow_down_circle_fill,
+                            title: appUpdate.hasPendingUpdate
+                                ? 'Download Update (v${appUpdate.latestVersion})'
+                                : 'Download App (APK / Desktop)',
+                            subtitle: appUpdate.hasPendingUpdate
+                                ? 'Newer version available for your device'
+                                : 'One-tap launches & live match alerts',
+                            onTap: () => nav('/download'),
+                          );
+                        },
+                      ),
                     ],
 
                     const SizedBox(height: 12),
@@ -747,9 +1076,14 @@ class _AdaptiveScaffoldState extends ConsumerState<AdaptiveScaffold> {
     bool isAdmin,
   ) {
     final session = ref.watch(playerSessionProvider);
+    final machine = ref.watch(machineAuthProvider);
+    final appUpdate = ref.watch(appUpdateProvider);
     final walletMode = ref.watch(walletModeProvider);
     final liveHistoryCount =
         ref.watch(liveMatchEngineProvider).notificationHistory.length;
+    final setupAlertCount =
+        _pendingSetupNotificationCount(machine, session, appUpdate);
+    final totalBadgeCount = liveHistoryCount + setupAlertCount;
     final isCompact = tier == ScreenTier.compact;
     final showBack = _needsBackButton(widget.currentPath, session, tier);
 
@@ -886,7 +1220,9 @@ class _AdaptiveScaffoldState extends ConsumerState<AdaptiveScaffold> {
 
                       // Notification Bell (Player)
                       Tooltip(
-                        message: 'Notifications',
+                        message: setupAlertCount > 0
+                            ? '$setupAlertCount setup action(s) & alerts'
+                            : 'Notifications',
                         child: GestureDetector(
                           onTap: () => _showNotificationsSheet(context),
                           child: Container(
@@ -896,28 +1232,54 @@ class _AdaptiveScaffoldState extends ConsumerState<AdaptiveScaffold> {
                               color: HigColors.surfaceGrouped,
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
-                                color: HigColors.separator,
+                                color: setupAlertCount > 0
+                                    ? HigColors.copper.withValues(alpha: 0.45)
+                                    : HigColors.separator,
                                 width: 1,
                               ),
                             ),
                             child: Stack(
                               alignment: Alignment.center,
                               children: [
-                                const Icon(
-                                  CupertinoIcons.bell,
+                                Icon(
+                                  setupAlertCount > 0
+                                      ? CupertinoIcons.bell_fill
+                                      : CupertinoIcons.bell,
                                   size: 16,
-                                  color: HigColors.labelPrimary,
+                                  color: setupAlertCount > 0
+                                      ? HigColors.copperBright
+                                      : HigColors.labelPrimary,
                                 ),
-                                if (liveHistoryCount > 0)
+                                if (totalBadgeCount > 0)
                                   Positioned(
-                                    top: 7,
-                                    right: 7,
+                                    top: 3,
+                                    right: 3,
                                     child: Container(
-                                      width: 6,
-                                      height: 6,
-                                      decoration: const BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: HigColors.brand,
+                                      constraints: const BoxConstraints(
+                                        minWidth: 14,
+                                        minHeight: 14,
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 3,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: setupAlertCount > 0
+                                            ? HigColors.copper
+                                            : HigColors.brand,
+                                        borderRadius:
+                                            BorderRadius.circular(999),
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: Text(
+                                        totalBadgeCount > 9
+                                            ? '9+'
+                                            : '$totalBadgeCount',
+                                        style: const TextStyle(
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w800,
+                                          color: Colors.black,
+                                          height: 1,
+                                        ),
                                       ),
                                     ),
                                   ),

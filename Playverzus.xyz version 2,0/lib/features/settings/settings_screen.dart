@@ -3,12 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/catalog/countries.dart';
+import '../../core/config/app_config.dart';
 import '../../core/network/api_client.dart';
 import '../../core/storage/app_state.dart';
+import '../../core/storage/app_update_provider.dart';
 import '../../design_system/layout/responsive.dart';
 import '../../design_system/tokens/hig_tokens.dart';
 import '../../design_system/widgets/country_flag.dart';
 import '../../design_system/widgets/hig_primitives.dart';
+import '../games/installed_games_sheet.dart';
 import '../matchroom/pre_match_permissions_sheet.dart';
 
 /// Complete v1.0 Account Settings + v2.0 Device Binding & Console Sync (`/settings`).
@@ -495,27 +498,75 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                   Text(
                                     machine.canAutoScanGames
                                         ? '${machine.featuredInstalledGames.length} / 21 featured games detected on this device'
-                                        : 'Browser session bound (install APK/Desktop app for OS game scan)',
+                                        : '${machine.featuredInstalledGames.length} / 21 featured games confirmed (${machine.capabilities.osLabel})',
+                                    style: HigTypography.caption(),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'App Version: v${AppConfig.appVersion} (Build ${AppConfig.appBuildNumber})',
                                     style: HigTypography.caption(),
                                   ),
                                 ],
                               ),
-                              if (machine.canAutoScanGames)
-                                HigButton(
-                                  label: 'Re-Scan Games',
-                                  icon: CupertinoIcons.refresh,
-                                  size: HigButtonSize.small,
-                                  variant: HigButtonVariant.secondary,
-                                  onPressed: () async {
-                                    final count = await ref
-                                        .read(machineAuthProvider.notifier)
-                                        .rescanInstalledGames();
-                                    ref.read(toastProvider.notifier).show(
-                                          '$count featured games verified on this device',
-                                          tone: ToastTone.success,
-                                        );
-                                  },
-                                ),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  HigButton(
+                                    label: 'Check Updates',
+                                    icon: CupertinoIcons.arrow_up_circle,
+                                    size: HigButtonSize.small,
+                                    variant: HigButtonVariant.secondary,
+                                    onPressed: () async {
+                                      final update = await ref
+                                          .read(appUpdateProvider.notifier)
+                                          .checkForUpdates(force: true);
+                                      if (!context.mounted) return;
+                                      if (update.hasPendingUpdate) {
+                                        ref.read(toastProvider.notifier).show(
+                                              'Update Available · v${update.latestVersion}',
+                                              body:
+                                                  'Tap Download App in Account Menu or Bell Notifications to install the latest release.',
+                                              tone: ToastTone.info,
+                                            );
+                                      } else {
+                                        ref.read(toastProvider.notifier).show(
+                                              'Up to date · Playverzus v${AppConfig.appVersion}',
+                                              tone: ToastTone.success,
+                                            );
+                                      }
+                                    },
+                                  ),
+                                  HigButton(
+                                    label:
+                                        'Setup / Sync Games (${machine.featuredInstalledGames.length})',
+                                    icon: CupertinoIcons.game_controller,
+                                    size: HigButtonSize.small,
+                                    variant: machine.needsGameSetup
+                                        ? HigButtonVariant.emerald
+                                        : HigButtonVariant.secondary,
+                                    onPressed: () =>
+                                        showInstalledGamesSetupSheet(context),
+                                  ),
+                                  if (machine.canAutoScanGames)
+                                    HigButton(
+                                      label: 'Re-Scan Device',
+                                      icon: CupertinoIcons.refresh,
+                                      size: HigButtonSize.small,
+                                      variant: HigButtonVariant.secondary,
+                                      onPressed: () async {
+                                        final count = await ref
+                                            .read(machineAuthProvider.notifier)
+                                            .rescanInstalledGames();
+                                        if (!context.mounted) return;
+                                        ref.read(toastProvider.notifier).show(
+                                              '$count featured games verified on this device',
+                                              tone: ToastTone.success,
+                                            );
+                                      },
+                                    ),
+                                ],
+                              ),
                             ],
                           ),
                         ),

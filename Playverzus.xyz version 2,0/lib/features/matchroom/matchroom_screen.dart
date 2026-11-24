@@ -19,6 +19,7 @@ import '../../design_system/widgets/country_flag.dart';
 import '../../design_system/widgets/hig_primitives.dart';
 import '../../design_system/widgets/proof_of_victory_card.dart';
 import '../../platform_channels/device_bridge.dart';
+import '../games/installed_games_sheet.dart';
 import 'pre_match_permissions_sheet.dart';
 
 class MatchRoomScreen extends ConsumerStatefulWidget {
@@ -1286,13 +1287,19 @@ class _MatchRoomScreenState extends ConsumerState<MatchRoomScreen> {
                                   label: 'ROOM $roomCode',
                                   tone: HigBadgeTone.emerald,
                                 ),
-                                HigBadge(
-                                  label: gameInstalledOnDevice
-                                      ? 'INSTALLED'
-                                      : 'CONFIRM INSTALL',
-                                  tone: gameInstalledOnDevice
-                                      ? HigBadgeTone.emerald
-                                      : HigBadgeTone.neutral,
+                                GestureDetector(
+                                  onTap: () => showInstalledGamesSetupSheet(
+                                    context,
+                                    highlightGameId: game.id,
+                                  ),
+                                  child: HigBadge(
+                                    label: gameInstalledOnDevice
+                                        ? 'INSTALLED'
+                                        : 'CONFIRM INSTALL',
+                                    tone: gameInstalledOnDevice
+                                        ? HigBadgeTone.emerald
+                                        : HigBadgeTone.neutral,
+                                  ),
                                 ),
                               ],
                             ),

@@ -229,6 +229,9 @@ class MachineAuthState {
   final bool captureAuthorized;
   final bool autoEscrowEnabled;
   final List<String> installedGameIds;
+  final bool gamesConfirmed;
+  final bool dismissedDownloadBanner;
+  final bool onboardingDismissed;
   final String consoleStreamPlatform; // 'TWITCH' | 'YOUTUBE'
   final String consoleStreamChannel;
 
@@ -246,11 +249,32 @@ class MachineAuthState {
     required this.captureAuthorized,
     required this.autoEscrowEnabled,
     required this.installedGameIds,
+    this.gamesConfirmed = false,
+    this.dismissedDownloadBanner = false,
+    this.onboardingDismissed = false,
     required this.consoleStreamPlatform,
     required this.consoleStreamChannel,
   });
 
   bool get canAutoScanGames => capabilities.supportsNativeGameScan;
+
+  bool get isRunningInstalledApp =>
+      !capabilities.isWeb || DeviceBridge.isRunningInstalledApp();
+
+  bool get needsAppDownloadPrompt =>
+      !isRunningInstalledApp && !dismissedDownloadBanner;
+
+  bool get needsFirstTimePermissions => !alertsAuthorized || !captureAuthorized;
+
+  bool get needsGameSetup => !gamesConfirmed && installedGameIds.isEmpty;
+
+  int get onboardingStepsDone =>
+      (!needsAppDownloadPrompt ? 1 : 0) +
+      (!needsFirstTimePermissions ? 1 : 0) +
+      (!needsGameSetup ? 1 : 0);
+
+  bool get needsOnboardingGuide =>
+      !onboardingDismissed && onboardingStepsDone < 3;
 
   bool get isFullyReady =>
       boundUserId.isNotEmpty &&
@@ -264,8 +288,11 @@ class MachineAuthState {
       officialGames.where((g) => installedGameIds.contains(g.id)).toList();
 
   String get deviceBindingSummary {
+    if (!isRunningInstalledApp) {
+      return 'Browser session active ($deviceFingerprint). Install the Playverzus Companion App for one-tap game launches and instant Ready alerts.';
+    }
     if (capabilities.isWeb) {
-      return 'Browser session active ($deviceFingerprint). Install the Playverzus Companion App for one-tap game launches and desktop/mobile Ready alerts.';
+      return 'Installed App session active ($deviceFingerprint). ${featuredInstalledGames.length} featured titles synced.';
     }
     return 'Native ${capabilities.osLabel} bound ($deviceFingerprint). ${featuredInstalledGames.length} featured titles detected on this device.';
   }
@@ -283,6 +310,9 @@ class MachineAuthState {
     bool? captureAuthorized,
     bool? autoEscrowEnabled,
     List<String>? installedGameIds,
+    bool? gamesConfirmed,
+    bool? dismissedDownloadBanner,
+    bool? onboardingDismissed,
     String? consoleStreamPlatform,
     String? consoleStreamChannel,
   }) {
@@ -301,6 +331,10 @@ class MachineAuthState {
       captureAuthorized: captureAuthorized ?? this.captureAuthorized,
       autoEscrowEnabled: autoEscrowEnabled ?? this.autoEscrowEnabled,
       installedGameIds: installedGameIds ?? this.installedGameIds,
+      gamesConfirmed: gamesConfirmed ?? this.gamesConfirmed,
+      dismissedDownloadBanner:
+          dismissedDownloadBanner ?? this.dismissedDownloadBanner,
+      onboardingDismissed: onboardingDismissed ?? this.onboardingDismissed,
       consoleStreamPlatform:
           consoleStreamPlatform ?? this.consoleStreamPlatform,
       consoleStreamChannel: consoleStreamChannel ?? this.consoleStreamChannel,
@@ -326,6 +360,9 @@ class MachineAuthNotifier extends StateNotifier<MachineAuthState> {
       captureAuthorized: false,
       autoEscrowEnabled: true,
       installedGameIds: const [],
+      gamesConfirmed: false,
+      dismissedDownloadBanner: false,
+      onboardingDismissed: false,
       consoleStreamPlatform: 'TWITCH',
       consoleStreamChannel: '',
     );
@@ -339,8 +376,8 @@ class MachineAuthNotifier extends StateNotifier<MachineAuthState> {
   }
 
   /// Device-dependent automatic binding run whenever a user signs in or registers:
-  /// - Web Browser: binds browser fingerprint + requests Web Notification permission; keeps installed games honest (only what user explicitly pinned or native app detected).
-  /// - Android APK / Desktop Native: captures hardware fingerprint + runs real OS installed-game scan against the 21 featured games.
+  /// - Web Browser: binds browser fingerprint + checks standalone app state + Web Notification permission.
+  /// - Android APK / Desktop Native: captures hardware fingerprint + runs real OS installed-game scan against 21 featured games.
   Future<MachineAuthState> bootstrapOnRegistration({
     required String userId,
     required String username,
@@ -351,6 +388,10 @@ class MachineAuthNotifier extends StateNotifier<MachineAuthState> {
     List<String> userPinnedGames = const [];
     String savedStreamPlatform = 'TWITCH';
     String savedStreamChannel = '';
+    bool savedGamesConfirmed = false;
+    bool savedDismissedDownload = false;
+    bool savedOnboardingDismissed = false;
+    bool savedCaptureAuthorized = false;
     try {
       final prefs = await SharedPreferences.getInstance();
       final raw = prefs.getString(_storageKeyFor(userId));
@@ -364,6 +405,10 @@ class MachineAuthNotifier extends StateNotifier<MachineAuthState> {
             (map['consoleStreamPlatform'] as String?) ?? 'TWITCH';
         savedStreamChannel =
             (map['consoleStreamChannel'] as String?) ?? '';
+        savedGamesConfirmed = map['gamesConfirmed'] == true;
+        savedDismissedDownload = map['dismissedDownloadBanner'] == true;
+        savedOnboardingDismissed = map['onboardingDismissed'] == true;
+        savedCaptureAuthorized = map['captureAuthorized'] == true;
       }
     } catch (_) {}
 
@@ -371,6 +416,11 @@ class MachineAuthNotifier extends StateNotifier<MachineAuthState> {
     final fp = await DeviceBridge.collectDeviceFingerprint();
     final notifState = DeviceBridge.getNotificationPermissionState();
     final osNotifOk = notifState == 'granted';
+    final runningInstalledApp =
+        !state.capabilities.isWeb || DeviceBridge.isRunningInstalledApp();
+    final isMobileWeb = state.capabilities.isWeb &&
+        (state.capabilities.platformKey == 'android' ||
+            state.capabilities.platformKey == 'ios');
 
     // 3. Scan installed games ONLY when running on a native OS that supports it
     final officialIds = officialGames.map((g) => g.id).toSet();
@@ -389,9 +439,14 @@ class MachineAuthNotifier extends StateNotifier<MachineAuthState> {
       hardwareAttested: fp.hardwareAttested,
       osNotificationsGranted: osNotifOk,
       alertsAuthorized: osNotifOk,
-      captureAuthorized: !kIsWeb || savedStreamChannel.isNotEmpty,
+      captureAuthorized: !kIsWeb ||
+          savedStreamChannel.isNotEmpty ||
+          (isMobileWeb && savedCaptureAuthorized),
       autoEscrowEnabled: true,
       installedGameIds: verifiedGames,
+      gamesConfirmed: savedGamesConfirmed || verifiedGames.isNotEmpty,
+      dismissedDownloadBanner: runningInstalledApp || savedDismissedDownload,
+      onboardingDismissed: savedOnboardingDismissed,
       consoleStreamPlatform: savedStreamPlatform,
       consoleStreamChannel: savedStreamChannel,
       lastGameScanAt: DateTime.now(),
@@ -403,11 +458,12 @@ class MachineAuthNotifier extends StateNotifier<MachineAuthState> {
   }
 
   /// Re-scans installed games on native Android / Desktop.
-  /// On Web, returns current user-pinned games honestly without faking OS detection.
+  /// On Web, returns current user-confirmed games honestly without faking OS detection.
   Future<int> rescanInstalledGames() async {
     HapticFeedback.selectionClick();
     if (kIsWeb || !state.capabilities.supportsNativeGameScan) {
       state = state.copyWith(lastGameScanAt: DateTime.now());
+      await _persist();
       return state.installedGameIds.length;
     }
     final scanned = await DeviceBridge.scanInstalledGames();
@@ -416,6 +472,7 @@ class MachineAuthNotifier extends StateNotifier<MachineAuthState> {
     final merged = {...matched, ...state.installedGameIds}.toList();
     state = state.copyWith(
       installedGameIds: merged,
+      gamesConfirmed: matched.isNotEmpty || state.gamesConfirmed,
       lastGameScanAt: DateTime.now(),
     );
     await _persist();
@@ -439,11 +496,32 @@ class MachineAuthNotifier extends StateNotifier<MachineAuthState> {
           'captureAuthorized': state.captureAuthorized,
           'autoEscrowEnabled': state.autoEscrowEnabled,
           'installedGameIds': state.installedGameIds,
+          'gamesConfirmed': state.gamesConfirmed,
+          'dismissedDownloadBanner': state.dismissedDownloadBanner,
+          'onboardingDismissed': state.onboardingDismissed,
           'consoleStreamPlatform': state.consoleStreamPlatform,
           'consoleStreamChannel': state.consoleStreamChannel,
         }),
       );
     } catch (_) {}
+  }
+
+  Future<void> dismissDownloadPrompt() async {
+    state = state.copyWith(dismissedDownloadBanner: true);
+    await _persist();
+  }
+
+  Future<void> dismissOnboarding() async {
+    state = state.copyWith(onboardingDismissed: true);
+    await _persist();
+  }
+
+  Future<void> markGamesSetupConfirmed({List<String>? gameIds}) async {
+    state = state.copyWith(
+      installedGameIds: gameIds ?? state.installedGameIds,
+      gamesConfirmed: true,
+    );
+    await _persist();
   }
 
   /// Explicitly prompts the user for live match OS/Web notification permission.
@@ -501,7 +579,10 @@ class MachineAuthNotifier extends StateNotifier<MachineAuthState> {
     } else {
       current.add(gameId);
     }
-    state = state.copyWith(installedGameIds: current);
+    state = state.copyWith(
+      installedGameIds: current,
+      gamesConfirmed: true,
+    );
     await _persist();
   }
 

@@ -8,6 +8,7 @@ import '../../design_system/layout/responsive.dart';
 import '../../design_system/tokens/hig_tokens.dart';
 import '../../design_system/widgets/hig_primitives.dart';
 import '../developer/developer_repository.dart';
+import 'installed_games_sheet.dart';
 
 class GamesCatalogScreen extends ConsumerStatefulWidget {
   const GamesCatalogScreen({super.key});
@@ -68,6 +69,24 @@ class _GamesCatalogScreenState extends ConsumerState<GamesCatalogScreen> {
                     Text(
                       'Select any official or developer API-integrated title to enter its matchmaking queue.',
                       style: HigTypography.footnote(),
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        HigButton(
+                          label:
+                              'Sync My Installed Games (${machine.featuredInstalledGames.length} / ${allGames.length})',
+                          icon: CupertinoIcons.game_controller,
+                          size: HigButtonSize.small,
+                          variant: machine.needsGameSetup
+                              ? HigButtonVariant.emerald
+                              : HigButtonVariant.secondary,
+                          onPressed: () =>
+                              showInstalledGamesSetupSheet(context),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 16),
                     HigTextField(

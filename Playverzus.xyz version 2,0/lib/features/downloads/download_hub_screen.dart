@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/config/app_config.dart';
 import '../../core/storage/app_state.dart';
+import '../../core/storage/app_update_provider.dart';
 import '../../design_system/layout/responsive.dart';
 import '../../design_system/tokens/hig_tokens.dart';
 import '../../design_system/widgets/brand_logo.dart';
@@ -142,6 +143,9 @@ class _DownloadHubScreenState extends ConsumerState<DownloadHubScreen> {
       if (hasDirectInstaller) {
         final uri = Uri.parse(spec.url);
         await launchUrl(uri, mode: LaunchMode.externalApplication);
+        await ref
+            .read(appUpdateProvider.notifier)
+            .recordDownloadedCurrentVersion();
         if (!mounted) return;
         ref.read(toastProvider.notifier).show(
               'Download Started',
@@ -155,6 +159,9 @@ class _DownloadHubScreenState extends ConsumerState<DownloadHubScreen> {
         final accepted = await promptWebAppInstall();
         if (!mounted) return;
         if (accepted) {
+          await ref
+              .read(appUpdateProvider.notifier)
+              .recordDownloadedCurrentVersion();
           ref.read(toastProvider.notifier).show(
                 'Installing Playverzus App',
                 body:
@@ -243,6 +250,8 @@ class _DownloadHubScreenState extends ConsumerState<DownloadHubScreen> {
   @override
   Widget build(BuildContext context) {
     final compact = Responsive.isCompact(context);
+    final machine = ref.watch(machineAuthProvider);
+    final appUpdate = ref.watch(appUpdateProvider);
     final spec = _specs[_activeKey] ?? _specs['windows']!;
     final detectedSpec = _specs[_detectedKey] ?? _specs['windows']!;
 
@@ -292,12 +301,96 @@ class _DownloadHubScreenState extends ConsumerState<DownloadHubScreen> {
                     ),
                     const SizedBox(height: 20),
                     HigBadge(
-                      label: _activeKey == _detectedKey
-                          ? 'DETECTED DEVICE · ${detectedSpec.key.toUpperCase()}'
-                          : 'SELECTED PLATFORM · ${spec.key.toUpperCase()}',
-                      icon: spec.icon,
-                      tone: HigBadgeTone.copper,
+                      label: appUpdate.hasPendingUpdate
+                          ? 'UPDATE AVAILABLE · V${appUpdate.latestVersion}'
+                          : machine.isRunningInstalledApp
+                              ? 'APP ACTIVE · ${machine.capabilities.osLabel.toUpperCase()}'
+                              : _activeKey == _detectedKey
+                                  ? 'DETECTED DEVICE · ${detectedSpec.key.toUpperCase()}'
+                                  : 'SELECTED PLATFORM · ${spec.key.toUpperCase()}',
+                      icon: appUpdate.hasPendingUpdate
+                          ? CupertinoIcons.arrow_up_circle_fill
+                          : machine.isRunningInstalledApp
+                              ? CupertinoIcons.checkmark_shield_fill
+                              : spec.icon,
+                      tone: (machine.isRunningInstalledApp ||
+                              appUpdate.hasPendingUpdate)
+                          ? HigBadgeTone.emerald
+                          : HigBadgeTone.copper,
                     ),
+                    if (appUpdate.hasPendingUpdate) ...[
+                      const SizedBox(height: 16),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 520),
+                        child: GlassCard(
+                          radius: 14,
+                          padding: const EdgeInsets.all(14),
+                          backgroundColor:
+                              HigColors.copper.withValues(alpha: 0.1),
+                          borderColor:
+                              HigColors.copper.withValues(alpha: 0.35),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                CupertinoIcons.arrow_up_circle_fill,
+                                color: HigColors.copperBright,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'New version v${appUpdate.latestVersion} is ready (your device has v${appUpdate.downloadedAppVersion.isEmpty ? AppConfig.appVersion : appUpdate.downloadedAppVersion}). ${appUpdate.releaseNotes}',
+                                  style: HigTypography.footnote(
+                                    color: HigColors.labelPrimary,
+                                  ),
+                                ),
+                              ),
+                              if (appUpdate.swUpdateReady &&
+                                  isRunningStandaloneApp()) ...[
+                                const SizedBox(width: 10),
+                                HigButton(
+                                  label: 'Reload Update',
+                                  size: HigButtonSize.small,
+                                  variant: HigButtonVariant.emerald,
+                                  onPressed: () => applyWebAppUpdate(),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+                    ] else if (machine.isRunningInstalledApp) ...[
+                      const SizedBox(height: 16),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 520),
+                        child: GlassCard(
+                          radius: 14,
+                          padding: const EdgeInsets.all(14),
+                          backgroundColor:
+                              HigColors.emerald.withValues(alpha: 0.1),
+                          borderColor:
+                              HigColors.emerald.withValues(alpha: 0.35),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                CupertinoIcons.checkmark_circle_fill,
+                                color: HigColors.emerald,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  "You're already running the Playverzus App on ${machine.capabilities.osLabel} (v${AppConfig.appVersion}). Alerts and 1-tap game launches are ready here.",
+                                  style: HigTypography.footnote(
+                                    color: HigColors.labelPrimary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 20),
                     Text(
                       spec.displayTitle,
