@@ -1030,6 +1030,40 @@ void main() {
     expect(find.text('TERMS READ'), findsOneWidget);
     expect(find.text('PRIVACY READ'), findsOneWidget);
   });
+
+  testWidgets(
+      'Cashier Direct Base USDC (No-KYB) mode renders zero-fee Base instructions and validates 0x payout addresses',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1280, 960);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: MaterialApp(home: Scaffold(body: CashierScreen())),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 120));
+
+    // Switch Cashier rail directly to USDC (Base · No KYC)
+    await tester.tap(find.text('USDC (Base · No KYC)'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Deposit USDC Directly on Base'), findsOneWidget);
+    expect(find.text('NO KYC / NO KYB · 0% FEE'), findsOneWidget);
+    expect(find.text('USDC 0.00 (0%)'), findsOneWidget);
+
+    // Switch to Withdraw -> verify Base EVM address validation (with live balance)
+    await tester.tap(find.text('Withdraw'));
+    await tester.pumpAndSettle();
+    expect(find.text('Withdraw USDC on Base'), findsOneWidget);
+
+    // Selecting USDC 20 · Best Value shows flat USDC 1.00 on-chain payout fee
+    await tester.tap(find.text('USDC 20 · Best Value'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('On-Chain Payout Fee'), findsOneWidget);
+  });
 }
 
 class _TestArenaNotifier extends ArenaDataNotifier {

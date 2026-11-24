@@ -54,19 +54,33 @@ export class V2MpesaController {
     const sk = process.env.CROSSMINT_SERVER_API_KEY || '';
     const ck = process.env.NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY || '';
     const wh = process.env.CROSSMINT_WEBHOOK_SECRET || '';
+    const treasury = (process.env.CROSSMINT_TREASURY_ADDRESS || '').trim();
+    const explicitEnv = (process.env.CROSSMINT_ENVIRONMENT || '').trim().toLowerCase();
     const serverKeyLive = sk.startsWith('sk_production_');
     const clientKeyLive = ck.startsWith('ck_production_');
-    const isProd =
-      serverKeyLive ||
-      clientKeyLive ||
-      process.env.CROSSMINT_ENVIRONMENT === 'production' ||
-      process.env.NODE_ENV === 'production';
+    const isStagingForced =
+      explicitEnv === 'staging' ||
+      sk.startsWith('sk_staging_') ||
+      ck.startsWith('ck_staging_');
+    const isProd = isStagingForced
+      ? false
+      : Boolean(
+          serverKeyLive ||
+            clientKeyLive ||
+            explicitEnv === 'production' ||
+            process.env.NODE_ENV === 'production',
+        );
+    const treasuryConfigured = Boolean(
+      treasury && treasury !== 'playverzus_master_treasury',
+    );
     return {
-      configured: Boolean(sk && ck),
+      configured: Boolean(sk),
       mode: isProd ? 'production' : 'staging',
       serverKeyLive,
       clientKeyLive,
       webhookSecretConfigured: Boolean(wh),
+      treasuryConfigured,
+      walletRailsReady: Boolean(sk && treasuryConfigured),
     };
   }
 

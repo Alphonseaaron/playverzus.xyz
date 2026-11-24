@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/config/app_config.dart';
@@ -20,15 +21,22 @@ class CashierScreen extends ConsumerStatefulWidget {
 
 class _CashierScreenState extends ConsumerState<CashierScreen> {
   int _tab = 0; // 0 = Deposit, 1 = Withdraw, 2 = History
+  bool? _useMpesaOverride; // null = follow active platform gateway
+  bool _useCardCheckout = false; // false = Direct Base USDC (No-KYB), true = Card Checkout
   bool _faucetLoading = false;
   bool _faucetClaimed = false;
   bool _submitting = false;
   bool _loadingHistory = false;
+  bool _loadingDepositWallet = false;
+  bool _syncingDepositWallet = false;
+  bool _copiedDepositAddr = false;
   bool _checkingStk = false;
   bool _expressPayout = false;
   String? _pendingStkLocation;
   String? _pendingStkStatus;
   String? _error;
+  String? _walletLoadErr;
+  Map<String, dynamic>? _depositWallet;
   String? _amountErr;
   String? _destErr;
   bool _syncingConverter = false;
@@ -39,11 +47,17 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
   final TextEditingController _mpesaPhoneCtrl = TextEditingController();
   final TextEditingController _walletAddrCtrl = TextEditingController();
   Timer? _stkPollTimer;
+  Timer? _copyResetTimer;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadWalletData());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadWalletData();
+      if (ref.read(paymentGatewayProvider) == PaymentGatewayMode.crossmint) {
+        _loadDepositWallet();
+      }
+    });
   }
 
   void _startAutoStkPolling() {
@@ -67,6 +81,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
   @override
   void dispose() {
     _stkPollTimer?.cancel();
+    _copyResetTimer?.cancel();
     _usdcCtrl.dispose();
     _kesCtrl.dispose();
     _mpesaPhoneCtrl.dispose();
@@ -104,6 +119,81 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
 
     if (!mounted) return;
     setState(() => _loadingHistory = false);
+  }
+
+  Future<void> _loadDepositWallet({bool force = false}) async {
+    if (!force && _depositWallet != null) return;
+    final session = ref.read(playerSessionProvider);
+    if (session.accessToken == null || session.accessToken!.isEmpty) {
+      if (!mounted) return;
+      setState(() {
+        _walletLoadErr =
+            'Sign in to generate your dedicated Base USDC deposit address.';
+      });
+      return;
+    }
+
+    setState(() {
+      _loadingDepositWallet = true;
+      _walletLoadErr = null;
+    });
+    try {
+      final res = await ApiClient.get('/crossmint/wallet');
+      if (!mounted) return;
+      if (res is Map) {
+        setState(() {
+          _depositWallet = Map<String, dynamic>.from(res);
+          _walletLoadErr = null;
+        });
+      }
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _walletLoadErr = e.message);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _walletLoadErr =
+            'Could not load your Base USDC deposit address right now.';
+      });
+    } finally {
+      if (mounted) setState(() => _loadingDepositWallet = false);
+    }
+  }
+
+  Future<void> _syncDepositWallet() async {
+    final session = ref.read(playerSessionProvider);
+    if (session.accessToken == null || session.accessToken!.isEmpty) {
+      ref.read(toastProvider.notifier).show(
+            'Sign in required to check deposits.',
+            tone: ToastTone.error,
+          );
+      return;
+    }
+
+    setState(() {
+      _syncingDepositWallet = true;
+      _error = null;
+    });
+    try {
+      final res = await ApiClient.post('/crossmint/wallet/sync');
+      await _loadWalletData();
+      if (!mounted) return;
+      final credited = res is Map ? ((res['newlyCreditedCount'] as num?)?.toInt() ?? 0) : 0;
+      final msg = res is Map && res['message'] != null
+          ? res['message'].toString()
+          : 'Deposit check completed.';
+      ref.read(toastProvider.notifier).show(
+            credited > 0 ? 'Base USDC deposit credited' : 'Blockchain check complete',
+            body: msg,
+            tone: credited > 0 ? ToastTone.success : ToastTone.info,
+          );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _error = e.message);
+      ref.read(toastProvider.notifier).show(e.message, tone: ToastTone.error);
+    } finally {
+      if (mounted) setState(() => _syncingDepositWallet = false);
+    }
   }
 
   double? _parsedAmountUsdc() {
@@ -377,7 +467,12 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
     if (dest.isEmpty || (isMpesa && dest.length < 9)) {
       setState(() => _destErr = isMpesa
           ? 'Enter your M-PESA phone number (e.g. +254 712 345 678).'
-          : 'Paste the wallet address where you want to receive USDC.');
+          : 'Paste your Base / EVM wallet address starting with 0x.');
+      return;
+    }
+    if (!isMpesa && !RegExp(r'^0x[a-fA-F0-9]{40}$').hasMatch(dest)) {
+      setState(() => _destErr =
+          'Enter a valid Base / EVM USDC address starting with 0x (42 characters).');
       return;
     }
 
@@ -447,7 +542,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
   Widget build(BuildContext context) {
     final session = ref.watch(playerSessionProvider);
     final gateway = ref.watch(paymentGatewayProvider);
-    final isMpesa = gateway == PaymentGatewayMode.kopokopo;
+    final isMpesa = _useMpesaOverride ?? (gateway == PaymentGatewayMode.kopokopo);
 
     final formattedBalance =
         AppConfig.formatUsdc(session.cashUsd, alwaysDecimals: true);
@@ -595,23 +690,68 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        HigSegmentedControl<bool>(
+                          backgroundColor: HigColors.surfaceGrouped,
+                          groupValue: isMpesa,
+                          onChanged: (val) {
+                            setState(() {
+                              _useMpesaOverride = val;
+                              _amountErr = null;
+                              _destErr = null;
+                              _error = null;
+                            });
+                            if (!val && _tab == 0) {
+                              _loadDepositWallet();
+                            }
+                          },
+                          segments: const {
+                            true: 'M-PESA (KES <-> USDC)',
+                            false: 'USDC (Base · No KYC)',
+                          },
+                        ),
+                        const SizedBox(height: 14),
+                        if (!isMpesa && _tab == 0) ...[
+                          HigSegmentedControl<bool>(
+                            backgroundColor: HigColors.surfaceGrouped,
+                            groupValue: _useCardCheckout,
+                            onChanged: (val) {
+                              setState(() {
+                                _useCardCheckout = val;
+                                _amountErr = null;
+                                _error = null;
+                              });
+                              if (!val) _loadDepositWallet();
+                            },
+                            segments: const {
+                              false: 'Direct USDC Transfer (Ready)',
+                              true: 'Card / Apple Pay (KYB Pending)',
+                            },
+                          ),
+                          const SizedBox(height: 14),
+                        ],
                         Text(
                           _tab == 0
                               ? (isMpesa
                                   ? 'Deposit USDC via M-PESA'
-                                  : 'Deposit USDC via Card / Wallet')
+                                  : (_useCardCheckout
+                                      ? 'Deposit USDC via Card / Apple Pay'
+                                      : 'Deposit USDC Directly on Base'))
                               : (isMpesa
                                   ? 'Withdraw USDC to M-PESA'
-                                  : 'Withdraw USDC On-Chain'),
+                                  : 'Withdraw USDC on Base'),
                           style: HigTypography.title3(),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           _tab == 0
-                              ? 'Type in USDC or KES to convert live (1 USDC = KES ${AppConfig.usdToKesRate.round()}). Minimum deposit: USDC 5.00 (KES ${PaymentFeeSchedule.mpesaMinDepositKes}).'
+                              ? (isMpesa
+                                  ? 'Type in USDC or KES to convert live (1 USDC = KES ${AppConfig.usdToKesRate.round()}). Minimum deposit: USDC 5.00 (KES ${PaymentFeeSchedule.mpesaMinDepositKes}).'
+                                  : (_useCardCheckout
+                                      ? 'Card deposits incur 3.5% + USDC 0.30 checkout fees and require Crossmint business KYB activation.'
+                                      : 'Send USDC (Base network) directly to your dedicated playverzus.xyz deposit address — 0% platform deposit fee, No KYC/KYB required.'))
                               : isMpesa
                                   ? 'Convert your USDC balance to KES for M-PESA payout. Every M-PESA payout has a fixed KES ${PaymentFeeSchedule.mpesaFlatPayoutFeeKes} fee — we suggest USDC 20+ for best value.'
-                                  : 'Enter any amount from USDC ${PaymentFeeSchedule.crossmintMinWithdrawalUsd.toStringAsFixed(2)} and convert to local KES at 1 USDC = KES ${AppConfig.usdToKesRate.round()}.',
+                                  : 'Send USDC from your balance directly to any Base / EVM wallet (0x...). Flat USDC 1.00 network fee — we suggest USDC 20+ for best value.',
                           style: HigTypography.caption(),
                         ),
                         const SizedBox(height: 14),
@@ -804,7 +944,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                         else if (_tab == 1)
                           HigTextField(
                             controller: _walletAddrCtrl,
-                            placeholder: 'USDC wallet address (Base / EVM)',
+                            placeholder: 'Base / EVM USDC address (0x...)',
                             prefixIcon: CupertinoIcons.creditcard,
                             errorText: _destErr,
                             onChanged: (_) {
@@ -812,25 +952,31 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                                 setState(() => _destErr = null);
                               }
                             },
+                          )
+                        else if (_tab == 0 && !_useCardCheckout)
+                          _buildDirectUsdcDepositPanel(
+                            session.accessToken != null &&
+                                session.accessToken!.isNotEmpty,
                           ),
 
-                        const SizedBox(height: 16),
-
-                        HigButton(
-                          label: _tab == 0
-                              ? (isMpesa
-                                  ? 'Deposit via M-PESA'
-                                  : 'Continue to Deposit')
-                              : (isMpesa
-                                  ? 'Withdraw to M-PESA'
-                                  : 'Withdraw USDC'),
-                          size: HigButtonSize.large,
-                          fullWidth: true,
-                          loading: _submitting,
-                          onPressed: () => _tab == 0
-                              ? _handleDeposit(isMpesa)
-                              : _handleWithdraw(isMpesa),
-                        ),
+                        if (isMpesa || _tab == 1 || _useCardCheckout) ...[
+                          const SizedBox(height: 16),
+                          HigButton(
+                            label: _tab == 0
+                                ? (isMpesa
+                                    ? 'Deposit via M-PESA'
+                                    : 'Continue to Card Checkout')
+                                : (isMpesa
+                                    ? 'Withdraw to M-PESA'
+                                    : 'Withdraw USDC'),
+                            size: HigButtonSize.large,
+                            fullWidth: true,
+                            loading: _submitting,
+                            onPressed: () => _tab == 0
+                                ? _handleDeposit(isMpesa)
+                                : _handleWithdraw(isMpesa),
+                          ),
+                        ],
                         if (_tab == 0 &&
                             isMpesa &&
                             _pendingStkLocation != null) ...[
@@ -1183,6 +1329,45 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
 
     if (!isMpesa && isDeposit) {
       final usd = hasTyped ? parsed : PaymentFeeSchedule.crossmintMinDepositUsd;
+      if (!_useCardCheckout) {
+        return Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: HigColors.surfaceGrouped,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: HigColors.separator),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _feeLine(
+                'Credited to playverzus.xyz Wallet',
+                '${AppConfig.formatUsdc(usd, alwaysDecimals: true)} (≈ KES ${AppConfig.usdcToKes(usd)})',
+                HigColors.labelPrimary,
+              ),
+              const SizedBox(height: 5),
+              _feeLine(
+                'Platform Deposit Fee (Direct Base USDC)',
+                'USDC 0.00 (0%)',
+                HigColors.emerald,
+              ),
+              const Divider(height: 14),
+              _feeLine(
+                'Net You Receive in Wallet',
+                '100% of sent USDC (≈ ${AppConfig.formatUsdc(usd, alwaysDecimals: true)})',
+                HigColors.emerald,
+                bold: true,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Minimum deposit: USDC ${PaymentFeeSchedule.crossmintMinDepositUsd.toStringAsFixed(2)} (KES ${AppConfig.usdcToKes(PaymentFeeSchedule.crossmintMinDepositUsd)}) · Send USDC on Base only.',
+                style: HigTypography.caption(),
+              ),
+            ],
+          ),
+        );
+      }
+
       final b = PaymentFeeSchedule.crossmintDepositBreakdown(usd);
       return Container(
         padding: const EdgeInsets.all(14),
@@ -1265,6 +1450,160 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
             'Tip: Because on-chain & mobile payout fees are fixed per transfer, withdrawing USDC 20+ keeps over 95% of your cashout. Min USDC ${PaymentFeeSchedule.crossmintMinWithdrawalUsd.toStringAsFixed(2)} · Max USDC ${PaymentFeeSchedule.crossmintMaxSingleWithdrawalUsd.toStringAsFixed(0)}/tx.',
             style: HigTypography.caption(),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDirectUsdcDepositPanel(bool isSignedIn) {
+    final address = (_depositWallet?['address'] ?? '').toString().trim();
+    final netLabel =
+        (_depositWallet?['networkLabel'] ?? 'Base Mainnet (USDC)').toString();
+    final contract = (_depositWallet?['tokenContract'] ?? '').toString();
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: HigColors.surfaceElevated,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: HigColors.emerald.withValues(alpha: 0.40)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 6,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    CupertinoIcons.link_circle_fill,
+                    size: 16,
+                    color: HigColors.emerald,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    netLabel,
+                    style: HigTypography.headline().copyWith(fontSize: 13.5),
+                  ),
+                ],
+              ),
+              const HigBadge(
+                label: 'NO KYC / NO KYB · 0% FEE',
+                tone: HigBadgeTone.emerald,
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          if (!isSignedIn)
+            HigErrorBanner(
+              message:
+                  'Sign in to generate your dedicated Base USDC deposit address.',
+            )
+          else if (_loadingDepositWallet)
+            const HigLoadingCard(
+              message: 'Preparing your Base USDC deposit address...',
+            )
+          else if (_walletLoadErr != null)
+            HigErrorBanner(
+              message: _walletLoadErr!,
+              onRetry: () => _loadDepositWallet(force: true),
+            )
+          else if (address.isEmpty)
+            HigButton(
+              label: 'Load My Base USDC Deposit Address',
+              icon: CupertinoIcons.qrcode,
+              size: HigButtonSize.medium,
+              variant: HigButtonVariant.secondary,
+              fullWidth: true,
+              onPressed: () => _loadDepositWallet(force: true),
+            )
+          else ...[
+            Text(
+              'YOUR DEDICATED BASE DEPOSIT ADDRESS',
+              style: HigTypography.caption(color: HigColors.labelSecondary)
+                  .copyWith(fontWeight: FontWeight.w700, fontSize: 10.5),
+            ),
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: HigColors.canvas,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: HigColors.separator),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: SelectableText(
+                      address,
+                      style: HigTypography.mono(
+                        size: 12,
+                        color: HigColors.labelPrimary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  HigButton(
+                    label: _copiedDepositAddr ? 'Copied' : 'Copy',
+                    icon: _copiedDepositAddr
+                        ? CupertinoIcons.checkmark
+                        : CupertinoIcons.doc_on_doc,
+                    size: HigButtonSize.small,
+                    variant: _copiedDepositAddr
+                        ? HigButtonVariant.primary
+                        : HigButtonVariant.secondary,
+                    onPressed: () async {
+                      await Clipboard.setData(ClipboardData(text: address));
+                      if (!mounted) return;
+                      setState(() => _copiedDepositAddr = true);
+                      ref.read(toastProvider.notifier).show(
+                            'Base deposit address copied',
+                            body: 'Send >= 5.00 USDC on Base network.',
+                            tone: ToastTone.success,
+                          );
+                      _copyResetTimer?.cancel();
+                      _copyResetTimer = Timer(const Duration(seconds: 3), () {
+                        if (mounted) {
+                          setState(() => _copiedDepositAddr = false);
+                        }
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              '1. Send at least 5.00 USDC on Base network (do not send on unsupported chains).\n'
+              '2. Your balance credits automatically once confirmed on Base (~10–30 sec).\n'
+              '3. Tap below anytime to check for incoming transfers immediately.',
+              style: HigTypography.caption(color: HigColors.labelSecondary),
+            ),
+            if (contract.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Text(
+                'USDC Contract (Base): $contract',
+                style: HigTypography.mono(
+                  size: 10,
+                  color: HigColors.labelTertiary,
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            HigButton(
+              label: "I've Sent USDC — Check Deposit",
+              icon: CupertinoIcons.refresh,
+              size: HigButtonSize.large,
+              fullWidth: true,
+              loading: _syncingDepositWallet,
+              onPressed: _syncDepositWallet,
+            ),
+          ],
         ],
       ),
     );

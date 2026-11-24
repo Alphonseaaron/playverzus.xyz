@@ -3,6 +3,7 @@ import {
   Optional,
   BadRequestException,
   InternalServerErrorException,
+  ServiceUnavailableException,
   Logger,
 } from '@nestjs/common';
 import {
@@ -273,18 +274,28 @@ export class WalletService {
 
       return data.map((t) => {
         const meta = t.metadata as Record<string, unknown> | null;
-        const isEur = meta?.currency === 'EUR';
+        const curr = String(meta?.currency || '').toUpperCase();
+        const provider = String(meta?.provider || '').toUpperCase();
+        const isCash =
+          curr === 'USDC' ||
+          curr === 'USD' ||
+          curr === 'EUR' ||
+          curr === 'KES' ||
+          provider === 'CROSSMINT' ||
+          provider === 'MPESA' ||
+          provider === 'KOPOKOPO' ||
+          provider === 'PAYSAFE';
         const numAmount = Number(t.amount);
         const numBalance = Number(t.balance_after);
 
         return {
           id: t.id,
-          amount: isEur ? numAmount / 100 : numAmount,
-          balanceAfter: isEur ? numBalance / 100 : numBalance,
+          amount: isCash ? numAmount / 100 : numAmount,
+          balanceAfter: isCash ? numBalance / 100 : numBalance,
           reason: t.reason,
           metadata: meta || {},
           createdAt: t.created_at,
-          currency: isEur ? 'EUR' : 'POINTS',
+          currency: isCash ? 'USDC' : 'POINTS',
         };
       });
     } catch {
@@ -624,48 +635,104 @@ export class WalletService {
         );
       }
 
-      // Deduct from Real Cash ledger
-      const newCashBalance = Math.round((cash.balance - roundedAmount) * 100) / 100;
-      cash.balance = newCashBalance;
-      await this.setRealCash(userId, cash);
-
       const methodObj = typeof methodInput === 'object' && methodInput !== null ? (methodInput as Record<string, any>) : null;
       const methodType = typeof methodInput === 'string' ? methodInput : (methodObj?.type || 'CROSSMINT');
       const destinationAddress = String(methodObj?.destinationAddress || methodObj?.address || '').trim();
-      const chain = String(methodObj?.chain || 'base').toLowerCase();
+      const requestedChain = String(methodObj?.chain || 'base').toLowerCase();
       const isExpress = methodObj?.expressPayout === true;
-      const payoutFeeUsd = methodType === 'CROSSMINT_USDC' || destinationAddress ? (isExpress ? 1.50 : 1.00) : 0;
-      const netTransferUsd = Math.max(0.50, Math.round((roundedAmount - payoutFeeUsd) * 100) / 100);
-      const amountCents = Math.round(roundedAmount * 100);
-      const balanceAfterCents = Math.round(newCashBalance * 100);
+      const isDirectCryptoPayout = methodType === 'CROSSMINT_USDC' || Boolean(destinationAddress);
+      const payoutFeeUsd = isDirectCryptoPayout ? (isExpress ? 1.50 : 1.00) : 0;
+      const netTransferUsd = Math.round((roundedAmount - payoutFeeUsd) * 100) / 100;
 
-      // Execute live Crossmint Wallets API on-chain USDC transfer for netTransferUsd (retaining upfront fee)
+      if (isDirectCryptoPayout && !/^0x[a-fA-F0-9]{40}$/.test(destinationAddress)) {
+        throw new BadRequestException(
+          'Enter a valid Base / EVM USDC wallet address starting with 0x (42 characters).',
+        );
+      }
+      if (netTransferUsd < 1.0) {
+        throw new BadRequestException(
+          `Net transfer after fees must be at least 1.00 USDC (requested ${roundedAmount.toFixed(2)} - fee ${payoutFeeUsd.toFixed(2)}).`,
+        );
+      }
+
+      // Execute live Crossmint Wallets API on-chain USDC transfer BEFORE deducting user balance
       let transferTxId: string | null = null;
       const crossmintServerKey = process.env.CROSSMINT_SERVER_API_KEY || '';
-      const treasuryAddr = process.env.CROSSMINT_TREASURY_ADDRESS || 'playverzus_master_treasury';
-      if (destinationAddress && crossmintServerKey) {
+      const clientApiKey = process.env.NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY || '';
+      const treasuryAddr = (process.env.CROSSMINT_TREASURY_ADDRESS || 'playverzus_master_treasury').trim();
+      const explicitCmEnv = (process.env.CROSSMINT_ENVIRONMENT || '').trim().toLowerCase();
+      const cmIsProd =
+        explicitCmEnv === 'staging' ||
+        crossmintServerKey.startsWith('sk_staging_') ||
+        clientApiKey.startsWith('ck_staging_')
+          ? false
+          : Boolean(
+              crossmintServerKey.startsWith('sk_production_') ||
+                clientApiKey.startsWith('ck_production_') ||
+                explicitCmEnv === 'production' ||
+                process.env.WALLET_MODE === 'live' ||
+                process.env.NODE_ENV === 'production',
+            );
+      const resolvedChain = !cmIsProd && requestedChain === 'base' ? 'base-sepolia' : requestedChain;
+      const apiBase = cmIsProd ? 'https://www.crossmint.com/api' : 'https://staging.crossmint.com/api';
+
+      if (isDirectCryptoPayout) {
+        if (!crossmintServerKey || !treasuryAddr || treasuryAddr === 'playverzus_master_treasury') {
+          throw new ServiceUnavailableException(
+            'Direct Base USDC payouts require Crossmint Wallets permissions and a configured CROSSMINT_TREASURY_ADDRESS. Use M-PESA payout or contact support.',
+          );
+        }
+
+        const tokenLocator = `${resolvedChain}:usdc`;
+        const endpoint = `${apiBase}/2025-06-09/wallets/${encodeURIComponent(treasuryAddr)}/tokens/${encodeURIComponent(tokenLocator)}/transfers`;
+        let cmRes: Response;
+        let cmData: Record<string, any> = {};
         try {
-          const tokenLocator = `${chain}:usdc`;
-          const endpoint = `https://www.crossmint.com/api/2025-06-09/wallets/${encodeURIComponent(treasuryAddr)}/tokens/${encodeURIComponent(tokenLocator)}/transfers`;
-          const cmRes = await fetch(endpoint, {
+          cmRes = await fetch(endpoint, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               'X-API-KEY': crossmintServerKey,
+              'x-idempotency-key': `payout-${userId}-${Date.now()}`,
             },
             body: JSON.stringify({
               recipient: destinationAddress,
               amount: netTransferUsd.toFixed(2),
             }),
           });
-          const cmData = (await cmRes.json().catch(() => ({}))) as Record<string, any>;
-          if (cmRes.ok && (cmData.id || cmData.transferId || cmData.txHash)) {
-            transferTxId = String(cmData.txHash || cmData.id || cmData.transferId);
-          }
+          cmData = (await cmRes.json().catch(() => ({}))) as Record<string, any>;
         } catch (err) {
-          this.log.warn({ err, userId }, 'Crossmint payout transfer queued for treasury execution');
+          this.log.warn({ err, userId }, 'Crossmint payout network error');
+          throw new ServiceUnavailableException(
+            'Could not reach Crossmint Wallets API right now. Your USDC balance was not deducted — please retry shortly.',
+          );
         }
+
+        if (!cmRes.ok) {
+          const reason = String(cmData?.message || cmData?.error || '').trim();
+          this.log.warn({ status: cmRes.status, cmData, userId }, 'Crossmint payout rejected');
+          if (cmRes.status === 401 || cmRes.status === 403) {
+            throw new ServiceUnavailableException(
+              'Crossmint Wallets transfer permission (wallets:transactions.create) is not enabled yet on the server key. Your balance was not deducted.',
+            );
+          }
+          throw new BadRequestException(
+            reason || 'USDC withdrawal transfer could not be executed. Your balance was not deducted.',
+          );
+        }
+
+        transferTxId = String(
+          cmData.onChain?.txId || cmData.txHash || cmData.id || cmData.transferId || '',
+        ) || null;
       }
+
+      // Deduct from Real Cash ledger only after external transfer acceptance
+      const newCashBalance = Math.round((cash.balance - roundedAmount) * 100) / 100;
+      cash.balance = newCashBalance;
+      await this.setRealCash(userId, cash);
+
+      const amountCents = Math.round(roundedAmount * 100);
+      const balanceAfterCents = Math.round(newCashBalance * 100);
 
       // Record permanent financial transaction in Supabase
       try {
@@ -680,6 +747,9 @@ export class WalletService {
               currency: 'USDC',
               provider: 'CROSSMINT',
               method: methodInput,
+              chain: resolvedChain,
+              payoutFeeUsd,
+              netTransferUsd,
               destinationAddress: destinationAddress || undefined,
               txHash: transferTxId || undefined,
               type: 'WITHDRAWAL',
@@ -691,18 +761,26 @@ export class WalletService {
 
       // Send instant push notification to user
       await this.push.sendToUser(userId, {
-        title: 'Withdrawal Processing',
-        body: `Your payout of $${roundedAmount.toFixed(2)} USDC has been submitted for processing.`,
+        title: 'Withdrawal Submitted',
+        body: isDirectCryptoPayout
+          ? `$${netTransferUsd.toFixed(2)} USDC (${payoutFeeUsd.toFixed(2)} fee) sent on ${resolvedChain.toUpperCase()} to ${destinationAddress.slice(0, 8)}...`
+          : `Your payout of $${roundedAmount.toFixed(2)} USDC has been submitted for processing.`,
         type: 'wallet',
         url: '/cashier',
       });
 
       return {
         success: true,
-        reference: `PAYOUT-${Date.now()}-${userId.slice(0, 6)}`,
+        reference: transferTxId || `PAYOUT-${Date.now()}-${userId.slice(0, 6)}`,
+        txHash: transferTxId,
+        chain: resolvedChain,
+        netTransferUsd,
+        feeUsd: payoutFeeUsd,
         amount: roundedAmount,
         balanceAfter: newCashBalance,
-        message: `Your withdrawal of $${roundedAmount.toFixed(2)} USDC has been submitted and is processing.`,
+        message: isDirectCryptoPayout
+          ? `Sent $${netTransferUsd.toFixed(2)} USDC on ${resolvedChain.toUpperCase()} to ${destinationAddress} ($${payoutFeeUsd.toFixed(2)} network/payout fee).`
+          : `Your withdrawal of $${roundedAmount.toFixed(2)} USDC has been submitted and is processing.`,
       };
     });
   }

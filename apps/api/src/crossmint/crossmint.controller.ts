@@ -12,6 +12,18 @@ export class CrossmintController {
     return this.crossmintService.getConfig();
   }
 
+  @Get('wallet')
+  @UseGuards(SupabaseAuthGuard)
+  async getDepositWallet(@CurrentUser() user: AuthUser) {
+    return this.crossmintService.getOrProvisionDepositWallet(user.id, user.email);
+  }
+
+  @Post('wallet/sync')
+  @UseGuards(SupabaseAuthGuard)
+  async syncDepositWallet(@CurrentUser() user: AuthUser) {
+    return this.crossmintService.syncDepositWallet(user.id, user.email);
+  }
+
   @Post('order')
   @UseGuards(SupabaseAuthGuard)
   async createOrder(

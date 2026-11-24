@@ -7,12 +7,12 @@ export class HealthController {
     return {
       status: 'ok',
       service: 'playverzus-api',
-      latestAppVersion: process.env.LATEST_APP_VERSION || '2.0.2',
-      latestBuildNumber: Number(process.env.LATEST_BUILD_NUMBER || 3),
+      latestAppVersion: process.env.LATEST_APP_VERSION || '2.0.3',
+      latestBuildNumber: Number(process.env.LATEST_BUILD_NUMBER || 4),
       minSupportedVersion: process.env.MIN_APP_VERSION || '2.0.0',
       releaseNotes:
         process.env.APP_RELEASE_NOTES ||
-        'playverzus.xyz brand alignment, native permission UX, and iOS-standard agreement review.',
+        'Direct No-KYB Base USDC deposits & payouts, live Cashier switcher, and iOS agreement flow.',
       downloadPath: '/download',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),

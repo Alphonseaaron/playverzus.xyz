@@ -66,16 +66,16 @@ const RESOURCES = {"assets/AssetManifest.bin": "76af58883a1b415f74ee6443c6209b96
 "downloads/playverzus-v2-revenue-model.pdf": "bf424bcfec9f066424b00fdf319d2581",
 "favicon.png": "c5df9dd993eb0268017e14cca43ff05c",
 "flutter.js": "24bc71911b75b5f8135c949e27a2984e",
-"flutter_bootstrap.js": "c7ecf68ced94947b66c110c730ae6604",
+"flutter_bootstrap.js": "cfbaa6b54525c16dc99098c44228d611",
 "icons/Icon-192.png": "c5df9dd993eb0268017e14cca43ff05c",
 "icons/Icon-512.png": "c5df9dd993eb0268017e14cca43ff05c",
 "icons/Icon-maskable-192.png": "c5df9dd993eb0268017e14cca43ff05c",
 "icons/Icon-maskable-512.png": "c5df9dd993eb0268017e14cca43ff05c",
 "index.html": "ef81b583cc5d5d8b11ced8254f455cf8",
 "/": "ef81b583cc5d5d8b11ced8254f455cf8",
-"main.dart.js": "bcd8a905e7efe96cb4783000e6e15136",
+"main.dart.js": "7a265d1089c1ca9eca4912c54041ec35",
 "manifest.json": "2d0e9fa2297a7540024e81053bbf83ff",
-"version.json": "19768919c156cead4ca4f0b2a1e180ab"};
+"version.json": "2a5009681e93df92c909bdee01470e14"};
 // The application shell files that are downloaded before a service worker can
 // start.
 const CORE = ["main.dart.js",
