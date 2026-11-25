@@ -119,79 +119,116 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return AppConfig.formatUsdc(usd);
   }
 
+  Widget _buildResponsiveBannerStrip({
+    required Color accentColor,
+    required IconData icon,
+    required Color iconColor,
+    required Widget body,
+    required List<Widget> actions,
+  }) {
+    return GlassCard(
+      radius: 14,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      borderColor: accentColor.withValues(alpha: 0.35),
+      backgroundColor: accentColor.withValues(alpha: 0.08),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final headerRow = Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Icon(icon, color: iconColor, size: 19),
+              ),
+              const SizedBox(width: 10),
+              Expanded(child: body),
+            ],
+          );
+
+          final actionWrap = Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: actions,
+          );
+
+          if (constraints.maxWidth < 560) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                headerRow,
+                const SizedBox(height: 10),
+                actionWrap,
+              ],
+            );
+          }
+
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(child: headerRow),
+              const SizedBox(width: 12),
+              actionWrap,
+            ],
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildAppDownloadStrip(
     BuildContext context,
     MachineAuthState machine,
   ) {
     final canInstantInstall = isWebAppInstallReady();
-    return GlassCard(
-      radius: 14,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      borderColor: HigColors.brand.withValues(alpha: 0.38),
-      backgroundColor: HigColors.brand.withValues(alpha: 0.08),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+    return _buildResponsiveBannerStrip(
+      accentColor: HigColors.brand,
+      icon: CupertinoIcons.device_phone_portrait,
+      iconColor: HigColors.brandBright,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
-            CupertinoIcons.device_phone_portrait,
-            color: HigColors.brandBright,
-            size: 20,
+          Text(
+            'playverzus.xyz for ${machine.capabilities.osLabel}',
+            style: HigTypography.headline().copyWith(fontSize: 13.5),
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'playverzus.xyz for ${machine.capabilities.osLabel}',
-                  style: HigTypography.headline().copyWith(fontSize: 13.5),
-                ),
-                Text(
-                  'Get one-tap game launches and native match alerts.',
-                  style: HigTypography.caption(),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: [
-              HigButton(
-                label: canInstantInstall
-                    ? 'Install'
-                    : DeviceBridge.recommendedAppActionLabel(),
-                size: HigButtonSize.small,
-                onPressed: () async {
-                  if (canInstantInstall) {
-                    final installed = await promptWebAppInstall();
-                    if (installed && mounted) {
-                      await ref
-                          .read(machineAuthProvider.notifier)
-                          .dismissDownloadPrompt();
-                      ref.read(toastProvider.notifier).show(
-                            'playverzus.xyz app installed',
-                            tone: ToastTone.success,
-                          );
-                    }
-                    return;
-                  }
-                  if (context.mounted) context.push('/download');
-                },
-              ),
-              HigButton(
-                label: 'Already in App',
-                size: HigButtonSize.small,
-                variant: HigButtonVariant.secondary,
-                onPressed: () => ref
-                    .read(machineAuthProvider.notifier)
-                    .dismissDownloadPrompt(),
-              ),
-            ],
+          Text(
+            'Get one-tap game launches and native match alerts.',
+            style: HigTypography.caption(),
           ),
         ],
       ),
+      actions: [
+        HigButton(
+          label: canInstantInstall
+              ? 'Install'
+              : DeviceBridge.recommendedAppActionLabel(),
+          size: HigButtonSize.small,
+          onPressed: () async {
+            if (canInstantInstall) {
+              final installed = await promptWebAppInstall();
+              if (installed && mounted) {
+                await ref
+                    .read(machineAuthProvider.notifier)
+                    .dismissDownloadPrompt();
+                ref.read(toastProvider.notifier).show(
+                      'playverzus.xyz app installed',
+                      tone: ToastTone.success,
+                    );
+              }
+              return;
+            }
+            if (context.mounted) context.push('/download');
+          },
+        ),
+        HigButton(
+          label: 'Already in App',
+          size: HigButtonSize.small,
+          variant: HigButtonVariant.secondary,
+          onPressed: () => ref
+              .read(machineAuthProvider.notifier)
+              .dismissDownloadPrompt(),
+        ),
+      ],
     );
   }
 
@@ -200,77 +237,55 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     MachineAuthState machine,
   ) {
     final blocked = DeviceBridge.getNotificationPermissionState() == 'denied';
-    return GlassCard(
-      radius: 14,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      borderColor: (blocked ? HigColors.amber : HigColors.copper)
-          .withValues(alpha: 0.35),
-      backgroundColor: (blocked ? HigColors.amber : HigColors.copper)
-          .withValues(alpha: 0.08),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+    return _buildResponsiveBannerStrip(
+      accentColor: blocked ? HigColors.amber : HigColors.copper,
+      icon: CupertinoIcons.bell_fill,
+      iconColor: blocked ? HigColors.amber : HigColors.copperBright,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            CupertinoIcons.bell_fill,
-            color: blocked ? HigColors.amber : HigColors.copperBright,
-            size: 19,
+          Text(
+            blocked
+                ? 'Notifications blocked on ${machine.capabilities.osLabel}'
+                : 'Enable playverzus.xyz match alerts',
+            style: HigTypography.headline().copyWith(fontSize: 13.5),
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  blocked
-                      ? 'Notifications blocked on ${machine.capabilities.osLabel}'
-                      : 'Enable playverzus.xyz match alerts',
-                  style: HigTypography.headline().copyWith(fontSize: 13.5),
-                ),
-                Text(
-                  blocked
-                      ? 'Allow Notifications for playverzus.xyz in browser settings to receive Ready and payout pings.'
-                      : 'Let your device alert you when opponents Ready up or matches settle.',
-                  style: HigTypography.caption(),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: [
-              HigButton(
-                label: blocked ? 'Retry' : 'Allow Alerts',
-                size: HigButtonSize.small,
-                onPressed: () async {
-                  final ok = await ref
-                      .read(machineAuthProvider.notifier)
-                      .promptNotificationPermission();
-                  final live =
-                      await DeviceBridge.fetchNotificationPermissionState();
-                  if (!mounted) return;
-                  ref.read(toastProvider.notifier).show(
-                        ok
-                            ? 'Match alerts enabled'
-                            : (live == 'denied'
-                                ? 'Blocked in browser settings — allow notifications and retry'
-                                : 'Notification prompt dismissed — we will ask again when joining a match'),
-                        tone: ok ? ToastTone.success : ToastTone.warning,
-                      );
-                },
-              ),
-              HigButton(
-                label: 'Not Now',
-                size: HigButtonSize.small,
-                variant: HigButtonVariant.secondary,
-                onPressed: () =>
-                    ref.read(machineAuthProvider.notifier).dismissOnboarding(),
-              ),
-            ],
+          Text(
+            blocked
+                ? 'Allow Notifications for playverzus.xyz in browser settings to receive Ready and payout pings.'
+                : 'Let your device alert you when opponents Ready up or matches settle.',
+            style: HigTypography.caption(),
           ),
         ],
       ),
+      actions: [
+        HigButton(
+          label: blocked ? 'Retry' : 'Allow Alerts',
+          size: HigButtonSize.small,
+          onPressed: () async {
+            final ok = await ref
+                .read(machineAuthProvider.notifier)
+                .promptNotificationPermission();
+            final live = await DeviceBridge.fetchNotificationPermissionState();
+            if (!mounted) return;
+            ref.read(toastProvider.notifier).show(
+                  ok
+                      ? 'Match alerts enabled'
+                      : (live == 'denied'
+                          ? 'Blocked in browser settings — allow notifications and retry'
+                          : 'Notification prompt dismissed — we will ask again when joining a match'),
+                  tone: ok ? ToastTone.success : ToastTone.warning,
+                );
+          },
+        ),
+        HigButton(
+          label: 'Not Now',
+          size: HigButtonSize.small,
+          variant: HigButtonVariant.secondary,
+          onPressed: () =>
+              ref.read(machineAuthProvider.notifier).dismissOnboarding(),
+        ),
+      ],
     );
   }
 
@@ -836,7 +851,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       crossAxisCount: isCompact ? 2 : 4,
       crossAxisSpacing: 12,
       mainAxisSpacing: 12,
-      childAspectRatio: isCompact ? 1.42 : 1.6,
+      childAspectRatio: isCompact ? 1.25 : 1.6,
       children: [
         _statTile(
           'Skill Rating',
@@ -861,16 +876,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Widget _statTile(String label, String value, Color accent) {
     return GlassCard(
       radius: 14,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(label, style: HigTypography.caption()),
+          Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: HigTypography.caption()),
           const SizedBox(height: 6),
-          Text(
-            value,
-            style: HigTypography.mono(size: 19, color: accent),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              maxLines: 1,
+              style: HigTypography.mono(size: 19, color: accent),
+            ),
           ),
         ],
       ),

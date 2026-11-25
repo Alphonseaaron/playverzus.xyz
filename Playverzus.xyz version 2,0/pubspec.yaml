@@ -1,7 +1,7 @@
 name: playverzus_v2
 description: "Playverzus.xyz Version 2.0 — Cross-Platform Competitive Esports Infrastructure (Apple iOS HIG Standard across Web, Android, iOS, Windows, macOS & Linux)."
 publish_to: 'none'
-version: 2.0.4+5
+version: 2.0.5+6
 
 environment:
   sdk: ^3.10.0

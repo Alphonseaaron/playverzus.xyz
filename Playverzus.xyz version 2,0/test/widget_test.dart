@@ -845,8 +845,8 @@ void main() {
       buildNumber: 1,
     );
     notifier.applyRemoteManifest(
-      latestVersion: '2.0.5',
-      latestBuildNumber: 6,
+      latestVersion: '9.9.0',
+      latestBuildNumber: 99,
       releaseNotes: 'Better onboarding & 1-tap tournament launch.',
     );
 
@@ -855,13 +855,13 @@ void main() {
     expect(pending.hasNewerDownloadedRelease, isTrue);
     expect(pending.hasPendingUpdate, isTrue);
 
-    // Dismissing 2.0.5 hides that version until a newer release (2.0.6) arrives
+    // Dismissing 9.9.0 hides that version until a newer release (9.9.1) arrives
     await notifier.dismissCurrentUpdate();
     expect(container.read(appUpdateProvider).hasPendingUpdate, isFalse);
 
     notifier.applyRemoteManifest(
-      latestVersion: '2.0.6',
-      latestBuildNumber: 7,
+      latestVersion: '9.9.1',
+      latestBuildNumber: 100,
     );
     expect(container.read(appUpdateProvider).hasPendingUpdate, isTrue);
   });
@@ -1072,6 +1072,55 @@ void main() {
     await tester.tap(find.text('USDC 20 · Best Value'));
     await tester.pumpAndSettle();
     expect(find.textContaining('On-Chain Payout Fee'), findsOneWidget);
+  });
+
+  testWidgets(
+      'Dashboard responsive banner strip & Cashier Direct USDC pill render cleanly without overflow on 375x812 mobile',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(375, 812);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final container = ProviderContainer(
+      overrides: [
+        arenaDataProvider.overrideWith((ref) => _TestArenaNotifier(ref)),
+      ],
+    );
+    addTearDown(container.dispose);
+    await tester.runAsync(() async {
+      await container
+          .read(playerSessionProvider.notifier)
+          .signInSandboxRole(asAdmin: false);
+    });
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(
+          home: Scaffold(body: DashboardScreen()),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('1v1 Matchmaking'), findsOneWidget);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(
+          home: Scaffold(body: CashierScreen()),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.tap(find.text('USDC (Base)'));
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Direct USDC'), findsOneWidget);
   });
 }
 

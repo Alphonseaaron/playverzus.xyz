@@ -381,6 +381,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             redirect: (_, __) => '/cashier',
           ),
           GoRoute(
+            path: '/arena',
+            redirect: (_, __) => '/challenges',
+          ),
+          GoRoute(
             path: '/profile',
             pageBuilder: (context, state) =>
                 _subtlePage(state, const ProfileScreen()),
