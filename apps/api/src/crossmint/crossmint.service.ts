@@ -34,6 +34,17 @@ export interface CrossmintDepositWalletInfo {
   qrPayload: string;
 }
 
+export interface CrossmintTreasuryWalletStatus {
+  configured: boolean;
+  environment: 'production' | 'staging';
+  chain: string;
+  address: string | null;
+  onChainUsdcBalance: number | null;
+  explorerUrl: string | null;
+  status: 'CONNECTED' | 'AWAITING_API_SCOPE' | 'NOT_CONFIGURED' | 'ERROR';
+  note: string;
+}
+
 const BASE_MAINNET_USDC = '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913';
 const BASE_SEPOLIA_USDC = '0x036cbd53842c5426634e7929541ec2318f3dcf7e';
 const MIN_DIRECT_USDC_DEPOSIT = 5.0;
@@ -129,6 +140,148 @@ export class CrossmintService {
       supportedCurrencies: ['USD', 'USDC', 'EUR', 'KES'],
       supportedMethods: ['usdc-base', 'card', 'apple-pay', 'google-pay'],
     };
+  }
+
+  /**
+   * Reads the live on-chain Base USDC balance of the configured Admin Treasury wallet
+   * from Crossmint Wallets API without failing the Treasury report if scopes are pending.
+   */
+  async getTreasuryWalletStatus(): Promise<CrossmintTreasuryWalletStatus> {
+    const environment: 'production' | 'staging' = this.isProd ? 'production' : 'staging';
+    const configured = this.isTreasuryConfigured();
+    const isEvmAddress = /^0x[a-fA-F0-9]{40}$/.test(this.treasuryAddress);
+    const explorerUrl = configured && isEvmAddress
+      ? (this.isProd
+          ? `https://basescan.org/address/${this.treasuryAddress}`
+          : `https://sepolia.basescan.org/address/${this.treasuryAddress}`)
+      : null;
+
+    if (!configured) {
+      return {
+        configured: false,
+        environment,
+        chain: this.defaultChain,
+        address: null,
+        onChainUsdcBalance: null,
+        explorerUrl: null,
+        status: 'NOT_CONFIGURED',
+        note: 'Set CROSSMINT_TREASURY_ADDRESS in Render after creating your Treasury wallet in Crossmint Console.',
+      };
+    }
+
+    if (!this.serverApiKey) {
+      return {
+        configured: true,
+        environment,
+        chain: this.defaultChain,
+        address: this.treasuryAddress,
+        onChainUsdcBalance: null,
+        explorerUrl,
+        status: 'AWAITING_API_SCOPE',
+        note: 'CROSSMINT_SERVER_API_KEY is not configured in the API environment.',
+      };
+    }
+
+    try {
+      const endpoint = `${this.baseUrl}/2025-06-09/wallets/${encodeURIComponent(this.treasuryAddress)}/balances?tokens=usdc&chains=${encodeURIComponent(this.defaultChain)}`;
+      const res = await fetch(endpoint, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+          'X-API-KEY': this.serverApiKey,
+        },
+        signal: AbortSignal.timeout(4000),
+      });
+
+      if (res.status === 401 || res.status === 403) {
+        return {
+          configured: true,
+          environment,
+          chain: this.defaultChain,
+          address: this.treasuryAddress,
+          onChainUsdcBalance: null,
+          explorerUrl,
+          status: 'AWAITING_API_SCOPE',
+          note: 'Enable wallets.read / wallets:balances.read scopes on your Crossmint server API key.',
+        };
+      }
+
+      if (!res.ok) {
+        return {
+          configured: true,
+          environment,
+          chain: this.defaultChain,
+          address: this.treasuryAddress,
+          onChainUsdcBalance: null,
+          explorerUrl,
+          status: 'ERROR',
+          note: `Crossmint balances query returned HTTP ${res.status}.`,
+        };
+      }
+
+      const payload = (await res.json().catch(() => null)) as any;
+      const onChainUsdcBalance = this.parseUsdcBalancePayload(payload);
+      return {
+        configured: true,
+        environment,
+        chain: this.defaultChain,
+        address: this.treasuryAddress,
+        onChainUsdcBalance,
+        explorerUrl,
+        status: 'CONNECTED',
+        note: 'Live on-chain Base USDC balance fetched from Crossmint Wallets API.',
+      };
+    } catch (err: any) {
+      this.log.warn({ err: err?.message }, 'Crossmint Treasury balance lookup timed out or failed');
+      return {
+        configured: true,
+        environment,
+        chain: this.defaultChain,
+        address: this.treasuryAddress,
+        onChainUsdcBalance: null,
+        explorerUrl,
+        status: 'ERROR',
+        note: 'Could not reach Crossmint Wallets API right now; ledger figures shown from DB/Redis.',
+      };
+    }
+  }
+
+  private parseUsdcBalancePayload(payload: any): number {
+    if (!payload) return 0;
+    const list: any[] = Array.isArray(payload)
+      ? payload
+      : Array.isArray(payload.balances)
+      ? payload.balances
+      : Array.isArray(payload.data)
+      ? payload.data
+      : [payload];
+
+    for (const item of list) {
+      if (!item || typeof item !== 'object') continue;
+      const sym = String(item.symbol || item.token || '').toLowerCase();
+      if (sym && sym !== 'usdc') continue;
+
+      const chainBal = item.balances?.[this.defaultChain];
+      const candidate =
+        item.amount ??
+        (typeof chainBal === 'object' ? chainBal?.amount : chainBal) ??
+        item.balance ??
+        null;
+      if (candidate !== null && candidate !== undefined) {
+        const parsed = Number(candidate);
+        if (Number.isFinite(parsed)) {
+          return Math.max(0, Math.round(parsed * 100) / 100);
+        }
+      }
+      if (item.rawAmount !== undefined) {
+        const raw = Number(item.rawAmount);
+        const decimals = Number(item.decimals ?? 6);
+        if (Number.isFinite(raw)) {
+          return Math.max(0, Math.round((raw / Math.pow(10, decimals)) * 100) / 100);
+        }
+      }
+    }
+    return 0;
   }
 
   /**

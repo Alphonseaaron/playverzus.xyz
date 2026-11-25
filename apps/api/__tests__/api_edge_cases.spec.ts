@@ -18,7 +18,7 @@ describe('API Services & Security Guards Edge Case Suite', () => {
 
     it('rejects deposit below MIN_DEPOSIT_EUR', async () => {
       await expect(service.deposit('u1', 4.99)).rejects.toThrowError(
-        `The minimum deposit amount is $${MIN_DEPOSIT_EUR.toFixed(2)} USDC.`,
+        `Minimum deposit is ${MIN_DEPOSIT_EUR.toFixed(2)} USDC.`,
       );
     });
 
@@ -47,9 +47,9 @@ describe('API Services & Security Guards Edge Case Suite', () => {
     });
 
     it('rejects payout below MIN_WITHDRAWAL_EUR', async () => {
-      await expect(service.requestPayout('u1', 9.99, { type: 'BANK_ACCOUNT' } as any)).rejects.toThrowError(
-        `The minimum withdrawal threshold is $${MIN_WITHDRAWAL_EUR.toFixed(2)} USDC.`,
-      );
+      await expect(
+        service.requestPayout('u1', MIN_WITHDRAWAL_EUR - 0.01, { type: 'BANK_ACCOUNT' } as any),
+      ).rejects.toThrowError(`Minimum withdrawal is ${MIN_WITHDRAWAL_EUR.toFixed(2)} USDC.`);
     });
 
     it('rejects payout above MAX_WITHDRAWAL_EUR', async () => {

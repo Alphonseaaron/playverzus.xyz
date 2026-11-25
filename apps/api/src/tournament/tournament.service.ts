@@ -1,7 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Optional } from '@nestjs/common';
 import { createServiceClient, TypedSupabaseClient } from '@playverzus/db';
 import { TournamentEngine, type TournamentFormat, TOURNAMENT_TIERS } from '@playverzus/core';
 import { resolveAndEnsureGameProfileId } from '../game-profile/game-profile.service';
+import { WalletService } from '../wallet/wallet.service';
 
 export const TOP_5_BLITZ_GAMES = [
   { id: '00000000-0000-0000-0000-000000000001', slug: 'cs2', name: 'Counter-Strike 2' },
@@ -16,7 +17,7 @@ export class TournamentService {
   private supabase: TypedSupabaseClient;
   private engine: TournamentEngine;
 
-  constructor() {
+  constructor(@Optional() private readonly walletService?: WalletService) {
     const url = process.env.SUPABASE_URL || 'https://placeholder.supabase.co';
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-key';
     this.supabase = createServiceClient(url, key);
@@ -30,7 +31,42 @@ export class TournamentService {
       .order('created_at', { ascending: false });
 
     if (error) throw new Error(error.message);
-    return data;
+    if (!data || data.length === 0) return data;
+
+    const ids = data.map((t: any) => t.id).filter(Boolean);
+    let configMap = new Map<string, { entryFeeUsdc?: number; prizePoolUsdc?: number }>();
+    try {
+      const { data: cfgLogs } = await this.supabase
+        .from('audit_log')
+        .select('entity_id, metadata')
+        .eq('action', 'TOURNAMENT_ESCROW_CONFIG')
+        .in('entity_id', ids);
+      for (const row of cfgLogs ?? []) {
+        const meta = (row.metadata || {}) as Record<string, any>;
+        configMap.set(row.entity_id, {
+          entryFeeUsdc: typeof meta.entryFeeUsdc === 'number' ? meta.entryFeeUsdc : undefined,
+          prizePoolUsdc: typeof meta.prizePoolUsdc === 'number' ? meta.prizePoolUsdc : undefined,
+        });
+      }
+    } catch {}
+
+    return data.map((t: any) => this.applyEscrowOverlay(t, configMap.get(t.id)));
+  }
+
+  private applyEscrowOverlay(t: any, cfg?: { entryFeeUsdc?: number; prizePoolUsdc?: number }) {
+    const entryFee = cfg?.entryFeeUsdc ?? Number(t.entry_fee ?? 0);
+    const prizePool = cfg?.prizePoolUsdc ?? Number(t.prize_pool ?? 0);
+    const currency =
+      String(t.currency || '').toUpperCase() === 'USDC' || Boolean(t.is_auto_sit_and_go) || Boolean(cfg)
+        ? 'USDC'
+        : String(t.currency || 'PTS');
+    return {
+      ...t,
+      entry_fee: entryFee,
+      prize_pool: prizePool,
+      currency,
+      isCash: currency === 'USDC' && entryFee > 0,
+    };
   }
 
   async getTournament(id: string) {
@@ -41,6 +77,24 @@ export class TournamentService {
       .maybeSingle();
 
     if (error || !data) throw new NotFoundException('Tournament not found');
+
+    let cfg: { entryFeeUsdc?: number; prizePoolUsdc?: number } | undefined;
+    try {
+      const { data: cfgRow } = await this.supabase
+        .from('audit_log')
+        .select('metadata')
+        .eq('action', 'TOURNAMENT_ESCROW_CONFIG')
+        .eq('entity_id', id)
+        .limit(1)
+        .maybeSingle();
+      const meta = (cfgRow?.metadata || null) as Record<string, any> | null;
+      if (meta) {
+        cfg = {
+          entryFeeUsdc: typeof meta.entryFeeUsdc === 'number' ? meta.entryFeeUsdc : undefined,
+          prizePoolUsdc: typeof meta.prizePoolUsdc === 'number' ? meta.prizePoolUsdc : undefined,
+        };
+      }
+    } catch {}
 
     const rawEntries = (data as any).tournament_entries as Array<{ user_id: string }> | undefined;
     if (rawEntries && rawEntries.length > 0) {
@@ -72,7 +126,7 @@ export class TournamentService {
       }
     }
 
-    return data;
+    return this.applyEscrowOverlay(data, cfg);
   }
 
   async createTournament(
@@ -88,28 +142,114 @@ export class TournamentService {
     },
   ) {
     const resolvedProfileId = await resolveAndEnsureGameProfileId(this.supabase, params.profileId);
+    const entryFeeUsdc = Math.max(0, Math.round(Number(params.entryFee ?? 0) * 100) / 100);
+    const prizePoolUsdc =
+      params.prizePool != null
+        ? Math.max(0, Math.round(Number(params.prizePool) * 100) / 100)
+        : Math.round(entryFeeUsdc * params.size * 0.8 * 100) / 100;
+
     const { data, error } = await this.supabase.rpc('create_tournament', {
       p_creator: creatorId,
       p_name: params.name,
       p_profile_id: resolvedProfileId,
       p_format: params.format,
       p_size: params.size,
-      p_entry_fee: params.entryFee ?? 0,
-      p_prize_pool: params.prizePool ?? 0,
+      p_entry_fee: Math.round(entryFeeUsdc),
+      p_prize_pool: Math.round(prizePoolUsdc),
       p_starts_at: params.startsAt ?? null,
     });
 
-    if (error) throw new Error(error.message);
+    if (error) throw new BadRequestException(error.message);
+
+    if (data?.id && entryFeeUsdc > 0) {
+      try {
+        await this.supabase
+          .from('tournaments')
+          .update({ currency: 'USDC' })
+          .eq('id', (data as any).id);
+        await this.supabase.from('audit_log').insert({
+          actor_id: creatorId,
+          action: 'TOURNAMENT_ESCROW_CONFIG',
+          entity_type: 'tournament',
+          entity_id: (data as any).id,
+          metadata: {
+            isRealCash: true,
+            entryFeeUsdc,
+            prizePoolUsdc,
+          },
+        });
+      } catch {}
+    }
+
     return data;
   }
 
   async joinTournament(tournamentId: string, userId: string) {
-    const { data, error } = await this.supabase.rpc('join_tournament', {
-      p_tournament_id: tournamentId,
-      p_user_id: userId,
-    });
+    const { data: t, error: tErr } = await this.supabase
+      .from('tournaments')
+      .select('id, status, size, entry_fee, currency, is_auto_sit_and_go')
+      .eq('id', tournamentId)
+      .maybeSingle();
 
-    if (error) throw new Error(error.message);
+    if (tErr || !t) {
+      throw new NotFoundException('Tournament not found');
+    }
+    if (t.status !== 'REGISTRATION') {
+      throw new BadRequestException('Tournament not open for registration');
+    }
+
+    const { data: existingEntries } = await this.supabase
+      .from('tournament_entries')
+      .select('id, user_id')
+      .eq('tournament_id', tournamentId);
+
+    if ((existingEntries || []).some((e) => e.user_id === userId)) {
+      throw new BadRequestException('You are already registered in this tournament');
+    }
+    if ((existingEntries || []).length >= Number(t.size || 0)) {
+      throw new BadRequestException('Tournament is full');
+    }
+
+    let entryFeeUsdc = Number(t.entry_fee || 0);
+    try {
+      const { data: cfg } = await this.supabase
+        .from('audit_log')
+        .select('metadata')
+        .eq('action', 'TOURNAMENT_ESCROW_CONFIG')
+        .eq('entity_id', tournamentId)
+        .limit(1)
+        .maybeSingle();
+      const meta = cfg?.metadata as Record<string, any> | null;
+      if (meta && typeof meta.entryFeeUsdc === 'number') {
+        entryFeeUsdc = meta.entryFeeUsdc;
+      }
+    } catch {}
+
+    const isUsdcCash =
+      String((t as any).currency || '').toUpperCase() === 'USDC' ||
+      Boolean((t as any).is_auto_sit_and_go);
+
+    let data: any;
+    if (isUsdcCash && entryFeeUsdc > 0 && this.walletService) {
+      await this.walletService.lockTournamentEntry(userId, entryFeeUsdc, tournamentId);
+      const { data: inserted, error: insErr } = await this.supabase
+        .from('tournament_entries')
+        .insert({ tournament_id: tournamentId, user_id: userId })
+        .select('*')
+        .single();
+      if (insErr) {
+        await this.walletService.unlockTournamentEntry(userId, entryFeeUsdc, tournamentId);
+        throw new BadRequestException(insErr.message);
+      }
+      data = inserted;
+    } else {
+      const rpcRes = await this.supabase.rpc('join_tournament', {
+        p_tournament_id: tournamentId,
+        p_user_id: userId,
+      });
+      if (rpcRes.error) throw new BadRequestException(rpcRes.error.message);
+      data = rpcRes.data;
+    }
 
     // Zero-manual auto-start when tournament reaches full entrant capacity
     try {

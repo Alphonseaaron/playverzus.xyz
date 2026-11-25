@@ -403,11 +403,11 @@ class ArenaDataNotifier extends StateNotifier<ArenaDataState> {
               ? oppNameRaw.toString().trim()
               : null,
       hostElo: (m['creator_elo'] as num?)?.toInt() ?? 1200,
-      mode: modeRaw == 'PARTY' ? 'PARTY_SQUAD' : '1V1_OPEN',
-      squadSize: modeRaw == 'PARTY' ? '2v2' : '1v1',
+      mode: (m['mode'] == 'PARTY' || m['mode'] == 'PARTY_SQUAD') ? 'PARTY_SQUAD' : '1V1_OPEN',
+      squadSize: (m['squadSize'] as String?) ?? (modeRaw == 'PARTY' ? '2v2' : '1v1'),
       format: (m['format'] as String?) ?? 'BO1',
       stakeUsd: fee,
-      isCash: fee > 0,
+      isCash: (m['isCash'] as bool?) ?? (fee > 0),
       region: (country != null && country.trim().isNotEmpty) ? country : 'Global',
       countryLock: country,
       status: (m['status'] as String?) ?? 'OPEN',
@@ -470,6 +470,9 @@ class ArenaDataNotifier extends StateNotifier<ArenaDataState> {
         'opponentId': resolvedOpponentId,
         'format': format,
         'entryFee': isCash ? stakeUsd : 0,
+        'isCash': isCash,
+        'mode': mode,
+        'squadSize': squadSize,
       });
       if (res is Map && res['id'] != null) {
         id = res['id'].toString();

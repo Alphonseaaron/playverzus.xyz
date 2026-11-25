@@ -377,6 +377,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 _subtlePage(state, const CashierScreen()),
           ),
           GoRoute(
+            path: '/wallet',
+            redirect: (_, __) => '/cashier',
+          ),
+          GoRoute(
             path: '/profile',
             pageBuilder: (context, state) =>
                 _subtlePage(state, const ProfileScreen()),

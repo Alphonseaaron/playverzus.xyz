@@ -9,6 +9,7 @@ import {
 import {
   type PayoutMethod,
   PaysafeClient,
+  getDuelRakeRate,
   MIN_DEPOSIT_USDC,
   MAX_DEPOSIT_USDC,
   MIN_WITHDRAWAL_USDC,
@@ -837,23 +838,50 @@ export class WalletService {
   // ─── Match Escrow Operations (Real Cash & Demo Points) ────────────────────
 
   /**
-   * Lock funds in escrow for a match (either Real Cash EUR or Demo PTS)
+   * Lock funds in escrow for a match (either Real Cash USDC or Demo PTS).
+   * Idempotent per (matchId, userId) so retries never double-lock.
    */
   async lockMatchStake(userId: string, amount: number, matchId: string, isRealCash: boolean): Promise<void> {
+    if (!Number.isFinite(amount) || amount <= 0) return;
     return this.redis.withLock(`wallet:${userId}`, 10_000, async () => {
+      const rounded = Math.round(amount * 100) / 100;
+      const amountCents = Math.round(rounded * 100);
+
+      // Idempotency guard via DB locks table (plus Redis fallback for unit tests)
+      const lockMarkerKey = `escrow:lock:m:${matchId}:${userId}`;
+      const existingMarker = await this.redis.get(lockMarkerKey);
+      if (existingMarker) return;
+
+      try {
+        const { data: existingLock } = await this.supabase
+          .from('locks')
+          .select('id')
+          .eq('match_id', matchId)
+          .eq('user_id', userId)
+          .eq('status', 'LOCKED')
+          .maybeSingle();
+        if (existingLock) {
+          await this.redis.set(lockMarkerKey, '1', 60 * 60 * 24 * 30);
+          return;
+        }
+      } catch {}
+
       if (isRealCash) {
         const cash = await this.getRealCash(userId);
-        const available = Math.max(0, cash.balance - cash.locked);
-        if (available < amount) {
-          throw new BadRequestException(`Insufficient Real Cash balance: available $${available.toFixed(2)} USDC, required $${amount.toFixed(2)} USDC`);
+        const available = Math.max(0, Math.round((cash.balance - cash.locked) * 100) / 100);
+        if (available + 0.001 < rounded) {
+          throw new BadRequestException(
+            `Insufficient Real Cash balance: available $${available.toFixed(2)} USDC, required $${rounded.toFixed(2)} USDC`,
+          );
         }
-        cash.locked = Math.round((cash.locked + amount) * 100) / 100;
+        cash.locked = Math.round((cash.locked + rounded) * 100) / 100;
         await this.setRealCash(userId, cash);
+        await this.redis.set(lockMarkerKey, '1', 60 * 60 * 24 * 30);
 
         try {
           await this.supabase.from('locks').insert({
             user_id: userId,
-            amount: Math.round(amount * 100), // in cents
+            amount: amountCents, // in cents
             match_id: matchId,
             status: 'LOCKED',
           });
@@ -868,6 +896,7 @@ export class WalletService {
         }
         const newLocked = pts.locked + amount;
         await this.supabase.from('wallets').update({ locked: newLocked }).eq('user_id', userId);
+        await this.redis.set(lockMarkerKey, '1', 60 * 60 * 24 * 30);
         try {
           await this.supabase.from('locks').insert({
             user_id: userId,
@@ -883,7 +912,62 @@ export class WalletService {
   }
 
   /**
-   * Settle match escrow: release locks and credit prize to winner
+   * Release locked escrow without penalty when a match is cancelled before completion.
+   */
+  async unlockMatchStake(
+    matchId: string,
+    playerA: string | null,
+    playerB: string | null,
+    stakeAmount: number,
+    isRealCash: boolean,
+  ): Promise<void> {
+    if (!Number.isFinite(stakeAmount) || stakeAmount <= 0) return;
+    return this.redis.withLock(`settle:${matchId}`, 15_000, async () => {
+      const rounded = Math.round(stakeAmount * 100) / 100;
+      const candidates = [playerA, playerB].filter((u): u is string => Boolean(u));
+
+      if (isRealCash) {
+        for (const uid of candidates) {
+          const markerKey = `escrow:lock:m:${matchId}:${uid}`;
+          let hasLock = Boolean(await this.redis.get(markerKey));
+          if (!hasLock) {
+            try {
+              const { data: row } = await this.supabase
+                .from('locks')
+                .select('id')
+                .eq('match_id', matchId)
+                .eq('user_id', uid)
+                .eq('status', 'LOCKED')
+                .maybeSingle();
+              hasLock = Boolean(row);
+            } catch {}
+          }
+          if (!hasLock) continue;
+
+          const cash = await this.getRealCash(uid);
+          cash.locked = Math.max(0, Math.round((cash.locked - rounded) * 100) / 100);
+          await this.setRealCash(uid, cash);
+          await this.redis.del(markerKey);
+        }
+
+        try {
+          await this.supabase
+            .from('locks')
+            .update({ status: 'REFUNDED' })
+            .eq('match_id', matchId)
+            .eq('status', 'LOCKED');
+        } catch {}
+      } else {
+        try {
+          await this.supabase.rpc('wallet_refund', { p_match_id: matchId });
+        } catch {}
+      }
+    });
+  }
+
+  /**
+   * Settle match escrow: release locks, deduct stakes, credit winner (minus tiered duel rake),
+   * record balanced double-entry transactions, and log collected Admin rake.
    */
   async settleMatchStake(
     matchId: string,
@@ -892,49 +976,126 @@ export class WalletService {
     winnerId: string,
     stakeAmount: number,
     isRealCash: boolean,
-  ): Promise<void> {
+  ): Promise<{ totalPot: number; winnerPrize: number; platformRake: number } | void> {
+    if (!Number.isFinite(stakeAmount) || stakeAmount <= 0) return;
     return this.redis.withLock(`settle:${matchId}`, 15_000, async () => {
-      const totalPrize = Math.round((stakeAmount * 2 * 0.90) * 100) / 100; // 90% prize pool
+      const roundedStake = Math.round(stakeAmount * 100) / 100;
+      const totalPot = Math.round(roundedStake * 2 * 100) / 100;
+      const rakeRate = getDuelRakeRate(roundedStake);
+      const totalPrize = Math.round(totalPot * (1 - rakeRate) * 100) / 100;
+      const platformRake = Math.round((totalPot - totalPrize) * 100) / 100;
 
       if (isRealCash) {
-        // Release player A and B locks
+        const settledFlagKey = `escrow:settled:m:${matchId}`;
+        if (await this.redis.get(settledFlagKey)) {
+          return { totalPot, winnerPrize: totalPrize, platformRake };
+        }
+        try {
+          const { data: existingTx } = await this.supabase
+            .from('transactions')
+            .select('id')
+            .eq('idempotency_key', `match-prize-${matchId}`)
+            .maybeSingle();
+          if (existingTx) {
+            await this.redis.set(settledFlagKey, '1', 60 * 60 * 24 * 90);
+            return { totalPot, winnerPrize: totalPrize, platformRake };
+          }
+        } catch {}
+
         const [cashA, cashB] = await Promise.all([
           this.getRealCash(playerA),
           this.getRealCash(playerB),
         ]);
-        cashA.locked = Math.max(0, Math.round((cashA.locked - stakeAmount) * 100) / 100);
-        cashA.balance = Math.max(0, Math.round((cashA.balance - stakeAmount) * 100) / 100);
-        cashB.locked = Math.max(0, Math.round((cashB.locked - stakeAmount) * 100) / 100);
-        cashB.balance = Math.max(0, Math.round((cashB.balance - stakeAmount) * 100) / 100);
+        cashA.locked = Math.max(0, Math.round((cashA.locked - roundedStake) * 100) / 100);
+        cashA.balance = Math.max(0, Math.round((cashA.balance - roundedStake) * 100) / 100);
+        cashB.locked = Math.max(0, Math.round((cashB.locked - roundedStake) * 100) / 100);
+        cashB.balance = Math.max(0, Math.round((cashB.balance - roundedStake) * 100) / 100);
 
-        // Credit winner
         const winnerCash = winnerId === playerA ? cashA : cashB;
         winnerCash.balance = Math.round((winnerCash.balance + totalPrize) * 100) / 100;
 
         await Promise.all([
           this.setRealCash(playerA, cashA),
           this.setRealCash(playerB, cashB),
+          this.redis.set(settledFlagKey, '1', 60 * 60 * 24 * 90),
+          this.redis.del(`escrow:lock:m:${matchId}:${playerA}`),
+          this.redis.del(`escrow:lock:m:${matchId}:${playerB}`),
         ]);
 
-        // Release lock rows in DB
         try {
-          await this.supabase.from('locks').update({ status: 'RELEASED' }).eq('match_id', matchId);
-        } catch {
-          // Non-fatal
-        }
+          await this.supabase
+            .from('locks')
+            .update({ status: 'RELEASED' })
+            .eq('match_id', matchId);
+        } catch {}
 
-        // Record prize transaction
+        const stakeCents = Math.round(roundedStake * 100);
+        const prizeCents = Math.round(totalPrize * 100);
+        const loserId = winnerId === playerA ? playerB : playerA;
+        const loserCash = winnerId === playerA ? cashB : cashA;
+
+        // Balanced double-entry transactions (stakes debited + prize credited)
         try {
-          await this.supabase.from('transactions').insert({
-            user_id: winnerId,
-            amount: Math.round(totalPrize * 100),
-            balance_after: Math.round(winnerCash.balance * 100),
-            reason: 'Match Prize Victory',
-            metadata: { matchId, currency: 'USDC', type: 'MATCH_PRIZE' },
+          await this.supabase.from('transactions').insert([
+            {
+              user_id: winnerId,
+              amount: -stakeCents,
+              balance_after: Math.round(Math.max(0, winnerCash.balance - totalPrize) * 100),
+              reason: 'Duel Stake Escrow Settled',
+              idempotency_key: `match-stake-${matchId}-${winnerId}`,
+              metadata: { matchId, currency: 'USDC', type: 'MATCH_STAKE' },
+            },
+            {
+              user_id: loserId,
+              amount: -stakeCents,
+              balance_after: Math.round(loserCash.balance * 100),
+              reason: 'Duel Stake Loss',
+              idempotency_key: `match-stake-${matchId}-${loserId}`,
+              metadata: { matchId, currency: 'USDC', type: 'MATCH_STAKE' },
+            },
+            {
+              user_id: winnerId,
+              amount: prizeCents,
+              balance_after: Math.round(winnerCash.balance * 100),
+              reason: 'Match Prize Victory',
+              idempotency_key: `match-prize-${matchId}`,
+              metadata: {
+                matchId,
+                currency: 'USDC',
+                type: 'MATCH_PRIZE',
+                totalPotUsdc: totalPot,
+                rakeRate,
+                platformRakeUsdc: platformRake,
+              },
+            },
+          ]);
+        } catch {}
+
+        try {
+          await this.supabase.from('audit_log').insert({
+            actor_id: winnerId,
+            action: 'PLATFORM_RAKE_COLLECTED',
+            entity_type: 'match',
+            entity_id: matchId,
+            metadata: {
+              currency: 'USDC',
+              source: 'DUEL',
+              totalPotUsdc: totalPot,
+              winnerPrizeUsdc: totalPrize,
+              rakeRate,
+              rakeUsdc: platformRake,
+            },
           });
-        } catch {
-          // Non-fatal
-        }
+        } catch {}
+
+        await this.push.sendToUser(winnerId, {
+          title: 'Victory Payout Credited',
+          body: `+$${totalPrize.toFixed(2)} USDC has been credited to your Real Cash wallet.`,
+          type: 'wallet',
+          url: '/cashier',
+        });
+
+        return { totalPot, winnerPrize: totalPrize, platformRake };
       } else {
         // Settle demo points using Postgres RPC
         try {
@@ -943,10 +1104,188 @@ export class WalletService {
             p_winner_id: winnerId,
             p_amount: Math.round(totalPrize),
           });
-        } catch {
-          // Non-fatal
-        }
+        } catch {}
+        return { totalPot, winnerPrize: Math.round(totalPrize), platformRake };
       }
+    });
+  }
+
+  // ─── Tournament Real Cash Escrow & Prize Settlement ─────────────────────
+
+  async lockTournamentEntry(
+    userId: string,
+    entryFeeUsdc: number,
+    tournamentId: string,
+  ): Promise<void> {
+    if (!Number.isFinite(entryFeeUsdc) || entryFeeUsdc <= 0) return;
+    return this.redis.withLock(`wallet:${userId}`, 10_000, async () => {
+      const rounded = Math.round(entryFeeUsdc * 100) / 100;
+      const amountCents = Math.round(rounded * 100);
+      const markerKey = `escrow:lock:t:${tournamentId}:${userId}`;
+      if (await this.redis.get(markerKey)) return;
+
+      try {
+        const { data: existing } = await this.supabase
+          .from('locks')
+          .select('id')
+          .eq('tournament_id', tournamentId)
+          .eq('user_id', userId)
+          .eq('status', 'LOCKED')
+          .maybeSingle();
+        if (existing) {
+          await this.redis.set(markerKey, '1', 60 * 60 * 24 * 30);
+          return;
+        }
+      } catch {}
+
+      const cash = await this.getRealCash(userId);
+      const available = Math.max(0, Math.round((cash.balance - cash.locked) * 100) / 100);
+      if (available + 0.001 < rounded) {
+        throw new BadRequestException(
+          `Insufficient Real Cash balance to join: available $${available.toFixed(2)} USDC, entry fee $${rounded.toFixed(2)} USDC.`,
+        );
+      }
+      cash.locked = Math.round((cash.locked + rounded) * 100) / 100;
+      await this.setRealCash(userId, cash);
+      await this.redis.set(markerKey, '1', 60 * 60 * 24 * 30);
+
+      try {
+        await this.supabase.from('locks').insert({
+          user_id: userId,
+          amount: amountCents,
+          tournament_id: tournamentId,
+          status: 'LOCKED',
+        });
+      } catch {}
+    });
+  }
+
+  async unlockTournamentEntry(
+    userId: string,
+    entryFeeUsdc: number,
+    tournamentId: string,
+  ): Promise<void> {
+    if (!Number.isFinite(entryFeeUsdc) || entryFeeUsdc <= 0) return;
+    return this.redis.withLock(`wallet:${userId}`, 10_000, async () => {
+      const rounded = Math.round(entryFeeUsdc * 100) / 100;
+      const markerKey = `escrow:lock:t:${tournamentId}:${userId}`;
+      const cash = await this.getRealCash(userId);
+      cash.locked = Math.max(0, Math.round((cash.locked - rounded) * 100) / 100);
+      await this.setRealCash(userId, cash);
+      await this.redis.del(markerKey);
+      try {
+        await this.supabase
+          .from('locks')
+          .update({ status: 'REFUNDED' })
+          .eq('tournament_id', tournamentId)
+          .eq('user_id', userId)
+          .eq('status', 'LOCKED');
+      } catch {}
+    });
+  }
+
+  async settleTournamentRealCash(
+    tournamentId: string,
+    winners: Array<{ userId: string; placement: number; prizeUsdc: number }>,
+    grossPoolUsdc: number,
+  ): Promise<void> {
+    return this.redis.withLock(`settle:tourn:${tournamentId}`, 15_000, async () => {
+      const settledKey = `escrow:settled:t:${tournamentId}`;
+      if (await this.redis.get(settledKey)) return;
+
+      const { data: lockedRows } = await this.supabase
+        .from('locks')
+        .select('id, user_id, amount')
+        .eq('tournament_id', tournamentId)
+        .eq('status', 'LOCKED');
+
+      const entrantIds = new Set<string>();
+      for (const row of lockedRows ?? []) {
+        const uid = String(row.user_id);
+        const amtCents = Number(row.amount || 0);
+        const amtUsdc = Math.round((amtCents / 100) * 100) / 100;
+        if (amtUsdc <= 0) continue;
+
+        entrantIds.add(uid);
+        const cash = await this.getRealCash(uid);
+        cash.locked = Math.max(0, Math.round((cash.locked - amtUsdc) * 100) / 100);
+        cash.balance = Math.max(0, Math.round((cash.balance - amtUsdc) * 100) / 100);
+        await this.setRealCash(uid, cash);
+        await this.redis.del(`escrow:lock:t:${tournamentId}:${uid}`);
+
+        try {
+          await this.supabase.from('transactions').insert({
+            user_id: uid,
+            amount: -amtCents,
+            balance_after: Math.round(cash.balance * 100),
+            reason: 'Tournament Entry Settled',
+            idempotency_key: `tourn-entry-${tournamentId}-${uid}`,
+            metadata: { tournamentId, currency: 'USDC', type: 'TOURNAMENT_ENTRY' },
+          });
+        } catch {}
+      }
+
+      if (lockedRows && lockedRows.length > 0) {
+        try {
+          await this.supabase
+            .from('locks')
+            .update({ status: 'RELEASED' })
+            .eq('tournament_id', tournamentId)
+            .eq('status', 'LOCKED');
+        } catch {}
+      }
+
+      let disbursedUsdc = 0;
+      for (const w of winners) {
+        if (!w.userId || w.prizeUsdc <= 0) continue;
+        const prizeRounded = Math.round(w.prizeUsdc * 100) / 100;
+        const prizeCents = Math.round(prizeRounded * 100);
+        disbursedUsdc = Math.round((disbursedUsdc + prizeRounded) * 100) / 100;
+
+        const cash = await this.getRealCash(w.userId);
+        cash.balance = Math.round((cash.balance + prizeRounded) * 100) / 100;
+        await this.setRealCash(w.userId, cash);
+
+        try {
+          await this.supabase.from('transactions').insert({
+            user_id: w.userId,
+            amount: prizeCents,
+            balance_after: Math.round(cash.balance * 100),
+            reason: `Tournament #${w.placement} Prize`,
+            idempotency_key: `tourn-prize-${tournamentId}-${w.userId}`,
+            metadata: { tournamentId, placement: w.placement, currency: 'USDC', type: 'TOURNAMENT_PRIZE' },
+          });
+        } catch {}
+
+        await this.push.sendToUser(w.userId, {
+          title: 'Tournament Prize Credited',
+          body: `+$${prizeRounded.toFixed(2)} USDC awarded for finishing #${w.placement}!`,
+          type: 'wallet',
+          url: '/cashier',
+        });
+      }
+
+      const rakeUsdc = Math.max(0, Math.round((grossPoolUsdc - disbursedUsdc) * 100) / 100);
+      if (rakeUsdc > 0) {
+        try {
+          await this.supabase.from('audit_log').insert({
+            actor_id: winners[0]?.userId || null,
+            action: 'PLATFORM_RAKE_COLLECTED',
+            entity_type: 'tournament',
+            entity_id: tournamentId,
+            metadata: {
+              currency: 'USDC',
+              source: 'TOURNAMENT',
+              grossPoolUsdc,
+              disbursedUsdc,
+              rakeUsdc,
+              entrants: entrantIds.size,
+            },
+          });
+        } catch {}
+      }
+
+      await this.redis.set(settledKey, '1', 60 * 60 * 24 * 90);
     });
   }
 

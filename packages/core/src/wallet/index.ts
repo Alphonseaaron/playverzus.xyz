@@ -29,7 +29,7 @@ export function getWallet(): WalletService {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (mode === 'real' || mode === 'paysafe') {
+  if (mode === 'real' || mode === 'paysafe' || mode === 'live') {
     if (url && key) {
       const client = createServiceClient(url, key);
       cached = new PaysafeWallet({ client });

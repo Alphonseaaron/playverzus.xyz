@@ -729,7 +729,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                               if (!val) _loadDepositWallet();
                             },
                             segments: const {
-                              false: 'Direct USDC (0% Fee)',
+                              false: 'Direct USDC',
                               true: 'Card / Apple Pay',
                             },
                           ),

@@ -37,9 +37,27 @@ export class MatchController {
   @Post()
   async create(
     @CurrentUser() user: AuthUser,
-    @Body() body: { profileId: string; opponentId?: string; format?: MatchFormat; entryFee?: number },
+    @Body()
+    body: {
+      profileId: string;
+      opponentId?: string;
+      format?: MatchFormat;
+      entryFee?: number;
+      isCash?: boolean;
+      mode?: string;
+      squadSize?: string;
+    },
   ) {
-    return this.matchService.createMatch(user.id, body.profileId, body.opponentId ?? null, body.format, body.entryFee);
+    return this.matchService.createMatch(
+      user.id,
+      body.profileId,
+      body.opponentId ?? null,
+      body.format,
+      body.entryFee,
+      body.isCash,
+      body.mode,
+      body.squadSize,
+    );
   }
 
   @Get(':id')

@@ -259,7 +259,7 @@ export class TournamentEngine {
   async distributePrizes(tournamentId: string): Promise<void> {
     const { data: t, error } = await this.deps.client
       .from('tournaments')
-      .select('prize_pool, prize_distribution')
+      .select('prize_pool, prize_distribution, currency')
       .eq('id', tournamentId)
       .maybeSingle();
     if (error || !t) {
@@ -280,6 +280,7 @@ export class TournamentEngine {
     const pool = Number(t.prize_pool ?? 0);
     if (pool <= 0) return;
 
+    const isUsdcCash = String((t as Record<string, unknown>).currency || '').toUpperCase() === 'USDC';
     const dist = (t.prize_distribution ?? {}) as Record<string, number>;
     const wallet = getWallet();
     let totalAwarded = 0;
@@ -287,24 +288,30 @@ export class TournamentEngine {
     for (const e of entries ?? []) {
       const placement = String(e.final_placement);
       const fraction = dist[placement] ?? 0;
-      let amount = Math.floor(pool * fraction);
+      let amount = Math.round(pool * fraction * 100) / 100;
       if (amount <= 0) continue;
 
       if (totalAwarded + amount > pool) {
-        amount = Math.max(0, pool - totalAwarded);
+        amount = Math.max(0, Math.round((pool - totalAwarded) * 100) / 100);
       }
       if (amount <= 0) break;
 
-      totalAwarded += amount;
-      await wallet.credit(e.user_id as string, amount, 'tournament_prize', {
-        metadata: { tournamentId, placement },
-        idempotencyKey: `tournament:${tournamentId}:prize:${e.user_id}`,
-      });
-      await this.deps.client
-        .from('tournament_entries')
-        .update({ prize_awarded: amount })
-        .eq('tournament_id', tournamentId)
-        .eq('user_id', e.user_id);
+      totalAwarded = Math.round((totalAwarded + amount) * 100) / 100;
+      if (!isUsdcCash) {
+        await wallet.credit(e.user_id as string, Math.round(amount), 'tournament_prize', {
+          metadata: { tournamentId, placement },
+          idempotencyKey: `tournament:${tournamentId}:prize:${e.user_id}`,
+        });
+      }
+      try {
+        await this.deps.client
+          .from('tournament_entries')
+          .update({ prize_awarded: Math.round(amount) })
+          .eq('tournament_id', tournamentId)
+          .eq('user_id', e.user_id);
+      } catch {
+        // Non-fatal if bigint prize_awarded rejects fractional display
+      }
     }
   }
 

@@ -199,4 +199,32 @@ describe('CrossmintService No-KYB Direct USDC Wallets', () => {
       } as any),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
+
+  it('fetches live Crossmint Treasury wallet Base USDC balance and BaseScan link', async () => {
+    const redis = makeMockRedis();
+    const walletSvc = {} as WalletService;
+
+    globalThis.fetch = vi.fn(async (url: string) => {
+      expect(url).toContain('/2025-06-09/wallets/0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/balances');
+      return new Response(
+        JSON.stringify([
+          {
+            symbol: 'usdc',
+            amount: '142.75',
+            balances: { base: '142.75' },
+          },
+        ]),
+        { status: 200 },
+      );
+    }) as any;
+
+    const svc = new CrossmintService(walletSvc, redis as any);
+    const treasury = await svc.getTreasuryWalletStatus();
+    expect(treasury.configured).toBe(true);
+    expect(treasury.status).toBe('CONNECTED');
+    expect(treasury.onChainUsdcBalance).toBe(142.75);
+    expect(treasury.explorerUrl).toBe(
+      'https://basescan.org/address/0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    );
+  });
 });

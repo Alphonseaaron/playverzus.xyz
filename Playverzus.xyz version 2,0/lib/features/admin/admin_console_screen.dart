@@ -1070,6 +1070,10 @@ class _AdminConsoleScreenState extends ConsumerState<AdminConsoleScreen> {
 
         const SizedBox(height: 14),
 
+        _buildMasterTreasuryWalletCard(tr['treasuryWallet'] as Map?),
+
+        const SizedBox(height: 14),
+
         // Treasury Balance Sheet KPIs
         GridView.count(
           shrinkWrap: true,
@@ -1229,6 +1233,88 @@ class _AdminConsoleScreenState extends ConsumerState<AdminConsoleScreen> {
     );
   }
 
+  Widget _buildMasterTreasuryWalletCard(Map? wallet) {
+    final configured = wallet?['configured'] == true;
+    final address = wallet?['address']?.toString();
+    final chain = (wallet?['chain'] ?? 'base').toString();
+    final env = (wallet?['environment'] ?? 'production').toString();
+    final status = (wallet?['status'] ?? (configured ? 'CONNECTED' : 'NOT_CONFIGURED')).toString();
+    final onChainBal = wallet?['onChainUsdcBalance'] as num?;
+    final explorerUrl = wallet?['explorerUrl']?.toString();
+    final note = (wallet?['note'] ??
+            'Configure CROSSMINT_TREASURY_ADDRESS in Render after creating your Treasury wallet in Crossmint Console.')
+        .toString();
+
+    return GlassCard(
+      radius: 16,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            alignment: WrapAlignment.spaceBetween,
+            children: [
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  const BrandLogo.crossmint(height: 18),
+                  Text('Master Base USDC Treasury Wallet',
+                      style: HigTypography.headline()),
+                  HigBadge(
+                    label: status == 'CONNECTED'
+                        ? 'LIVE ON $chain ($env)'.toUpperCase()
+                        : status.replaceAll('_', ' '),
+                    tone: status == 'CONNECTED'
+                        ? HigBadgeTone.emerald
+                        : status == 'NOT_CONFIGURED'
+                            ? HigBadgeTone.copper
+                            : HigBadgeTone.indigo,
+                  ),
+                ],
+              ),
+              if (onChainBal != null)
+                Text(
+                  'On-Chain: \$${onChainBal.toStringAsFixed(2)} USDC',
+                  style: HigTypography.title3(color: HigColors.emerald),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (address != null && address.isNotEmpty)
+            SelectableText(
+              'Treasury Address ($chain): $address',
+              style: HigTypography.mono(size: 12),
+            )
+          else
+            Text(
+              'Treasury Address: Not configured yet (deposits stay safely inside each player\'s dedicated Crossmint MPC wallet until swept).',
+              style: HigTypography.footnote(),
+            ),
+          const SizedBox(height: 6),
+          Text(note, style: HigTypography.caption()),
+          if (explorerUrl != null && explorerUrl.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            HigButton(
+              label: 'Inspect Treasury on BaseScan',
+              icon: CupertinoIcons.arrow_up_right_square,
+              size: HigButtonSize.small,
+              variant: HigButtonVariant.secondary,
+              onPressed: () => launchUrl(
+                Uri.parse(explorerUrl),
+                mode: LaunchMode.externalApplication,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   // ─── 6. REVIEW & DISPUTE QUEUE (APPROVE / REJECT / CORRECT SCORE) ─────────
   Widget _buildReviewPanel(AdminConsoleState admin) {
     if (admin.reviewQueue.isEmpty) {
@@ -1236,7 +1322,7 @@ class _AdminConsoleScreenState extends ConsumerState<AdminConsoleScreen> {
         icon: CupertinoIcons.checkmark_shield,
         title: 'Dispute queue is clear',
         subtitle:
-            'Flagged OCR captures and contested match scores appear here for Approve, Reject, or Score Correction.',
+            'Flagged verification captures and contested match scores appear here for Approve, Reject, or Score Correction.',
       );
     }
 

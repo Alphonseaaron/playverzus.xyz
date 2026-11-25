@@ -185,6 +185,15 @@ function createInMemoryPlatformDb() {
         filters.push((r) => r[col] === val);
         return builder;
       },
+      neq: (col: string, val: any) => {
+        filters.push((r) => r[col] !== val);
+        return builder;
+      },
+      ilike: (col: string, val: string) => {
+        const needle = String(val || '').toLowerCase();
+        filters.push((r) => String(r[col] || '').toLowerCase() === needle);
+        return builder;
+      },
       in: (col: string, vals: any[]) => {
         filters.push((r) => vals.includes(r[col]));
         return builder;
@@ -550,12 +559,12 @@ describe('End-to-End Multi-Actor & Multi-Platform Userflow Verification Suite (Z
     const settledMatch = await apiMatchService.getMatch(created.id);
     expect(settledMatch.status).toBe('SETTLED');
     expect(settledMatch.winner).toBe('u-usa');
-    expect(settledMatch.verifiedBy).toBe('AI');
+    expect(settledMatch.verifiedBy).toBe('AI_DUAL_CONSENSUS');
 
-    // 6. Verify escrow released & winner credited 200 PTS (900 + 200 = 1100)
+    // 6. Verify escrow released & winner credited 175 PTS after 12.5% Pro duel rake (900 + 175 = 1075)
     expect(walletA.locked).toBe(0);
     expect(walletB.locked).toBe(0);
-    expect(walletA.balance).toBe(1100);
+    expect(walletA.balance).toBe(1075);
     expect(walletB.balance).toBe(900);
 
     // 7. Verify Elo ratings updated automatically on the global leaderboard
@@ -639,14 +648,15 @@ describe('End-to-End Multi-Actor & Multi-Platform Userflow Verification Suite (Z
     await apiMatchService.submitScore(mobileMatch.id, 'u-usa', '2,500', 0.95, false, 'legit_1', 'CLIENT_OCR');
     await apiMatchService.submitScore(mobileMatch.id, 'u-usa', '6,400', 0.95, false, 'legit_2', 'CLIENT_OCR');
 
-    // Player B submits 5 identical replay frames claiming 99,999
-    for (let i = 0; i < 5; i++) {
+    // Player B submits 5 frozen-hash frames with rapidly mutating overlay scores (no final victory flag)
+    const spoofScores = ['12,000', '25,000', '40,000', '65,000', '99,999'];
+    for (let i = 0; i < spoofScores.length; i++) {
       await apiMatchService.submitScore(
         mobileMatch.id,
         'u-ger',
-        '99,999',
+        spoofScores[i]!,
         0.95,
-        i === 4,
+        false,
         'replay_static_hash',
         'CLIENT_OCR',
       );
@@ -706,14 +716,14 @@ describe('End-to-End Multi-Actor & Multi-Platform Userflow Verification Suite (Z
       'Opponent and I both saw win screen',
     );
 
-    // Verify dispute was resolved 100% automatically by AI_ARBITER without waiting for human admin!
-    expect(disputeResult.status).toBe('RESOLVED');
-    expect(disputeResult.resolution).toContain('AI_ARBITER');
+    // Verify mutual winning claims safely route to Reviewer Audit ('OPEN' dispute + 'REVIEW' match status)
+    // without prematurely paying out escrow!
+    expect(disputeResult.status).toBe('OPEN');
 
-    const resolvedMatch = await apiMatchService.getMatch(disputedMatch.id);
-    expect(resolvedMatch.status).toBe('SETTLED');
-    expect(resolvedMatch.winner).toBe('u-nga');
-    expect(resolvedMatch.verifiedBy).toBe('AI_ARBITER');
+    const conflictMatch = await apiMatchService.getMatch(disputedMatch.id);
+    expect(conflictMatch.status).toBe('REVIEW');
+    expect(conflictMatch.winner).toBeNull();
+    expect(conflictMatch.verifiedBy).toBe('NEEDS_REVIEW');
   });
 
   it('Flow 4: Match Cancellation & Automatic 100% Escrow Refund', async () => {
