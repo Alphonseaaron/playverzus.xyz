@@ -233,9 +233,13 @@ export async function provisionCrossmintEvmWallet(params: {
     // Ignore legacy MPC failure when Smart Wallet errors exist
   }
 
-  const combinedMsg = smartErrors[0]
-    ? smartErrors.slice(0, 3).join(' | ')
-    : 'Could not initialize Base USDC Smart Wallet right now.';
+  const firstSmartMsg = smartErrors[0] || '';
+  const needsServerSigner = firstSmartMsg.toLowerCase().includes('api-key signers are not enabled');
+  const combinedMsg = needsServerSigner
+    ? 'Crossmint Smart Wallets require CROSSMINT_SIGNER_SECRET in Render (custodial api-key signers are disabled on self-serve projects). Set CROSSMINT_SIGNER_SECRET and redeploy.'
+    : smartErrors[0]
+      ? smartErrors.slice(0, 2).join(' | ')
+      : 'Could not initialize Base USDC Smart Wallet right now.';
 
   return {
     ok: false,
