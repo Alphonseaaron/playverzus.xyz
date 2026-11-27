@@ -227,4 +227,36 @@ describe('CrossmintService No-KYB Direct USDC Wallets', () => {
       'https://basescan.org/address/0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
     );
   });
+
+  it('auto-provisions Master Base Treasury Smart Wallet when CROSSMINT_TREASURY_ADDRESS env var is unset', async () => {
+    delete process.env.CROSSMINT_TREASURY_ADDRESS;
+    const redis = makeMockRedis();
+    const walletSvc = {} as WalletService;
+    const treasuryAddr = '0x9999999999999999999999999999999999999999';
+
+    globalThis.fetch = vi.fn(async (url: string, init?: RequestInit) => {
+      if (init?.method === 'GET' && url.includes('/wallets/')) {
+        return new Response(JSON.stringify({ error: true }), { status: 404 });
+      }
+      if (init?.method === 'POST' && url.endsWith('/2025-06-09/wallets')) {
+        const body = JSON.parse(String(init.body || '{}'));
+        expect(body.type).toBe('smart');
+        expect(body.owner).toBe('userId:playverzus_master_treasury');
+        expect(body.config?.recoveryMethods?.[0]?.type).toBe('api-key');
+        return new Response(
+          JSON.stringify({ address: treasuryAddr, chainType: 'evm', type: 'smart' }),
+          { status: 201 },
+        );
+      }
+      return new Response(JSON.stringify([]), { status: 200 });
+    }) as any;
+
+    const svc = new CrossmintService(walletSvc, redis as any);
+    const liveCfg = await svc.getLiveConfig();
+    expect(liveCfg.treasuryConfigured).toBe(true);
+    expect(liveCfg.treasuryAddress).toBe(treasuryAddr);
+
+    // Cached in Redis after provisioning
+    expect(await redis.get('crossmint:treasury:address')).toBe(treasuryAddr);
+  });
 });

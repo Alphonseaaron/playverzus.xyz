@@ -9,6 +9,13 @@ import * as crypto from 'crypto';
 import { createServiceClient, TypedSupabaseClient } from '@playverzus/db';
 import { WalletService } from '../wallet/wallet.service';
 import { RedisService } from '../redis/redis.service';
+import {
+  resolveCrossmintEnv,
+  provisionCrossmintEvmWallet,
+  resolveTreasuryAddress,
+  executeCrossmintUsdcTransfer,
+  isValidEvmAddress,
+} from './crossmint-wallets.helper';
 
 export interface CrossmintOrderResult {
   success: boolean;
@@ -74,6 +81,13 @@ export class CrossmintService {
   private readonly treasuryAddress = (
     process.env.CROSSMINT_TREASURY_ADDRESS || 'playverzus_master_treasury'
   ).trim();
+  private readonly signerSecret = (process.env.CROSSMINT_SIGNER_SECRET || '').trim();
+  private readonly signerAddress = (process.env.CROSSMINT_SERVER_SIGNER_ADDRESS || '').trim();
+  private resolvedTreasuryAddr: string | null = isValidEvmAddress(
+    process.env.CROSSMINT_TREASURY_ADDRESS,
+  )
+    ? process.env.CROSSMINT_TREASURY_ADDRESS!.trim()
+    : null;
   private readonly isProd = CrossmintService.resolveIsProd(
     this.serverApiKey,
     this.clientApiKey,
@@ -104,59 +118,85 @@ export class CrossmintService {
   }
 
   static resolveIsProd(serverKey = '', clientKey = ''): boolean {
-    const explicitEnv = (process.env.CROSSMINT_ENVIRONMENT || '').trim().toLowerCase();
-    if (
-      explicitEnv === 'staging' ||
-      serverKey.startsWith('sk_staging_') ||
-      clientKey.startsWith('ck_staging_')
-    ) {
-      return false;
+    return resolveCrossmintEnv(serverKey, clientKey).isProd;
+  }
+
+  private effectiveTreasuryAddress(): string | null {
+    if (isValidEvmAddress(this.resolvedTreasuryAddr)) {
+      return this.resolvedTreasuryAddr;
     }
-    return Boolean(
-      serverKey.startsWith('sk_production_') ||
-        clientKey.startsWith('ck_production_') ||
-        explicitEnv === 'production' ||
-        process.env.WALLET_MODE === 'live' ||
-        process.env.NODE_ENV === 'production',
-    );
+    if (this.isTreasuryConfigured() && this.treasuryAddress !== 'playverzus_master_treasury') {
+      return this.treasuryAddress;
+    }
+    return null;
   }
 
   isTreasuryConfigured(): boolean {
     return Boolean(
-      this.treasuryAddress &&
-        this.treasuryAddress !== 'playverzus_master_treasury',
+      isValidEvmAddress(this.resolvedTreasuryAddr) ||
+        (this.treasuryAddress && this.treasuryAddress !== 'playverzus_master_treasury'),
     );
   }
 
+  private async ensureTreasuryAddress(autoProvision = true): Promise<string | null> {
+    const existing = this.effectiveTreasuryAddress();
+    if (existing) return existing;
+
+    const res = await resolveTreasuryAddress({
+      explicitTreasury: this.isTreasuryConfigured() ? this.treasuryAddress : '',
+      apiKey: this.serverApiKey,
+      chain: this.defaultChain,
+      baseUrl: this.baseUrl,
+      supabase: this.supabase,
+      redis: this.redis,
+      signerSecret: this.signerSecret,
+      signerAddress: this.signerAddress,
+      autoProvision,
+    });
+
+    if (res.address) {
+      this.resolvedTreasuryAddr = res.address;
+    }
+    return res.address;
+  }
+
   getConfig() {
-    const treasuryConfigured = this.isTreasuryConfigured();
+    const addr = this.effectiveTreasuryAddress();
+    const treasuryConfigured = Boolean(addr);
     return {
       clientApiKey: this.clientApiKey,
       environment: this.isProd ? 'production' : 'staging',
       defaultChain: this.defaultChain,
       treasuryConfigured,
-      treasuryAddress: treasuryConfigured ? this.treasuryAddress : null,
+      treasuryAddress: treasuryConfigured ? addr : null,
       directUsdcDepositAvailable: Boolean(this.serverApiKey),
       supportedCurrencies: ['USD', 'USDC', 'EUR', 'KES'],
       supportedMethods: ['usdc-base', 'card', 'apple-pay', 'google-pay'],
     };
   }
 
+  async getLiveConfig() {
+    await this.ensureTreasuryAddress(true).catch(() => null);
+    return this.getConfig();
+  }
+
   /**
-   * Reads the live on-chain Base USDC balance of the configured Admin Treasury wallet
-   * from Crossmint Wallets API without failing the Treasury report if scopes are pending.
+   * Reads the live on-chain Base USDC balance of the Admin Treasury wallet
+   * (auto-provisioning it via Crossmint Wallets API if not manually pinned via env).
    */
   async getTreasuryWalletStatus(): Promise<CrossmintTreasuryWalletStatus> {
     const environment: 'production' | 'staging' = this.isProd ? 'production' : 'staging';
-    const configured = this.isTreasuryConfigured();
-    const isEvmAddress = /^0x[a-fA-F0-9]{40}$/.test(this.treasuryAddress);
-    const explorerUrl = configured && isEvmAddress
-      ? (this.isProd
-          ? `https://basescan.org/address/${this.treasuryAddress}`
-          : `https://sepolia.basescan.org/address/${this.treasuryAddress}`)
-      : null;
+    const resolvedAddr = await this.ensureTreasuryAddress(true).catch(() => null);
+    const activeAddr = resolvedAddr || (this.isTreasuryConfigured() ? this.treasuryAddress : null);
+    const configured = Boolean(activeAddr);
+    const explorerUrl =
+      configured && isValidEvmAddress(activeAddr)
+        ? (this.isProd
+            ? `https://basescan.org/address/${activeAddr}`
+            : `https://sepolia.basescan.org/address/${activeAddr}`)
+        : null;
 
-    if (!configured) {
+    if (!configured || !activeAddr) {
       return {
         configured: false,
         environment,
@@ -165,7 +205,7 @@ export class CrossmintService {
         onChainUsdcBalance: null,
         explorerUrl: null,
         status: 'NOT_CONFIGURED',
-        note: 'Set CROSSMINT_TREASURY_ADDRESS in Render after creating your Treasury wallet in Crossmint Console.',
+        note: 'Set CROSSMINT_SERVER_API_KEY with Wallets scopes (or CROSSMINT_TREASURY_ADDRESS) in Render.',
       };
     }
 
@@ -174,7 +214,7 @@ export class CrossmintService {
         configured: true,
         environment,
         chain: this.defaultChain,
-        address: this.treasuryAddress,
+        address: activeAddr,
         onChainUsdcBalance: null,
         explorerUrl,
         status: 'AWAITING_API_SCOPE',
@@ -183,7 +223,7 @@ export class CrossmintService {
     }
 
     try {
-      const endpoint = `${this.baseUrl}/2025-06-09/wallets/${encodeURIComponent(this.treasuryAddress)}/balances?tokens=usdc&chains=${encodeURIComponent(this.defaultChain)}`;
+      const endpoint = `${this.baseUrl}/2025-06-09/wallets/${encodeURIComponent(activeAddr)}/balances?tokens=usdc&chains=${encodeURIComponent(this.defaultChain)}`;
       const res = await fetch(endpoint, {
         method: 'GET',
         headers: {
@@ -198,11 +238,11 @@ export class CrossmintService {
           configured: true,
           environment,
           chain: this.defaultChain,
-          address: this.treasuryAddress,
+          address: activeAddr,
           onChainUsdcBalance: null,
           explorerUrl,
           status: 'AWAITING_API_SCOPE',
-          note: 'Enable wallets.read / wallets:balances.read scopes on your Crossmint server API key.',
+          note: 'Enable wallets.read / wallets:balance.read scopes on your Crossmint server API key.',
         };
       }
 
@@ -211,7 +251,7 @@ export class CrossmintService {
           configured: true,
           environment,
           chain: this.defaultChain,
-          address: this.treasuryAddress,
+          address: activeAddr,
           onChainUsdcBalance: null,
           explorerUrl,
           status: 'ERROR',
@@ -225,7 +265,7 @@ export class CrossmintService {
         configured: true,
         environment,
         chain: this.defaultChain,
-        address: this.treasuryAddress,
+        address: activeAddr,
         onChainUsdcBalance,
         explorerUrl,
         status: 'CONNECTED',
@@ -237,7 +277,7 @@ export class CrossmintService {
         configured: true,
         environment,
         chain: this.defaultChain,
-        address: this.treasuryAddress,
+        address: activeAddr,
         onChainUsdcBalance: null,
         explorerUrl,
         status: 'ERROR',
@@ -301,90 +341,42 @@ export class CrossmintService {
 
     const existingAddress = await this.findCachedUserWalletAddress(userId);
     if (existingAddress) {
+      await this.ensureTreasuryAddress(true).catch(() => null);
       return this.formatDepositWalletInfo(existingAddress, userId);
     }
 
     const ownerLocator = `userId:${userId}`;
-    const headers = {
-      'Content-Type': 'application/json',
-      'X-API-KEY': this.serverApiKey,
-    };
-
-    // 1. Check if Crossmint already has a wallet for this owner
-    for (const locator of [
-      `${ownerLocator}:evm`,
-      `${ownerLocator}:evm-mpc-wallet`,
-      `${ownerLocator}:evm-smart-wallet`,
-      ...(email ? [`email:${email}:evm`] : []),
-    ]) {
-      try {
-        const lookup = await fetch(
-          `${this.baseUrl}/2025-06-09/wallets/${encodeURIComponent(locator)}`,
-          { method: 'GET', headers },
-        );
-        if (lookup.ok) {
-          const found = (await lookup.json().catch(() => ({}))) as Record<string, any>;
-          if (typeof found?.address === 'string' && /^0x[a-fA-F0-9]{40}$/.test(found.address)) {
-            await this.persistUserWalletMapping(userId, found.address, found);
-            return this.formatDepositWalletInfo(found.address, userId);
-          }
-        }
-      } catch {
-        // Continue to creation attempt
-      }
-    }
-
-    // 2. Provision a new EVM custodial MPC wallet under the Wallets API (No KYB required)
-    const createBody: Record<string, unknown> = {
-      chainType: 'evm',
-      type: 'mpc',
-      owner: ownerLocator,
+    const prov = await provisionCrossmintEvmWallet({
+      baseUrl: this.baseUrl,
+      chain: this.defaultChain,
+      apiKey: this.serverApiKey,
+      ownerLocator,
+      email,
       alias: `pvz_${userId.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 20)}`,
-    };
-
-    let response = await fetch(`${this.baseUrl}/2025-06-09/wallets`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(createBody),
+      signerSecret: this.signerSecret,
+      signerAddress: this.signerAddress,
     });
-    let data = (await response.json().catch(() => ({}))) as Record<string, any>;
 
-    // Fallback to smart wallet with server signer if configured and mpc was rejected
-    const signerAddr = (process.env.CROSSMINT_SERVER_SIGNER_ADDRESS || '').trim();
-    if (!response.ok && response.status === 400 && signerAddr) {
-      response = await fetch(`${this.baseUrl}/2025-06-09/wallets`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          chainType: 'evm',
-          type: 'smart',
-          owner: ownerLocator,
-          config: {
-            recoveryMethods: [{ type: 'server', address: signerAddr }],
-          },
-        }),
-      });
-      data = (await response.json().catch(() => ({}))) as Record<string, any>;
-    }
-
-    if (!response.ok || typeof data?.address !== 'string') {
-      const apiMsg = String(data?.message || data?.error || '').trim();
+    if (!prov.ok) {
       this.log.warn(
-        { status: response.status, data, userId },
+        { status: prov.status, data: prov.data, message: prov.message, userId },
         'Crossmint Wallets API rejected wallet provisioning',
       );
-      if (response.status === 401 || response.status === 403) {
+      if (prov.isAuthError) {
         throw new ServiceUnavailableException(
           'Crossmint Wallets permissions (wallets.create, wallets.read, wallets:transactions.read) are not enabled yet on the server API key. Enable Wallets scopes in Crossmint Console or use M-PESA.',
         );
       }
       throw new BadRequestException(
-        apiMsg || 'Could not initialize your Base USDC deposit address right now.',
+        prov.message || 'Could not initialize your Base USDC deposit address right now.',
       );
     }
 
-    await this.persistUserWalletMapping(userId, data.address, data);
-    return this.formatDepositWalletInfo(data.address, userId);
+    await Promise.all([
+      this.persistUserWalletMapping(userId, prov.address, prov.raw),
+      this.ensureTreasuryAddress(true).catch(() => null),
+    ]);
+    return this.formatDepositWalletInfo(prov.address, userId);
   }
 
   /**
@@ -502,8 +494,8 @@ export class CrossmintService {
     const feeUsd = Math.ceil(Math.max(0.50, rawFee) * 100) / 100;
     const numAmount = Math.round((netCreditUsd + feeUsd) * 100) / 100;
 
-    let recipientAddress = this.isTreasuryConfigured() ? this.treasuryAddress : '';
-    if (!/^0x[a-fA-F0-9]{40}$/.test(recipientAddress)) {
+    let recipientAddress = (await this.ensureTreasuryAddress(true).catch(() => null)) || '';
+    if (!isValidEvmAddress(recipientAddress)) {
       try {
         const wallet = await this.getOrProvisionDepositWallet(userId, email);
         recipientAddress = wallet.address;
@@ -811,47 +803,42 @@ export class CrossmintService {
         );
       }
 
-      if (!this.serverApiKey || !this.isTreasuryConfigured()) {
+      const activeTreasury = await this.ensureTreasuryAddress(true);
+      if (!this.serverApiKey || !activeTreasury) {
         throw new ServiceUnavailableException(
           'Crossmint Treasury Wallet is not configured yet (set CROSSMINT_SERVER_API_KEY with Wallets scopes and CROSSMINT_TREASURY_ADDRESS).',
         );
       }
 
-      const tokenLocator = `${chain}:usdc`;
-      const endpoint = `${apiBase}/2025-06-09/wallets/${encodeURIComponent(this.treasuryAddress)}/tokens/${encodeURIComponent(tokenLocator)}/transfers`;
-
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-KEY': this.serverApiKey,
-          'x-idempotency-key': `treasury-${params.adminId}-${Date.now()}`,
-        },
-        body: JSON.stringify({
-          recipient,
-          amount: numAmount.toFixed(2),
-        }),
+      const txRes = await executeCrossmintUsdcTransfer({
+        baseUrl: apiBase,
+        chain,
+        apiKey: this.serverApiKey,
+        fromWalletAddress: activeTreasury,
+        toAddress: recipient,
+        amountUsdc: numAmount,
+        idempotencyKey: `treasury-${params.adminId}-${Date.now()}`,
+        signerSecret: this.signerSecret,
       });
 
-      const data = (await response.json().catch(() => ({}))) as any;
-      if (!response.ok) {
-        this.log.warn({ status: response.status, data }, 'Crossmint Treasury USDC Transfer failed');
+      if (!txRes.ok) {
+        this.log.warn({ status: txRes.status, data: txRes.data, msg: txRes.message }, 'Crossmint Treasury USDC Transfer failed');
         throw new BadRequestException(
-          String(data?.message || data?.error || 'Crossmint rejected the treasury USDC transfer.'),
+          txRes.message || 'Crossmint rejected the treasury USDC transfer.',
         );
       }
 
       return {
         success: true,
         mode: 'WALLET_TRANSFER' as const,
-        transferId: data.id || data.transferId || `cm-tx-${Date.now()}`,
-        txHash: data.txHash || data.onChain?.txId || null,
-        explorerLink: data.explorerLink || data.onChain?.explorerLink || null,
+        transferId: txRes.txId || `cm-tx-${Date.now()}`,
+        txHash: txRes.txHash,
+        explorerLink: txRes.explorerLink,
         amount: numAmount,
         currency: 'USDC',
         chain,
         destination: recipient,
-        status: data.status || 'SUBMITTED',
+        status: txRes.status,
       };
     }
 
@@ -863,9 +850,10 @@ export class CrossmintService {
       );
     }
 
-    if (!this.serverApiKey || !this.isTreasuryConfigured()) {
+    const activeTreasury = await this.ensureTreasuryAddress(true).catch(() => null);
+    if (!this.serverApiKey || !activeTreasury) {
       throw new ServiceUnavailableException(
-        'Bank off-ramp requires CROSSMINT_SERVER_API_KEY and CROSSMINT_TREASURY_ADDRESS.',
+        'Bank off-ramp requires CROSSMINT_SERVER_API_KEY and a configured Treasury wallet.',
       );
     }
 
@@ -873,7 +861,7 @@ export class CrossmintService {
       payment: {
         method: chain,
         currency: 'usdc',
-        payerAddress: this.treasuryAddress,
+        payerAddress: activeTreasury,
       },
       recipient: {
         paymentMethodId,
@@ -1183,32 +1171,28 @@ export class CrossmintService {
     chain: string,
     amountUsdc: number,
   ): Promise<void> {
-    if (!this.isTreasuryConfigured() || !/^0x[a-fA-F0-9]{40}$/.test(this.treasuryAddress)) {
+    const activeTreasury = await this.ensureTreasuryAddress(true).catch(() => null);
+    if (!activeTreasury || !isValidEvmAddress(activeTreasury)) {
       return;
     }
-    if (userWalletAddress.toLowerCase() === this.treasuryAddress.toLowerCase()) {
+    if (userWalletAddress.toLowerCase() === activeTreasury.toLowerCase()) {
       return;
     }
 
     try {
-      const tokenLocator = `${chain}:usdc`;
-      const endpoint = `${this.baseUrl}/2025-06-09/wallets/${encodeURIComponent(userWalletAddress)}/tokens/${encodeURIComponent(tokenLocator)}/transfers`;
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-KEY': this.serverApiKey,
-          'x-idempotency-key': `sweep-${userWalletAddress}-${Date.now()}`,
-        },
-        body: JSON.stringify({
-          recipient: this.treasuryAddress,
-          amount: amountUsdc.toFixed(2),
-        }),
+      const txRes = await executeCrossmintUsdcTransfer({
+        baseUrl: this.baseUrl,
+        chain,
+        apiKey: this.serverApiKey,
+        fromWalletAddress: userWalletAddress,
+        toAddress: activeTreasury,
+        amountUsdc,
+        idempotencyKey: `sweep-${userWalletAddress}-${Date.now()}`,
+        signerSecret: this.signerSecret,
       });
-      if (!res.ok) {
-        const body = await res.text().catch(() => '');
+      if (!txRes.ok) {
         this.log.warn(
-          { status: res.status, body, userWalletAddress, chain },
+          { status: txRes.status, body: txRes.data, msg: txRes.message, userWalletAddress, chain },
           'Treasury sweep skipped/deferred (manual or batch sweep available in Crossmint Console)',
         );
       }

@@ -22,6 +22,11 @@ import {
 import { createServiceClient, TypedSupabaseClient } from '@playverzus/db';
 import { RedisService } from '../redis/redis.service';
 import { PushService } from '../push/push.service';
+import {
+  resolveCrossmintEnv,
+  resolveTreasuryAddress,
+  executeCrossmintUsdcTransfer,
+} from '../crossmint/crossmint-wallets.helper';
 
 interface CashLedger {
   balance: number; // USDC
@@ -660,71 +665,73 @@ export class WalletService {
       let transferTxId: string | null = null;
       const crossmintServerKey = process.env.CROSSMINT_SERVER_API_KEY || '';
       const clientApiKey = process.env.NEXT_PUBLIC_CROSSMINT_CLIENT_API_KEY || '';
-      const treasuryAddr = (process.env.CROSSMINT_TREASURY_ADDRESS || 'playverzus_master_treasury').trim();
-      const explicitCmEnv = (process.env.CROSSMINT_ENVIRONMENT || '').trim().toLowerCase();
-      const cmIsProd =
-        explicitCmEnv === 'staging' ||
-        crossmintServerKey.startsWith('sk_staging_') ||
-        clientApiKey.startsWith('ck_staging_')
-          ? false
-          : Boolean(
-              crossmintServerKey.startsWith('sk_production_') ||
-                clientApiKey.startsWith('ck_production_') ||
-                explicitCmEnv === 'production' ||
-                process.env.WALLET_MODE === 'live' ||
-                process.env.NODE_ENV === 'production',
-            );
+      const explicitTreasury = (process.env.CROSSMINT_TREASURY_ADDRESS || '').trim();
+      const signerSecret = (process.env.CROSSMINT_SIGNER_SECRET || '').trim();
+      const signerAddress = (process.env.CROSSMINT_SERVER_SIGNER_ADDRESS || '').trim();
+      const { isProd: cmIsProd, baseUrl: apiBase } = resolveCrossmintEnv(
+        crossmintServerKey,
+        clientApiKey,
+      );
       const resolvedChain = !cmIsProd && requestedChain === 'base' ? 'base-sepolia' : requestedChain;
-      const apiBase = cmIsProd ? 'https://www.crossmint.com/api' : 'https://staging.crossmint.com/api';
 
       if (isDirectCryptoPayout) {
-        if (!crossmintServerKey || !treasuryAddr || treasuryAddr === 'playverzus_master_treasury') {
+        if (!crossmintServerKey) {
           throw new ServiceUnavailableException(
-            'Direct Base USDC payouts require Crossmint Wallets permissions and a configured CROSSMINT_TREASURY_ADDRESS. Use M-PESA payout or contact support.',
+            'Direct Base USDC payouts require CROSSMINT_SERVER_API_KEY with Wallets scopes. Use M-PESA payout or contact support.',
           );
         }
 
-        const tokenLocator = `${resolvedChain}:usdc`;
-        const endpoint = `${apiBase}/2025-06-09/wallets/${encodeURIComponent(treasuryAddr)}/tokens/${encodeURIComponent(tokenLocator)}/transfers`;
-        let cmRes: Response;
-        let cmData: Record<string, any> = {};
-        try {
-          cmRes = await fetch(endpoint, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-API-KEY': crossmintServerKey,
-              'x-idempotency-key': `payout-${userId}-${Date.now()}`,
-            },
-            body: JSON.stringify({
-              recipient: destinationAddress,
-              amount: netTransferUsd.toFixed(2),
-            }),
-          });
-          cmData = (await cmRes.json().catch(() => ({}))) as Record<string, any>;
-        } catch (err) {
-          this.log.warn({ err, userId }, 'Crossmint payout network error');
+        const treasury = await resolveTreasuryAddress({
+          explicitTreasury,
+          apiKey: crossmintServerKey,
+          chain: resolvedChain,
+          baseUrl: apiBase,
+          supabase: this.supabase,
+          redis: this.redis,
+          signerSecret,
+          signerAddress,
+          autoProvision: true,
+        });
+
+        if (!treasury.configured || !treasury.address) {
           throw new ServiceUnavailableException(
-            'Could not reach Crossmint Wallets API right now. Your USDC balance was not deducted — please retry shortly.',
+            treasury.error ||
+              'Direct Base USDC payouts require Crossmint Wallets permissions and an initialized Treasury wallet. Use M-PESA payout or contact support.',
           );
         }
 
-        if (!cmRes.ok) {
-          const reason = String(cmData?.message || cmData?.error || '').trim();
-          this.log.warn({ status: cmRes.status, cmData, userId }, 'Crossmint payout rejected');
-          if (cmRes.status === 401 || cmRes.status === 403) {
+        const txResult = await executeCrossmintUsdcTransfer({
+          baseUrl: apiBase,
+          chain: resolvedChain,
+          apiKey: crossmintServerKey,
+          fromWalletAddress: treasury.address,
+          toAddress: destinationAddress,
+          amountUsdc: netTransferUsd,
+          idempotencyKey: `payout-${userId}-${Date.now()}`,
+          signerSecret,
+        });
+
+        if (!txResult.ok) {
+          this.log.warn(
+            { status: txResult.status, cmData: txResult.data, message: txResult.message, userId },
+            'Crossmint payout rejected',
+          );
+          if (txResult.isAuthError) {
             throw new ServiceUnavailableException(
               'Crossmint Wallets transfer permission (wallets:transactions.create) is not enabled yet on the server key. Your balance was not deducted.',
             );
           }
+          if (txResult.status >= 500) {
+            throw new ServiceUnavailableException(
+              'Could not reach Crossmint Wallets API right now. Your USDC balance was not deducted — please retry shortly.',
+            );
+          }
           throw new BadRequestException(
-            reason || 'USDC withdrawal transfer could not be executed. Your balance was not deducted.',
+            txResult.message || 'USDC withdrawal transfer could not be executed. Your balance was not deducted.',
           );
         }
 
-        transferTxId = String(
-          cmData.onChain?.txId || cmData.txHash || cmData.id || cmData.transferId || '',
-        ) || null;
+        transferTxId = txResult.txHash || txResult.txId || null;
       }
 
       // Deduct from Real Cash ledger only after external transfer acceptance

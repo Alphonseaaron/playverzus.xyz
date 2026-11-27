@@ -9,7 +9,7 @@ export class CrossmintController {
 
   @Get('config')
   getConfig() {
-    return this.crossmintService.getConfig();
+    return this.crossmintService.getLiveConfig();
   }
 
   @Get('wallet')
