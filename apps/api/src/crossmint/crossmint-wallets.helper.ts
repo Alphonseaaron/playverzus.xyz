@@ -73,9 +73,11 @@ export async function provisionCrossmintEvmWallet(params: {
   // 1. Lookup any existing wallet tied to this owner first (Smart, MPC, or generic EVM)
   const locators = [
     `${params.ownerLocator}:evm`,
+    `${params.ownerLocator}:evm:smart`,
     `${params.ownerLocator}:evm-smart-wallet`,
+    `${params.ownerLocator}:evm:mpc`,
     `${params.ownerLocator}:evm-mpc-wallet`,
-    ...(params.email ? [`email:${params.email}:evm`] : []),
+    ...(params.email ? [`email:${params.email}:evm`, `email:${params.email}:evm:smart`] : []),
   ];
   for (const locator of locators) {
     try {
@@ -94,6 +96,13 @@ export async function provisionCrossmintEvmWallet(params: {
     }
   }
 
+  const sanitizedAlias = params.alias
+    ? params.alias.replace(/[^a-zA-Z0-9-]/g, '-').slice(0, 32)
+    : undefined;
+  const smartErrors: string[] = [];
+  let lastStatus = 400;
+  let lastData: Record<string, any> | undefined;
+
   // 2. If CROSSMINT_SIGNER_SECRET is configured, create via official Wallets SDK Server Signer
   const secret = (params.signerSecret || '').trim();
   if (secret) {
@@ -102,7 +111,7 @@ export async function provisionCrossmintEvmWallet(params: {
       const created = await wallets.createWallet({
         chain: params.chain as any,
         owner: params.ownerLocator,
-        alias: params.alias,
+        ...(sanitizedAlias ? { alias: sanitizedAlias } : {}),
         recoveryMethods: [{ type: 'server', secret }],
       });
       if (isValidEvmAddress(created?.address)) {
@@ -118,83 +127,122 @@ export async function provisionCrossmintEvmWallet(params: {
       if (isAuth) {
         return { ok: false, status: 403, isAuthError: true, message: msg };
       }
+      smartErrors.push(`sdk-server: ${msg}`);
     }
   }
 
-  // 3. Provision via Crossmint Wallets REST API (Smart Wallet with API-Key/Server signer -> fallback MPC)
+  // 3. Provision via Crossmint Wallets REST API (Smart Wallet candidates first; never let legacy MPC mask Smart errors)
   const signerAddr = (params.signerAddress || '').trim();
   const recoveryEntry = signerAddr
     ? { type: 'server', address: signerAddr }
     : { type: 'api-key' };
 
-  const candidates: Array<Record<string, unknown>> = [
+  const baseSmart = {
+    chainType: 'evm',
+    type: 'smart',
+    owner: params.ownerLocator,
+  };
+
+  const smartCandidates: Array<{ label: string; body: Record<string, unknown> }> = [
     {
-      chainType: 'evm',
-      type: 'smart',
-      owner: params.ownerLocator,
-      ...(params.alias ? { alias: params.alias } : {}),
-      config: {
-        recoveryMethods: [recoveryEntry],
+      label: 'smart-recovery-delegated',
+      body: {
+        ...baseSmart,
+        ...(sanitizedAlias ? { alias: sanitizedAlias } : {}),
+        config: { recoveryMethods: [recoveryEntry], delegatedSigners: [] },
       },
     },
     {
-      chainType: 'evm',
-      type: 'smart',
-      owner: params.ownerLocator,
-      ...(params.alias ? { alias: params.alias } : {}),
-      config: {
-        adminSigner: recoveryEntry,
+      label: 'smart-recovery-no-alias',
+      body: {
+        ...baseSmart,
+        config: { recoveryMethods: [recoveryEntry] },
       },
     },
     {
-      chainType: 'evm',
-      type: 'mpc',
-      owner: params.ownerLocator,
-      ...(params.alias ? { alias: params.alias } : {}),
+      label: 'smart-admin-no-alias',
+      body: {
+        ...baseSmart,
+        config: { adminSigner: recoveryEntry, delegatedSigners: [] },
+      },
     },
+    ...(signerAddr
+      ? []
+      : [
+          {
+            label: 'smart-server-auto',
+            body: {
+              ...baseSmart,
+              config: { recoveryMethods: [{ type: 'server' }] },
+            },
+          },
+        ]),
   ];
 
-  let lastStatus = 400;
-  let lastMsg = '';
-  let lastData: Record<string, any> | undefined;
-
-  for (const body of candidates) {
+  for (const candidate of smartCandidates) {
     try {
       const response = await fetch(`${params.baseUrl}/2025-06-09/wallets`, {
         method: 'POST',
         headers,
-        body: JSON.stringify(body),
+        body: JSON.stringify(candidate.body),
       });
       const data = (await response.json().catch(() => ({}))) as Record<string, any>;
       if (response.ok && isValidEvmAddress(data?.address)) {
         return { ok: true, address: data.address.trim(), raw: data };
       }
 
+      const msg = String(data?.message || data?.error || '').trim();
       lastStatus = response.status;
       lastData = data;
-      lastMsg = String(data?.message || data?.error || '').trim();
+      if (msg) {
+        smartErrors.push(`${candidate.label}(${response.status}): ${msg}`);
+      }
 
       if (response.status === 401 || response.status === 403) {
         return {
           ok: false,
           status: response.status,
           isAuthError: true,
-          message: lastMsg || 'Missing Crossmint Wallets permissions on server API key.',
+          message: msg || 'Missing Crossmint Wallets permissions on server API key.',
           data,
         };
       }
     } catch (err: any) {
       lastStatus = 503;
-      lastMsg = String(err?.message || 'Network error calling Crossmint Wallets API').trim();
+      smartErrors.push(`${candidate.label}: ${String(err?.message || 'Network error').trim()}`);
     }
   }
+
+  // Silent legacy MPC fallback (succeeds only if project has custodial MPC enabled; never overwrites Smart errors)
+  try {
+    const mpcRes = await fetch(`${params.baseUrl}/2025-06-09/wallets`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        chainType: 'evm',
+        type: 'mpc',
+        owner: params.ownerLocator,
+        ...(sanitizedAlias ? { alias: sanitizedAlias } : {}),
+      }),
+    });
+    const mpcData = (await mpcRes.json().catch(() => ({}))) as Record<string, any>;
+    if (mpcRes.ok && isValidEvmAddress(mpcData?.address)) {
+      return { ok: true, address: mpcData.address.trim(), raw: mpcData };
+    }
+  } catch {
+    // Ignore legacy MPC failure when Smart Wallet errors exist
+  }
+
+  const combinedMsg = smartErrors[0]
+    ? smartErrors.slice(0, 3).join(' | ')
+    : 'Could not initialize Base USDC Smart Wallet right now.';
 
   return {
     ok: false,
     status: lastStatus,
     isAuthError: false,
-    message: lastMsg || 'Could not initialize Base USDC Smart Wallet right now.',
-    data: lastData,
+    message: combinedMsg,
+    data: { ...(lastData || {}), smartErrors },
   };
 }
 
